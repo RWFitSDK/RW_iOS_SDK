@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+._*
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
+
+# CocoaPods
+Pods/
+
+# Temp files
+*.swp
+*~
+.~*
