@@ -27,13 +27,13 @@
 		AB483C66286418D7000234B0 /* DHBleSDKDemoTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AB483C65286418D7000234B0 /* DHBleSDKDemoTests.m */; };
 		AB483C70286418D7000234B0 /* DHBleSDKDemoUITests.m in Sources */ = {isa = PBXBuildFile; fileRef = AB483C6F286418D7000234B0 /* DHBleSDKDemoUITests.m */; };
 		AB483C72286418D7000234B0 /* DHBleSDKDemoUITestsLaunchTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AB483C71286418D7000234B0 /* DHBleSDKDemoUITestsLaunchTests.m */; };
+		AB4BE9D12FFCD627009FEF2E /* DHBleSDK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB4BE9D02FFCD627009FEF2E /* DHBleSDK.framework */; };
 		ABA6DB0828F84B4E0020FB5A /* DHBluetoothManager.m in Sources */ = {isa = PBXBuildFile; fileRef = ABA6DB0728F84B4E0020FB5A /* DHBluetoothManager.m */; };
 		ABB9E9932E311D58004BF4D7 /* DHUIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3AA1AD288A41D700FAC387 /* DHUIKit.framework */; };
 		ABB9E9942E311D58004BF4D7 /* DHUIKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = AB3AA1AD288A41D700FAC387 /* DHUIKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		ABB9E9962E311D5A004BF4D7 /* DHFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3AA1AC288A41D700FAC387 /* DHFoundation.framework */; };
 		ABB9E9972E311D5A004BF4D7 /* DHFoundation.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = AB3AA1AC288A41D700FAC387 /* DHFoundation.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		ABBE0C3F28DC6D8300534A34 /* ScanViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = ABBE0C3D28DC6D8300534A34 /* ScanViewController.m */; };
-		ABDDAA5A2FE3E39400A24994 /* DHBleSDK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABDDAA592FE3E39400A24994 /* DHBleSDK.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -105,12 +105,12 @@
 		AB483C6B286418D7000234B0 /* DHBleSDKDemoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DHBleSDKDemoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB483C6F286418D7000234B0 /* DHBleSDKDemoUITests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DHBleSDKDemoUITests.m; sourceTree = "<group>"; };
 		AB483C71286418D7000234B0 /* DHBleSDKDemoUITestsLaunchTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DHBleSDKDemoUITestsLaunchTests.m; sourceTree = "<group>"; };
+		AB4BE9D02FFCD627009FEF2E /* DHBleSDK.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DHBleSDK.framework; path = Frameworks/DHBleSDK.framework; sourceTree = "<group>"; };
 		ABA6DB0628F84B4E0020FB5A /* DHBluetoothManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DHBluetoothManager.h; sourceTree = "<group>"; };
 		ABA6DB0728F84B4E0020FB5A /* DHBluetoothManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DHBluetoothManager.m; sourceTree = "<group>"; };
 		ABBE0C3D28DC6D8300534A34 /* ScanViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ScanViewController.m; sourceTree = "<group>"; };
 		ABBE0C3E28DC6D8300534A34 /* ScanViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ScanViewController.h; sourceTree = "<group>"; };
 		ABCBFD032865675B00B98ED4 /* PrefixHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PrefixHeader.h; sourceTree = "<group>"; };
-		ABDDAA592FE3E39400A24994 /* DHBleSDK.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DHBleSDK.framework; path = Frameworks/DHBleSDK.framework; sourceTree = "<group>"; };
 		ABEF20A1288F96290000A953 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		D84C635AC3EA76D4C2771750 /* Pods-DHBleSDKDemo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DHBleSDKDemo.debug.xcconfig"; path = "Target Support Files/Pods-DHBleSDKDemo/Pods-DHBleSDKDemo.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -123,7 +123,7 @@
 				02BE4E0574D0B5A15EC0478E /* Pods_DHBleSDKDemo.framework in Frameworks */,
 				ABB9E9962E311D5A004BF4D7 /* DHFoundation.framework in Frameworks */,
 				ABB9E9932E311D58004BF4D7 /* DHUIKit.framework in Frameworks */,
-				ABDDAA5A2FE3E39400A24994 /* DHBleSDK.framework in Frameworks */,
+				AB4BE9D12FFCD627009FEF2E /* DHBleSDK.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -147,7 +147,7 @@
 		0D408F33A221141523F8B1F8 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				ABDDAA592FE3E39400A24994 /* DHBleSDK.framework */,
+				AB4BE9D02FFCD627009FEF2E /* DHBleSDK.framework */,
 				ABEF20A1288F96290000A953 /* AVFoundation.framework */,
 				AB3AA1AC288A41D700FAC387 /* DHFoundation.framework */,
 				AB3AA1AD288A41D700FAC387 /* DHUIKit.framework */,

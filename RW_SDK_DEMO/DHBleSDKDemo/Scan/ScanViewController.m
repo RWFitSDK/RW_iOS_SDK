@@ -132,13 +132,13 @@
     [self.dataArray removeAllObjects];
     [self.deviceArray addObjectsFromArray:self.deviceTempArray];
     for (DHPeripheralModel *model in self.deviceArray) {
-        if (model.macAddr.length == 0) {
-            continue;
-        }
+//        if (model.macAddr.length == 0) {
+//            continue;
+//        }
         BaseCellModel *cellModel = [[BaseCellModel alloc] init];
         cellModel.leftTitle = model.name;
         cellModel.subTitle = [NSString stringWithFormat:@"%ld",(long)model.rssi];
-        cellModel.contentTitle = model.macAddr;
+        cellModel.contentTitle = [NSString stringWithFormat:@"%@ %@", model.rssi == 0 ? @"(System Paired)" : model.macAddr, model.deviceModel ?: @""];
         [self.dataArray addObject:cellModel];
     }
     [self.myTableView reloadData];

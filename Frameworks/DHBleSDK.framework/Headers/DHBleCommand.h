@@ -218,13 +218,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// 控制传感器原始数据输出
 /// @param outputType 1: 开启Sensor输出 2: 关闭Sensor输出
-/// @param sensorType 1: PPG 2: ACC
+/// @param sensorType 1: ACC  2: PPG
 + (void)ringControlSensorRaw:(UInt8)outputType type:(UInt8)sensorType
                        block:(void(^)(int code, id data))block;
 
 /// 获取传感器历史原始数据
-/// @param block 同步完成回调
-/// @param dataBlock 数据回调, data为NSDictionary: sensorType, sequence, + 对应数据
+/// @param block 同步完成回调, code==0 表示同步完成
+/// @param dataBlock 数据回调, data为NSArray<NSDictionary>，每个元素包含 sensorType, sequence, count + 对应数据数组(ppgData/accData/ppgRedData/irData)
 + (void)ringGetHistorySensorRaw:(void(^)(int code, id data))block dataBlock:(void(^)(int code, int progress, id data))dataBlock;
 
 #pragma mark- 工厂测试与校正

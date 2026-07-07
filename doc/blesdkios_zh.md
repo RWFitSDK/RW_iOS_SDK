@@ -232,6 +232,73 @@ DeviceFuncV2Model类属性定义:
 | isSupportFallDetect         | 是否支持跌落提醒           |
 | isSupportRecording          | 是否支持录音功能           |
 
+##### 3.1.8 使用外部 CBCentralManager 搜索并由 SDK 连接
+
+> 接口说明: 当客户 App 同时集成多个 BLE SDK，并使用自己的统一蓝牙搜索入口时，可将搜索使用的 `CBCentralManager` 传给本 SDK。客户只负责搜索，不负责连接；连接、服务发现、特征发现、数据收发和断连仍由 SDK 处理。
+
+> [!IMPORTANT]
+>
+> `CBPeripheral` 与扫描它的 `CBCentralManager` 是绑定的。客户传入的 `peripheral` 必须来自当前设置的 `externalCentralManager`。SDK 不使用私有 API 校验来源，如果传入的 Central 与 Peripheral 不匹配，连接可能失败或超时。
+
+方法说明:
+
+```objective-c
+// 初始化 SDK，并指定外部 CBCentralManager。centralManager 传 nil 时使用 SDK 自管理模式。
++ (void)initWithServiceUuids:(NSArray <NSString *>*)uuids
+      externalCentralManager:(nullable CBCentralManager *)centralManager;
+
+// 运行中设置外部 CBCentralManager。只能在未连接、未连接中状态下设置。
++ (void)setExternalCentralManager:(nullable CBCentralManager *)centralManager;
+
+// 是否正在使用外部 CBCentralManager。
++ (BOOL)isUsingExternalCentralManager;
+
+// 连接客户统一搜索到的设备。
++ (void)connectPeripheral:(CBPeripheral *)peripheral
+        advertisementData:(nullable NSDictionary *)advertisementData
+                     RSSI:(nullable NSNumber *)RSSI;
+```
+
+参数说明:
+
+| 参数 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| centralManager | CBCentralManager | 客户统一搜索使用的同一个 Central。SDK 后续会使用它发起连接。 |
+| peripheral | CBPeripheral | 客户通过 `centralManager` 搜索到的设备对象，连接必须使用该对象。 |
+| advertisementData | NSDictionary | 广播数据，用于补全 `DHPeripheralModel` 的 `macAddr`、`deviceModel`、设备名等信息；连接本身不依赖该参数，可传 nil。 |
+| RSSI | NSNumber | 信号强度，用于补全 `DHPeripheralModel.rssi`；连接本身不依赖该参数，可传 nil。 |
+
+调用示例:
+
+```objective-c
+// 1. 客户使用自己的 CBCentralManager 统一搜索设备。
+// centralManager、peripheral、advertisementData、RSSI 来自客户自己的扫描回调。
+
+// 2. 将同一个 CBCentralManager 交给 SDK。
+[DHBleCentralManager initWithServiceUuids:@[]
+                   externalCentralManager:centralManager];
+
+// 或者 SDK 已初始化时，运行中设置外部 Central。
+[DHBleCentralManager setExternalCentralManager:centralManager];
+
+// 3. 设置 SDK 连接回调。
+[DHBleCentralManager shareInstance].connectDelegate = self;
+
+// 4. 由 SDK 发起连接。
+[DHBleCentralManager connectPeripheral:peripheral
+                     advertisementData:advertisementData
+                                  RSSI:RSSI];
+```
+
+注意事项:
+
+- 旧接入方式 `[DHBleCentralManager initWithServiceUuids:@[]]` 保持不变，SDK 会自行创建 `CBCentralManager`。
+- 外部 Central 模式下，SDK 会使用客户传入的同一个 `CBCentralManager` 连接设备。
+- SDK 开始连接后会接管 `centralManager.delegate`，后续连接回调由 SDK 处理。
+- 客户应在交给 SDK 连接前停止自己的扫描流程。
+- 连接中、已连接、正在服务发现或正在同步数据时，不允许切换 `externalCentralManager`。
+- 外部 Central 模式下如需自动重连，客户需要保持传入的 `centralManager` 实例存活。
+
 
 
 ### 3.2 设备功能操作
@@ -2109,6 +2176,10 @@ dataBlock 返回 NSArray<NSDictionary>, 每个元素包含以下字段:
 
 
 ## SDK修订记录
+
+**V2.0.0_20260706** (2026.07.06)
+
+- 添加外部 `CBCentralManager` 接入方式(3.1.8)，支持客户统一搜索设备后由 SDK 使用同一个 Central 发起连接。
 
 **V2.0.0_20260616** (2026.06.16)
 

@@ -1029,8 +1029,11 @@
                     NSLog(@"Sensor History Raw sync finished code %d", code);
                 } dataBlock:^(int code, int progress, id  _Nonnull data) {
                     if (code == 0 && data) {
-                        NSDictionary *info = data;
-                        NSLog(@"Sensor History Raw info %@", info);
+                        NSArray *resultArray = data;
+                        NSLog(@"Sensor History Raw count=%zd", resultArray.count);
+                        for (NSDictionary *info in resultArray) {
+                            NSLog(@"  sensorType=%@ seq=%@ count=%@", info[@"sensorType"], info[@"sequence"], info[@"count"]);
+                        }
                     }
                 }];
             }
@@ -1081,9 +1084,9 @@
         }
         else if (indexPath.row == 29){ //设置计数提醒间隔60分钟
             if ([DHBluetoothManager shareInstance].deviceFuncV2Model && [DHBluetoothManager shareInstance].deviceFuncV2Model.isSupportCountReminder){
-                [DHBleCommand setCountReminderInterval:60 block:^(int code, id  _Nonnull data) {
+                [DHBleCommand setCountReminderInterval:30 block:^(int code, id  _Nonnull data) {
                     if (code == 0){
-                        NSLog(@"setCountReminderInterval 60 OK");
+                        NSLog(@"setCountReminderInterval 30 OK");
                     }
                 }];
             }

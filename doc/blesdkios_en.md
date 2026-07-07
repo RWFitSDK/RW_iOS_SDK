@@ -228,6 +228,75 @@ DeviceFuncV2Model class attribute definitions:
 | isSupportFallDetect         | Does it support fall detection alert?                     |
 | isSupportRecording          | Does it support recording function?                      |
 
+##### 3.1.8 Use an External CBCentralManager for Scanning and Let the SDK Connect
+
+> Description: If the customer App integrates multiple BLE SDKs and uses its own unified BLE scanning entry, pass the scanning `CBCentralManager` to this SDK. The customer App is only responsible for scanning. Connection, service discovery, characteristic discovery, data transfer, and disconnection are still handled by the SDK.
+
+> [!IMPORTANT]
+>
+> A `CBPeripheral` is bound to the `CBCentralManager` that discovered it. The `peripheral` passed to the SDK must come from the currently set `externalCentralManager`. The SDK does not use private APIs to verify the source. If the Central and Peripheral do not match, the connection may fail or time out.
+
+Method Description:
+
+```objective-c
+// Initialize the SDK and specify an external CBCentralManager.
+// Pass nil to use the SDK-managed mode.
++ (void)initWithServiceUuids:(NSArray <NSString *>*)uuids
+      externalCentralManager:(nullable CBCentralManager *)centralManager;
+
+// Set an external CBCentralManager at runtime.
+// It can only be set when the SDK is not connecting or connected.
++ (void)setExternalCentralManager:(nullable CBCentralManager *)centralManager;
+
+// Check whether the SDK is using an external CBCentralManager.
++ (BOOL)isUsingExternalCentralManager;
+
+// Connect to a device discovered by the customer's unified scanner.
++ (void)connectPeripheral:(CBPeripheral *)peripheral
+        advertisementData:(nullable NSDictionary *)advertisementData
+                     RSSI:(nullable NSNumber *)RSSI;
+```
+
+Parameter Description:
+
+| parameter | type | description |
+| --------- | ---- | ----------- |
+| centralManager | CBCentralManager | The same Central used by the customer App for unified scanning. The SDK will use it to connect. |
+| peripheral | CBPeripheral | The device object discovered by `centralManager`. The connection must use this object. |
+| advertisementData | NSDictionary | Advertisement data used to complete `DHPeripheralModel` fields such as `macAddr`, `deviceModel`, and device name. It is not required for the connection itself and can be nil. |
+| RSSI | NSNumber | Signal strength used to complete `DHPeripheralModel.rssi`. It is not required for the connection itself and can be nil. |
+
+Example:
+
+```objective-c
+// 1. The customer App scans devices with its own CBCentralManager.
+// centralManager, peripheral, advertisementData, and RSSI come from the customer's scan callback.
+
+// 2. Pass the same CBCentralManager to the SDK.
+[DHBleCentralManager initWithServiceUuids:@[]
+                   externalCentralManager:centralManager];
+
+// Or set the external Central at runtime if the SDK has already been initialized.
+[DHBleCentralManager setExternalCentralManager:centralManager];
+
+// 3. Set the SDK connection delegate.
+[DHBleCentralManager shareInstance].connectDelegate = self;
+
+// 4. Let the SDK start the connection.
+[DHBleCentralManager connectPeripheral:peripheral
+                     advertisementData:advertisementData
+                                  RSSI:RSSI];
+```
+
+Notes:
+
+- The old integration method `[DHBleCentralManager initWithServiceUuids:@[]]` remains unchanged, and the SDK will create its own `CBCentralManager`.
+- In external Central mode, the SDK connects by using the same `CBCentralManager` passed by the customer App.
+- After the SDK starts connecting, it takes over `centralManager.delegate`, and subsequent connection callbacks are handled by the SDK.
+- The customer App should stop its own scanning flow before handing the device to the SDK for connection.
+- Do not switch `externalCentralManager` while connecting, connected, discovering services, or synchronizing data.
+- For automatic reconnection in external Central mode, the customer App must keep the passed `centralManager` instance alive.
+
 
 
 ### 3.2 Device function operation
@@ -2019,7 +2088,9 @@ Example of usage:
 
 ## SDK Revision History
 
-.....
+**V2.0.0_20260706** (2026.07.06)
+
+- Added external `CBCentralManager` integration (3.1.8), allowing the customer App to scan devices with its unified scanner and let the SDK connect with the same Central.
 
 
 
@@ -2028,8 +2099,6 @@ Example of usage:
 ## 联系方式 / 技术支持
 
 - 技术支持邮箱  developer@dhouse88.com
-
-
 
 
 

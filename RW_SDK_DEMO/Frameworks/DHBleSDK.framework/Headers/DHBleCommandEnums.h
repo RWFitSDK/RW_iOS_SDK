@@ -85,6 +85,7 @@ typedef enum : UInt8 {
     BLE_KEY_FLAG_READ_CONTINUE = 0x11,
     BLE_KEY_FLAG_CREATE = 0x20, //增操作，指令版本0
     BLE_KEY_FLAG_DELETE = 0x30, //删操作，指令版本0
+    BLE_KEY_FLAG_PUSH = 0x40, //设备主动PUSH,APP不需要回复
     BLE_KEY_FLAG_NONE
 } BleKeyFlag;
 
