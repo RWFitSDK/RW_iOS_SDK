@@ -54,6 +54,8 @@ NS_ASSUME_NONNULL_BEGIN
 + (BOOL)isConnected;
 /// 设备绑定状态
 + (BOOL)isBinded;
+/// 当前绑定设备UUID
++ (nullable NSString *)currentBindedUUID;
 /// 设置绑定状态
 /// @param isBinded 是否绑定
 + (void)setBindedStatus:(BOOL)isBinded;

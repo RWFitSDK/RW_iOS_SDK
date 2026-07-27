@@ -30,8 +30,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)navRightButtonClick:(UIButton *)sender;
 
-- (NSString *)modelDescriptionWithIndent:(NSInteger)level Object:(id)object;
-
 @end
 
 NS_ASSUME_NONNULL_END

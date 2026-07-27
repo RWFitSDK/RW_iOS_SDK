@@ -34,6 +34,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL isChildAppSwitch;
 @property (nonatomic, assign) BOOL isPushMsgEnableSwitch; //是否启用消息控制开关
 @property (nonatomic, assign) UInt32 pushMsgSwitchValue;
+/// 消息类型支持能力高32位，对应消息bit32-bit63
+@property (nonatomic, assign) UInt32 pushMsgSwitchValue2;
 @property (nonatomic, assign) BOOL isOpenWomenCare; //是否默认打开女性生理周期(之前默认是性别女才打开显示)
 @property (nonatomic, assign) BOOL isAlarm; //是否显示设置闹钟
 @property (nonatomic, assign) BOOL isBackLight; //是否支持屏幕睡眠时间设置/是否显示亮屏时长设置
@@ -66,6 +68,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL isDataTypeBloodSugar;
 @property (nonatomic, assign) BOOL isDataTypeMuslimCount;
 @property (nonatomic, assign) BOOL isDataTypeTemperature; //是否支持体温
+/// 计步明细间隔，单位：分钟；旧设备或功能位未配置时为60
+/// 当天计步明细间隔，单位：分钟；仅 BLE_KEY_ACTIVITY_CURRENT_DAY (0x051A) 使用
+@property (nonatomic, assign) NSInteger activityDataInterval;
 
 @property (nonatomic, assign) BOOL isSupportMuslimTimeDisplayMode; //是否支持Muslim时间显示模式
 @property (nonatomic, assign) BOOL isSupportPPGMonitoring; //是否支持PPG定时监测

@@ -72,34 +72,6 @@
     }
 }
 
-- (NSString *)modelDescriptionWithIndent:(NSInteger)level Object:(id)object{
-    uint count;
-    objc_property_t *properties = class_copyPropertyList([object class], &count);
-    NSMutableString *mStr = [NSMutableString string];
-    NSMutableString *tab = [NSMutableString stringWithString:@""];
-    for (int index = 0; index < level; index ++) {
-        [tab appendString:@"\t"];
-    }
-    [mStr appendString:@"{\n"];
-    for (int index = 0; index < count; index ++) {
-        NSString *lastSymbol = index + 1 == count ? @"" : @";";
-        objc_property_t property = properties[index];
-        NSString *name = @(property_getName(property));
-        id value = [object valueForKey:name];
-        [mStr appendFormat:@"\t%@%@ = %@%@\n",
-         tab,
-         name,
-         value,
-         lastSymbol];
-    }
-    [mStr appendFormat:@"%@}",tab];
-    free(properties);
-    return [NSString stringWithFormat:@"<%@ : %p> %@",
-            NSStringFromClass([object class]),
-            object,
-            mStr];
-}
-
 
 #pragma mark - get and set 属性的set和get方法
 

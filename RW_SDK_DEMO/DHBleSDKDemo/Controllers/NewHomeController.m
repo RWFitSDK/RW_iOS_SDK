@@ -16,6 +16,8 @@
 #import <DHBleSDK/DHDailyBpModel.h>
 
 #import "WorkoutTypeController.h"
+#import "ScanViewController.h"
+#import <DHFoundation/SSZipArchive.h>
 
 @interface NewHomeController ()<UITableViewDelegate, UITableViewDataSource>
 @property (nonatomic, strong) IBOutlet UILabel *infoDeviceNameLb;
@@ -23,6 +25,13 @@
 @property (nonatomic, strong) IBOutlet UILabel *infoDeviceMacLb;
 @property (nonatomic, strong) IBOutlet UITableView *functionTb;
 @property (nonatomic, strong) IBOutlet UIButton *infoDeviceBindBt;
+@property (nonatomic, strong) UILabel *headerStatusLb;
+@property (nonatomic, strong) UILabel *headerNameLb;
+@property (nonatomic, strong) UILabel *headerMacLb;
+@property (nonatomic, strong) UILabel *headerUuidLb;
+@property (nonatomic, strong) UILabel *headerDeviceModelLb;
+@property (nonatomic, strong) UIButton *retryConnectBt;
+@property (nonatomic, strong) UIButton *searchDeviceBt;
 
 @property (nonatomic, strong) NSArray *functionBaseList;
 @property (nonatomic, strong) NSArray *functionHealthList;
@@ -41,47 +50,153 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view from its nib.
     self.groupTitleArr = @[@"Basic function commands-基础功能指令", @"Health data synchronization-健康数据同步(实时单次与全天检测)", @"Workout-多运动", @"Firmware upgrade-固件升级"];
-        
-    self.functionBaseList = @[@"SDK Version", @"Get Bluetooth MAC address(获取蓝牙Mac地址)", @"Set user information(设置用户信息)", @"Get firmware information(获取固件信息)", @"Get Battery(获取电量)", @"Get Video Switch(获取视频控制开关)", @"Set Video Switch(设置视频控制开关)", @"Get LED brightness level(获取LED亮屏强度)", @"Set LED brightness level(设置LED亮屏强度)", @"Get Wearing position(获取佩戴位置)", @"Set Wearing position(设置佩戴位置)",@"Activate and deactivate the camera(启动与关闭拍照)", @"Find Device(查找设备)", @"Shut down and restore to factory settings(关机,恢复出厂设置)", @"Alarm Clock - Get Alarm Clock(闹钟-获取闹钟)", @"Alarm clock - Set alarm(闹钟-设置闹钟)", @"Alarm Clock - Delete all alarms(闹钟-删除所有闹钟)", @"Get the number of vibrations-震动次数获取",@"Set the number of vibrations-震动次数设置", @"Get screen sleep mode-睡眠模式获取", @"Set screen sleep mode-睡眠模式设置", @"Get Message push notification switch-消息推送开关获取", @"Set Message push notification switch-消息推送开关设置", @"Check if receiving likes/comments is enabled-获取赞念是否打开", @"Set whether the likes feature is enabled.-设置赞念是否打开", @"Get heart rate alarm configuration-获取心率报警配置", @"Set heart rate alarm configuration-设置心率报警配置", @"Get blood oxygen alarm configuration-获取血氧报警配置", @"Set blood oxygen alarm configuration-设置血氧报警配置", @"Set Time Format-设置12/24小时时间显示格式", @"Get Alarm Vibration Duration-获取闹钟震动时长", @"Set Alarm Vibration Duration-设置闹钟震动时长", @"Get Vibration Interval-获取震动间隔时长", @"Set Vibration Interval-设置震动间隔时长"];
-    
-    self.functionHealthList = @[@"Real-time, single-instance health data monitoring-实时单次启动健康数据检测(心率,血氧,HRV, 压力, 血糖)", @"Get HeartRate Monitor(获取心率监听)", @"Set HeartRate Monitor(设置心率监听)",@"Get Blood oxygen Monitor(获取血氧监听)", @"Set Blood oxygen Monitor(设置血氧监听)",@"Get HRV Monitor(获取HRV监听)", @"Set HRV Monitor(设置HRV监听)",@"Get PPG Monitor(获取PPG监听)", @"Set PPG Monitor(设置PPG监听)",@"Get Stress Monitor(获取压力监听)", @"Set Stress Monitor(设置压力监听)",@"Get Blood Sugar Monitor(获取血糖监听)", @"Set Blood Sugar Monitor(设置血糖监听)", @"Sync all your health data(同步所有健康数据)", @"Get Blood Pressure Monitor(获取血压监听)", @"Set Blood Pressure Monitor(设置血压监听)", @"Get Temperature Monitor(获取定时体温监测)", @"Set Temperature Monitor(设置定时体温监测)", @"Get Muslim Time Display Mode(获取Muslim时间显示模式)", @"Set Muslim Time Display Mode(设置Muslim时间显示模式)", @"Get Muslim Count Reset Mode(获取Muslim计数清零方式)", @"Set Muslim Count Reset Mode(设置Muslim计数清零方式)", @"Start Sensor Raw(启动传感器原始数据)", @"Stop Sensor Raw(停止传感器原始数据)", @"Get Sensor History Raw(获取传感器历史数据)", @"HR Calibration(心率校正)", @"Get Fall Detect(获取跌落提醒开关)", @"Set Fall Detect On(设置跌落提醒开启)", @"Get Count Reminder(获取计数提醒间隔)", @"Set Count Reminder 60min(设置计数提醒60分钟)"];
-    
-    self.functionWorkoutList = @[@"Workout-多运动"];
-    
-    self.functionOTAList = @[@"Firmware upgrade ota - 固件升级"];
-    
 
-    
+    self.functionBaseList = @[@"SDK Version", @"Get Bluetooth MAC address(获取蓝牙Mac地址)", @"Set user information(设置用户信息)", @"Get firmware information(获取固件信息)", @"Get Battery(获取电量)", @"Get Video Switch(获取视频控制开关)", @"Set Video Switch(设置视频控制开关)", @"Get LED brightness level(获取LED亮屏强度)", @"Set LED brightness level(设置LED亮屏强度)", @"Get Wearing position(获取佩戴位置)", @"Set Wearing position(设置佩戴位置)",@"Activate and deactivate the camera(启动与关闭拍照)", @"Find Device(查找设备)", @"Shut down and restore to factory settings(关机,恢复出厂设置)", @"Alarm Clock - Get Alarm Clock(闹钟-获取闹钟)", @"Alarm clock - Set alarm(闹钟-设置闹钟)", @"Alarm Clock - Delete all alarms(闹钟-删除所有闹钟)", @"Get the number of vibrations-震动次数获取",@"Set the number of vibrations-震动次数设置", @"Get screen sleep mode-睡眠模式获取", @"Set screen sleep mode-睡眠模式设置", @"Get Message push notification switch-消息推送开关获取", @"Set Message push notification switch-消息推送开关设置", @"Check if receiving likes/comments is enabled-获取赞念是否打开", @"Set whether the likes feature is enabled.-设置赞念是否打开", @"Get heart rate alarm configuration-获取心率报警配置", @"Set heart rate alarm configuration-设置心率报警配置", @"Get blood oxygen alarm configuration-获取血氧报警配置", @"Set blood oxygen alarm configuration-设置血氧报警配置", @"Set Time Format-设置12/24小时时间显示格式", @"Get Alarm Vibration Duration-获取闹钟震动时长", @"Set Alarm Vibration Duration-设置闹钟震动时长", @"Get Vibration Interval-获取震动间隔时长", @"Set Vibration Interval-设置震动间隔时长"];
+
+    self.functionHealthList = @[@"Real-time, single-instance health data monitoring-实时单次启动健康数据检测(心率,血氧,HRV, 压力, 血糖)", @"Get HeartRate Monitor(获取心率监听)", @"Set HeartRate Monitor(设置心率监听)",@"Get Blood oxygen Monitor(获取血氧监听)", @"Set Blood oxygen Monitor(设置血氧监听)",@"Get HRV Monitor(获取HRV监听)", @"Set HRV Monitor(设置HRV监听)",@"Get PPG Monitor(获取PPG监听)", @"Set PPG Monitor(设置PPG监听)",@"Get Stress Monitor(获取压力监听)", @"Set Stress Monitor(设置压力监听)",@"Get Blood Sugar Monitor(获取血糖监听)", @"Set Blood Sugar Monitor(设置血糖监听)", @"Sync all your health data(同步所有健康数据)", @"Get Blood Pressure Monitor(获取血压监听)", @"Set Blood Pressure Monitor(设置血压监听)", @"Get Temperature Monitor(获取定时体温监测)", @"Set Temperature Monitor(设置定时体温监测)", @"Get Muslim Time Display Mode(获取Muslim时间显示模式)", @"Set Muslim Time Display Mode(设置Muslim时间显示模式)", @"Get Muslim Count Reset Mode(获取Muslim计数清零方式)", @"Set Muslim Count Reset Mode(设置Muslim计数清零方式)", @"Start Sensor Raw(启动传感器原始数据)", @"Stop Sensor Raw(停止传感器原始数据)", @"Get Sensor History Raw(获取传感器历史数据)", @"HR Calibration(心率校正)", @"Get Fall Detect(获取跌落提醒开关)", @"Set Fall Detect On(设置跌落提醒开启)", @"Get Count Reminder(获取计数提醒间隔)", @"Set Count Reminder 60min(设置计数提醒60分钟)"];
+
+    self.functionWorkoutList = @[@"Workout-多运动"];
+
+    self.functionOTAList = @[@"Firmware upgrade ota - 固件升级"];
+
+
+
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(connectStateChange:) name:BluetoothNotificationConnectStateChange object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(connectLoginOKChange:) name:BluetoothNotificationConnectLoginOKChange object:nil];
-    
+
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateRingMeasureValueChange:) name:BluetoothNotificationHealthRingMeasureValueChange object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateRingMeasureStateChange:) name:BluetoothNotificationHealthRingMeasureStateChange object:nil];
-    
+
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(cameraTakePictureNotification) name:BluetoothNotificationCameraTakePicture object:nil];
-    
+
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(healthOverAlert:) name:BluetoothNotificationRingHealthOverAlert object:nil];
-    
+
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(sensorRawDataNotification:) name:BluetoothNotificationSensorRawData object:nil];
-    
+
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(touchEventNotification:) name:BluetoothNotificationTouchEvent object:nil];
-        
-    //BluetoothNotificationRingHealthOverAlert
-    
-    self.infoDeviceNameLb.text = self.deviceModel.name;
-    self.infoDeviceMacLb.text = self.deviceModel.macAddr;
+
+    self.infoDeviceNameLb.hidden = YES;
+    self.infoDeviceStateLb.hidden = YES;
+    self.infoDeviceMacLb.hidden = YES;
+    self.infoDeviceBindBt.hidden = YES;
+    [self.functionTb mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.offset(0);
+        make.top.equalTo(self.navigationView.mas_bottom).offset(10);
+        make.bottom.offset(-kBottomHeight);
+    }];
+    [self setupDeviceHeaderView];
+    [self updateDeviceHeaderView];
+    [self setupLogShareButton];
+}
+
+#pragma mark - Log sharing
+
+- (void)setupLogShareButton
+{
+    self.navigationView.navRightButton.hidden = NO;
+    if (@available(iOS 13.0, *)) {
+        UIImage *shareImage = [UIImage systemImageNamed:@"square.and.arrow.up"];
+        [self.navigationView.navRightButton setImage:shareImage forState:UIControlStateNormal];
+        self.navigationView.navRightButton.tintColor = HomeColor_TitleColor;
+    } else {
+        [self.navigationView.navRightButton setImage:nil forState:UIControlStateNormal];
+        [self.navigationView.navRightButton setTitle:@"日志" forState:UIControlStateNormal];
+        [self.navigationView.navRightButton setTitleColor:HomeColor_TitleColor forState:UIControlStateNormal];
+        self.navigationView.navRightButton.titleLabel.font = HomeFont_ContentFont;
+    }
+    self.navigationView.navRightButton.accessibilityLabel = @"分享日志";
+}
+
+- (void)navRightButtonClick:(UIButton *)sender
+{
+    [self shareLogArchiveFromSourceView:sender];
+}
+
+- (void)shareLogArchiveFromSourceView:(UIView *)sourceView
+{
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSString *documentsPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+    NSString *logDirectoryPath = [documentsPath stringByAppendingPathComponent:@"DeviceLog"];
+    if (![self directoryContainsFilesAtPath:logDirectoryPath]) {
+        SHOWHUD(@"暂无可分享的日志");
+        return;
+    }
+
+    NSString *temporaryPath = NSTemporaryDirectory();
+    for (NSString *fileName in [fileManager contentsOfDirectoryAtPath:temporaryPath error:nil]) {
+        if ([fileName hasPrefix:@"RW_SDK_logs_"] && [fileName.pathExtension.lowercaseString isEqualToString:@"zip"]) {
+            [fileManager removeItemAtPath:[temporaryPath stringByAppendingPathComponent:fileName] error:nil];
+        }
+    }
+
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+    formatter.dateFormat = @"yyyyMMdd_HHmmss";
+    NSString *archiveName = [NSString stringWithFormat:@"RW_SDK_logs_%@.zip", [formatter stringFromDate:[NSDate date]]];
+    NSString *archivePath = [temporaryPath stringByAppendingPathComponent:archiveName];
+
+    SHOWHUDNODISS(@"正在打包日志…");
+    __weak typeof(self) weakSelf = self;
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+        BOOL success = [SSZipArchive createZipFileAtPath:archivePath withContentsOfDirectory:logDirectoryPath];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (!strongSelf) {
+                [fileManager removeItemAtPath:archivePath error:nil];
+                return;
+            }
+            HUDDISS;
+            if (!success || ![fileManager fileExistsAtPath:archivePath]) {
+                [fileManager removeItemAtPath:archivePath error:nil];
+                SHOWHUD(@"日志分享失败");
+                return;
+            }
+
+            NSURL *archiveURL = [NSURL fileURLWithPath:archivePath];
+            UIActivityViewController *activityController = [[UIActivityViewController alloc] initWithActivityItems:@[archiveURL] applicationActivities:nil];
+            UIPopoverPresentationController *popover = activityController.popoverPresentationController;
+            if (popover) {
+                popover.sourceView = sourceView;
+                popover.sourceRect = sourceView.bounds;
+            }
+            activityController.completionWithItemsHandler = ^(UIActivityType _Nullable activityType, BOOL completed, NSArray * _Nullable returnedItems, NSError * _Nullable activityError) {
+                [fileManager removeItemAtPath:archivePath error:nil];
+            };
+            [strongSelf presentViewController:activityController animated:YES completion:nil];
+        });
+    });
+}
+
+- (BOOL)directoryContainsFilesAtPath:(NSString *)directoryPath
+{
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    BOOL isDirectory = NO;
+    if (![fileManager fileExistsAtPath:directoryPath isDirectory:&isDirectory] || !isDirectory) {
+        return NO;
+    }
+
+    NSDirectoryEnumerator<NSString *> *enumerator = [fileManager enumeratorAtPath:directoryPath];
+    for (NSString *relativePath in enumerator) {
+        NSString *fullPath = [directoryPath stringByAppendingPathComponent:relativePath];
+        BOOL childIsDirectory = NO;
+        if ([fileManager fileExistsAtPath:fullPath isDirectory:&childIsDirectory] && !childIsDirectory) {
+            return YES;
+        }
+    }
+    return NO;
 }
 
 - (void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
-    
+
     if ([DHBluetoothManager shareInstance].isConnected){
         self.infoDeviceStateLb.text = @"Connected";
     }
     else{
         self.infoDeviceStateLb.text = @"Disconnected";
     }
+    [self updateDeviceHeaderView];
 }
 
 - (void)connectStateChange:(NSNotification *)ntf
@@ -93,18 +208,20 @@
     else{
         self.infoDeviceStateLb.text = @"Disconnected";
     }
+    [self updateDeviceHeaderView];
 }
 
 - (void)connectLoginOKChange:(NSNotification *)ntf
 {
     [[DHBluetoothManager shareInstance] bindedOk];
-    
+
     if ([DHBleCentralManager isBinded]){
         [self.infoDeviceBindBt setTitle:@"Binded" forState:UIControlStateNormal];
     }
     else{
         [self.infoDeviceBindBt setTitle:@"Unbound" forState:UIControlStateNormal];
     }
+    [self updateDeviceHeaderView];
 }
 
 
@@ -112,10 +229,130 @@
 {
     if ([DHBleCentralManager isBinded]){
         [[DHBluetoothManager shareInstance] unBindDevice];
-        
-        
+
+
         [self.navigationController popViewControllerAnimated:YES];
     }
+}
+
+- (void)setupDeviceHeaderView
+{
+    UIView *headerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, kScreenWidth, 178)];
+    headerView.backgroundColor = HomeColor_BlockColor;
+
+    self.headerStatusLb = [self createHeaderLabelWithFrame:CGRectMake(15, 10, kScreenWidth - 30, 20) font:HomeFont_TitleFont];
+    self.headerNameLb = [self createHeaderLabelWithFrame:CGRectMake(15, 38, kScreenWidth - 30, 18) font:HomeFont_ContentFont];
+    self.headerMacLb = [self createHeaderLabelWithFrame:CGRectMake(15, 62, kScreenWidth - 30, 18) font:HomeFont_ContentFont];
+    self.headerUuidLb = [self createHeaderLabelWithFrame:CGRectMake(15, 86, kScreenWidth - 30, 18) font:HomeFont_ContentFont];
+    self.headerDeviceModelLb = [self createHeaderLabelWithFrame:CGRectMake(15, 110, kScreenWidth - 30, 18) font:HomeFont_ContentFont];
+
+    CGFloat buttonTop = 138;
+    CGFloat buttonSpace = 8;
+    CGFloat buttonWidth = (kScreenWidth - 30 - buttonSpace) / 2.0;
+    self.retryConnectBt = [self createHeaderButtonWithFrame:CGRectMake(15, buttonTop, buttonWidth, 34) title:@"Retry Connect" action:@selector(retryConnectButtonClick)];
+    self.searchDeviceBt = [self createHeaderButtonWithFrame:CGRectMake(15 + buttonWidth + buttonSpace, buttonTop, buttonWidth, 34) title:@"Search Device" action:@selector(searchDeviceButtonClick)];
+
+    [headerView addSubview:self.headerStatusLb];
+    [headerView addSubview:self.headerNameLb];
+    [headerView addSubview:self.headerMacLb];
+    [headerView addSubview:self.headerUuidLb];
+    [headerView addSubview:self.headerDeviceModelLb];
+    [headerView addSubview:self.retryConnectBt];
+    [headerView addSubview:self.searchDeviceBt];
+
+    self.functionTb.tableHeaderView = headerView;
+}
+
+- (UILabel *)createHeaderLabelWithFrame:(CGRect)frame font:(UIFont *)font
+{
+    UILabel *label = [[UILabel alloc] initWithFrame:frame];
+    label.font = font;
+    label.textColor = HomeColor_TitleColor;
+    label.numberOfLines = 1;
+    label.adjustsFontSizeToFitWidth = YES;
+    label.minimumScaleFactor = 0.75;
+    return label;
+}
+
+- (UIButton *)createHeaderButtonWithFrame:(CGRect)frame title:(NSString *)title action:(SEL)action
+{
+    UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
+    button.frame = frame;
+    button.titleLabel.font = [UIFont systemFontOfSize:13.0];
+    button.backgroundColor = COLOR(@"#F2F2F2");
+    button.layer.cornerRadius = 6.0;
+    button.layer.borderWidth = 0.5;
+    button.layer.borderColor = HomeColor_LineColor.CGColor;
+    [button setTitle:title forState:UIControlStateNormal];
+    [button setTitleColor:HomeColor_TitleColor forState:UIControlStateNormal];
+    [button setTitleColor:HomeColor_SubTitleColor forState:UIControlStateDisabled];
+    [button addTarget:self action:action forControlEvents:UIControlEventTouchUpInside];
+    return button;
+}
+
+- (void)updateDeviceHeaderView
+{
+    NSString *uuid = [DHBleCentralManager currentBindedUUID] ?: @"";
+    BOOL hasSavedDevice = uuid.length > 0;
+    BOOL isConnected = [DHBluetoothManager shareInstance].isConnected || [DHBleCentralManager isConnected];
+    NSString *name = self.deviceModel.name.length ? self.deviceModel.name : [[DHBluetoothManager shareInstance] savedDeviceName];
+    NSString *mac = self.deviceModel.macAddr.length ? self.deviceModel.macAddr : [[DHBluetoothManager shareInstance] savedDeviceMac];
+    NSString *deviceModel = self.deviceModel.deviceModel.length ? self.deviceModel.deviceModel : [[DHBluetoothManager shareInstance] savedDeviceModel];
+
+    self.headerStatusLb.text = isConnected ? @"Connected" : (hasSavedDevice ? @"Saved device, disconnected" : @"No saved device");
+    self.headerNameLb.text = [NSString stringWithFormat:@"Name: %@", name.length ? name : @"-"];
+    self.headerMacLb.text = [NSString stringWithFormat:@"MAC: %@", mac.length ? mac : @"-"];
+    self.headerUuidLb.text = [NSString stringWithFormat:@"UDID: %@", uuid.length ? uuid : @"-"];
+    self.headerDeviceModelLb.text = [NSString stringWithFormat:@"DeviceID: %@", deviceModel.length ? deviceModel : @"-"];
+
+    self.retryConnectBt.enabled = hasSavedDevice && !isConnected;
+    [self.searchDeviceBt setTitle:hasSavedDevice ? @"Search Again" : @"Search Device" forState:UIControlStateNormal];
+}
+
+- (void)retryConnectButtonClick
+{
+    if ([DHBleCentralManager isPoweredOff]) {
+        SHOWHUD(@"手机蓝牙未开启")
+        return;
+    }
+    if (![DHBleCentralManager currentBindedUUID].length) {
+        SHOWHUD(@"No saved device")
+        return;
+    }
+    [DHBleCentralManager checkAndAutoReconnectDevice];
+}
+
+- (void)searchDeviceButtonClick
+{
+    if ([DHBleCentralManager currentBindedUUID].length) {
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"重新搜索设备"
+                                                                       message:@"将清除 Demo 中保存的设备并断开当前连接。如设备已通过系统蓝牙配对（ANCS 通知等功能会触发系统配对），还需要到 iPhone 设置 > 蓝牙 中手动忽略此设备，否则系统配对关系仍会保留。"
+                                                                preferredStyle:UIAlertControllerStyleAlert];
+        UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil];
+        __weak typeof(self) weakSelf = self;
+        UIAlertAction *continueAction = [UIAlertAction actionWithTitle:@"Continue" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            [weakSelf startSearchDevice];
+        }];
+        [alert addAction:cancelAction];
+        [alert addAction:continueAction];
+        [self presentViewController:alert animated:YES completion:nil];
+        return;
+    }
+
+    [self startSearchDevice];
+}
+
+- (void)startSearchDevice
+{
+    [[DHBluetoothManager shareInstance] clearSavedDeviceInfo];
+    [DHBleCentralManager setBindedStatus:NO];
+    [DHBleCentralManager disconnectDevice];
+
+    ScanViewController *vc = [[ScanViewController alloc] init];
+    vc.navTitle = @"搜索设备";
+    vc.navRightImage = @"public_nav_refresh";
+    [self.navigationController pushViewController:vc animated:YES];
+    [self updateDeviceHeaderView];
 }
 
 - (void)updateRingMeasureStateChange:(NSNotification *)ntf
@@ -128,26 +365,26 @@
     NSDictionary *tUserInfo = ntf.userInfo;
     NSInteger tDataValue = [tUserInfo[@"dataValue"] integerValue];
     NSInteger tDataType = [tUserInfo[@"dataType"] integerValue];
-    
+
     NSLog(@"updateRingMeasureValueChange 0x%04X 数值: %zd", (unsigned int)tDataType, tDataValue);
-    
+
     if (tDataType == BLE_KEY_APP_REAL_TIME_MUSLIM_COUNT){ //Muslim Count
-        
+
     }
     else if (tDataType == BLE_KEY_APP_REAL_BLOOD_SUGAR_DATA){ //BloodSugar 血糖
-        
+
     }
     else if (tDataType == BLE_KEY_APP_REAL_TIME_HRV_DATA){ //HRV
-        
+
     }
     else if (tDataType == BLE_KEY_APP_REAL_TIME_HR_DATA){ //HR 心率
-        
+
     }
     else if (tDataType == BLE_KEY_APP_REAL_TIME_BLOOD_OXYGEN_DATA){ //BloodOxygen 血氧
-        
+
     }
     else if (tDataType == BLE_KEY_APP_REAL_TIME_STRESS_DATA){ //Stress 压力
-        
+
     }
     else if (tDataType == BLE_KEY_APP_REAL_TIME_BP_DATA){ //BloodPressure 血压
         NSInteger sp = [tUserInfo[@"systolic"] integerValue]; //收缩压
@@ -166,15 +403,15 @@
     NSDictionary *tUserInfo = ntf.userInfo;
     NSInteger tType = [tUserInfo[@"type"] integerValue];
     NSInteger tValue = [tUserInfo[@"value"] integerValue];
-    
+
     if (tType == 0){ //HeartRate Alert Over
-        
+
     }
     else if (tType == 1){ //SP02
-        
+
     }
     else if (tType == 2){ //HeartRate Alert Under
-        
+
     }
 }
 
@@ -268,11 +505,11 @@
         tCell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"VaperFunctionCell"];
     }
     tCell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-    
+
     tCell.textLabel.font = [UIFont systemFontOfSize:14.0];
     tCell.textLabel.numberOfLines = 0;
     tCell.textLabel.lineBreakMode = NSLineBreakByWordWrapping;
-    
+
     if (indexPath.section == 0){
         tCell.textLabel.text = [self.functionBaseList objectAtIndex:indexPath.row];
     }
@@ -291,7 +528,7 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    
+
     if (indexPath.section == 0){
         if (indexPath.row == 0){ //sdk version
             NSLog(@"%@", [DHBleCommand getSDKVersion]);
@@ -384,13 +621,13 @@
             }];
         }
         else if (indexPath.row == 11){ // 启动与关闭拍照
-            
+
             //APP进相机界面启动 1为控制设备进对应界面, 0为控制设备退出
             //BluetoothNotificationCameraTakePicture 设备发出拍照通知,进行拍照
             if ([DHBluetoothManager shareInstance].deviceFuncV2Model && [DHBluetoothManager shareInstance].deviceFuncV2Model.isTakePhoto){
-                
+
                 [DHBleCommand controlCamera:1 block:^(int code, id  _Nonnull data) {
-                    
+
                 }];
             }
             else{
@@ -399,13 +636,13 @@
         }
         else if (indexPath.row == 12){ // 查找设备
             [DHBleCommand controlFindDeviceBegin:^(int code, id  _Nonnull data) {
-                
+
             }];
         }
         else if (indexPath.row == 13){ // 关机,恢复出厂设置
             // 1关机 2 恢复出厂
             [DHBleCommand controlDevice:2 block:^(int code, id  _Nonnull data) {
-                
+
             }];
         }
         else if (indexPath.row == 14){ //Alarm-Get Alarms
@@ -498,7 +735,7 @@
                 sleepModel.sleepEndHour = 20;
                 sleepModel.sleepEndMin = 00;
                 [DHBleCommand setDisplaySleepMode:sleepModel block:^(int code, id  _Nonnull data) {
-                    
+
                 }];
             }
             else{
@@ -510,7 +747,7 @@
                 [DHBleCommand ringGetAncs:^(int code, id  _Nonnull data) {
                     if (code == 0){
                         DHAncsSetModel *ancsModel = data;
-                        
+
                     }
                 }];
             }
@@ -523,7 +760,7 @@
                 DHAncsSetModel *tAncsModel = [[DHAncsSetModel alloc] init];
                 tAncsModel.isSMS = YES;
                 [DHBleCommand ringSetAncs:tAncsModel block:^(int code, id  _Nonnull data) {
-                    
+
                 }];
             }
             else{
@@ -546,7 +783,7 @@
         else if (indexPath.row == 24){ //设置赞念是否打开
             if ([DHBluetoothManager shareInstance].deviceFuncV2Model && [DHBluetoothManager shareInstance].deviceFuncV2Model.isSupportMuslimCountSwitch){
                 [DHBleCommand setMuslimCountSwitch:1 block:^(int code, id  _Nonnull data) {
-                    
+
                 }];
             }
             else{
@@ -574,7 +811,7 @@
                 tHRAlertModel.overValue = 160;
                 tHRAlertModel.underValue = 0xff;
                 [DHBleCommand setHRAlert:tHRAlertModel block:^(int code, id  _Nonnull data) {
-                    
+
                 }];
             }
             else{
@@ -601,7 +838,7 @@
                 tSP02AlertModel.isOpen = YES;
                 tSP02AlertModel.overValue = 94;
                 [DHBleCommand setSP02Alert:tSP02AlertModel block:^(int code, id  _Nonnull data) {
-                    
+
                 }];
             }
             else{
@@ -666,12 +903,12 @@
         if (indexPath.row == 0){ //
             //BluetoothNotificationHealthRingMeasureValueChange 通知获取测试的值
             //BluetoothNotificationHealthRingMeasureStateChange 测试完成通知
-            
+
             //启动心率测试
             [DHBleCommand controlOpen:1 dataType:BLE_KEY_BLOOD_PRESSURE block:^(int code, id  _Nonnull data) {
-                
+
             }];
-            
+
             //启动血氧测试
     //        [DHBleCommand controlOpen:1 dataType:BLE_KEY_BLOOD_OXYGEN block:^(int code, id  _Nonnull data) {
     //
@@ -680,12 +917,12 @@
     //        [DHBleCommand controlOpen:1 dataType:BLE_KEY_HRV block:^(int code, id  _Nonnull data) {
     //
     //        }];
-            
+
             //启动压力Stress测试, 确保设备支持压力
     //        [DHBleCommand controlOpen:1 dataType:BLE_KEY_STRESS block:^(int code, id  _Nonnull data) {
     //
     //        }];
-            
+
             //启动血糖测试, 确保设备支持血糖
     //        [DHBleCommand controlOpen:1 dataType:BLE_KEY_BLOOD_SUGAR block:^(int code, id  _Nonnull data) {
     //
@@ -700,7 +937,7 @@
             }];
         }
         else if (indexPath.row == 2){ //设置心率监听
-            
+
             DHHeartRateModeSetModel *tModeSetModel = [[DHHeartRateModeSetModel alloc] init];
             tModeSetModel.isOpen = YES;
             tModeSetModel.startHour = 00;
@@ -814,7 +1051,7 @@
         }
         else if (indexPath.row == 11){// 获取血糖监听
             if ([DHBluetoothManager shareInstance].deviceFuncV2Model && [DHBluetoothManager shareInstance].deviceFuncV2Model.isDataTypeBloodSugar){
-                
+
                 [DHBleCommand getBloodSugarMode:^(int code, id  _Nonnull data) {
                     if (code == 0){
                         DHBloodSugarModeSetModel *model = data;
@@ -844,7 +1081,7 @@
             else{
                 SHOWHUD(@"Not Support!");
             }
-            
+
         }
         else if (indexPath.row == 13){ //Sync all your health data
             [DHBleCommand startDataSyncing:^(int code, id data){
@@ -1110,7 +1347,7 @@
     }
     else{
         NSString *tFilePath = @""; //bin文件,厂家提供
-        
+
         if (tFilePath.length > 0){ //注意 有升级文件后再测试
             NSData *fileData = [NSData dataWithContentsOfFile:tFilePath];
             [DHBleCommand ringOtaWithFileData:fileData block:^(int code, CGFloat progress, id  _Nonnull data) {

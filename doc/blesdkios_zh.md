@@ -202,6 +202,9 @@ DeviceFuncV2Model类属性定义:
 | 属性                        | 说明                        |
 | --------------------------- | --------------------------- |
 | isPushMsgEnableSwitch       | 是否启用消息控制开关        |
+| pushMsgSwitchValue          | 消息类型支持能力低32位（bit0-bit31） |
+| pushMsgSwitchValue2         | 消息类型支持能力高32位（bit32-bit63），旧设备默认为0 |
+| activityDataInterval        | 当天计步明细间隔（分钟）；未配置时按60处理 |
 | isAlarm                     | 是否支持闹钟                |
 | isBackLight                 | 是否支持屏幕睡眠时间设置    |
 | isSupportWorkout3           | 是否支持多运动;             |
@@ -721,9 +724,20 @@ sleepModel.sleepEndMin = 00;
 
 ##### 3.2.1.14 消息推送开关设置与获取
 
->  消息推送开关;
+> 配置表属性 `isPushMsgEnableSwitch` 表示设备是否支持消息推送开关设置；
+> `pushMsgSwitchValue` 和 `pushMsgSwitchValue2` 是消息类型支持能力，分别对应
+> bit0-bit31 和 bit32-bit63，不表示设备当前的开关状态。
 >
-> 配置表属性:  `isPushMsg`,  `pushMsgSwitchValue` 为确定设备哪些应用支持.
+> 进入消息推送设置页面时，应调用 `ringGetAncs:` 从设备拉取当前开关。
+> 查询成功后，`data` 为 `DHAncsSetModel`；修改模型后再调用 `ringSetAncs:block:`
+> 写回设备。
+
+| 用途 | 属性/接口 | 返回内容 |
+| ---- | --------- | -------- |
+| 判断功能是否支持 | `DeviceFuncV2Model.isPushMsgEnableSwitch` | 是否支持消息推送开关 |
+| 判断消息类型是否支持 | `pushMsgSwitchValue` / `pushMsgSwitchValue2` | 支持的消息类型 bit0-bit63 |
+| 拉取当前开关 | `ringGetAncs:` | `DHAncsSetModel` |
+| 设置当前开关 | `ringSetAncs:block:` | 设置结果 |
 
 方法说明: 
 
@@ -751,7 +765,7 @@ tAncsModel.isSMS = YES;
 [DHBleCommand ringGetAncs:^(int code, id  _Nonnull data) {
   if (code == 0){
     DHAncsSetModel *ancsModel = data;
-
+    NSLog(@"SMS=%d Wechat=%d", ancsModel.isSMS, ancsModel.isWechat);
   }
 }];
 
@@ -1645,7 +1659,15 @@ tModeSetModel.interval = 60;
 
 ##### 3.2.2.4 全天检测-健康数据说明
 
-1. 计步数据 DHDailyStepModel
+1. 今天与历史计步数据 DHDailyStepModel
+
+   今天与历史计步数据都使用 `DHDailyStepModel`。今天数据通常返回一个当天模型；
+   历史数据可能返回多个日期模型，每个模型代表一天。
+
+   | 数据 | 返回内容 | 每日总数 |
+   | ---- | -------- | -------- |
+   | 今天计步 | 当天一个 `DHDailyStepModel` | 使用设备返回的当天总步数、总卡路里和总里程 |
+   | 历史计步 | 可能包含多个日期的 `DHDailyStepModel` | 对当天历史明细的步数、卡路里和里程分别求和 |
 
    ```objective-c
    @interface DHDailyStepModel : NSObject
@@ -1661,14 +1683,20 @@ tModeSetModel.interval = 60;
    @property (nonatomic, assign) NSInteger calorie; //当天总卡路里
    /// 步数（步）
    @property (nonatomic, assign) NSInteger step; //当天总步数
-   
-   /// 计步项 例：@[@{@"index":@0,@"step":@100,@"calorie":@10000,@"distance":@50},...]
-   /// index（序号）step（步数）calorie（消耗） distance（里程）单位同上
-   /// index从0开始，固定24个item，对应一天24小时
-   @property (nonatomic,strong) NSArray <NSDictionary *>*items; //一天时每小时的数据,总24条(今天未满24条)
+
+   /// 计步明细间隔，单位分钟；未配置时默认60
+   @property (nonatomic, assign) NSInteger activityDataInterval;
+
+   /// 每条包含timestamp、index、step、calorie、distance
+   /// timestamp为Unix秒；index为当天按当前计步粒度划分后的明细序号
+   @property (nonatomic,strong) NSMutableArray <NSDictionary *>*items;
    
    @end
    ```
+
+   `activityDataInterval` 表示 `items` 的计步明细间隔，单位为分钟；
+   `60` 表示每小时一条，`10` 表示每10分钟一条，未配置时默认为 `60`。
+   请使用 `timestamp` 作为明细的准确时间。
 
    
 
@@ -2176,6 +2204,10 @@ dataBlock 返回 NSArray<NSDictionary>, 每个元素包含以下字段:
 
 
 ## SDK修订记录
+
+**V2.0.0_20260724** (2026.07.24)
+
+- 添加计步明细间隔支持
 
 **V2.0.0_20260706** (2026.07.06)
 

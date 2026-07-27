@@ -160,15 +160,17 @@
     [DHBluetoothManager shareInstance].deviceFuncV2Model = deviceFuncModel;
     
     [[DHBluetoothManager shareInstance] bindedOk];
+    [[DHBluetoothManager shareInstance] saveDeviceInfoWithModel:peripheral];
     
     self.deviceModel = peripheral;
-    
-    NewHomeController *vc = [[NewHomeController alloc] init];
-    vc.deviceModel = self.deviceModel;
-    vc.navTitle = self.deviceModel.name;
-    vc.isHideNavRightButton = YES;
-    vc.isHideNavLeftButton = YES;
-    [self.navigationController pushViewController:vc animated:YES];
+    UIViewController *rootVC = self.navigationController.viewControllers.firstObject;
+    if ([rootVC isKindOfClass:[NewHomeController class]]) {
+        NewHomeController *homeVC = (NewHomeController *)rootVC;
+        homeVC.deviceModel = self.deviceModel;
+    }
+    [[NSNotificationCenter defaultCenter] postNotificationName:BluetoothNotificationConnectStateChange object:nil];
+    HUDDISS
+    [self.navigationController popToRootViewControllerAnimated:YES];
 }
 
 - (void)centralManagerDidDisconnectPeripheral:(CBPeripheral *)peripheral {

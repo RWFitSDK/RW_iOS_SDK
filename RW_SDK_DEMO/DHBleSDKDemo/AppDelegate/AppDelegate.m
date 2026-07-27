@@ -6,7 +6,7 @@
 //
 
 #import "AppDelegate.h"
-#import "ScanViewController.h"
+#import "NewHomeController.h"
 
 @interface AppDelegate ()
 
@@ -22,12 +22,13 @@
     
     [self initBleSDK];
     
-    ScanViewController *vc = [[ScanViewController alloc] init];
-    vc.navTitle = @"搜索设备";
-    vc.navRightImage = @"public_nav_refresh";
+    NewHomeController *vc = [[NewHomeController alloc] init];
+    vc.navTitle = @"RW SDK Demo";
     vc.isHideNavLeftButton = YES;
-    UINavigationController *scanVC = [[UINavigationController alloc] initWithRootViewController:vc];
-    [self.window setRootViewController:scanVC];
+    vc.isHideNavRightButton = NO;
+    UINavigationController *homeVC = [[UINavigationController alloc] initWithRootViewController:vc];
+    [self.window setRootViewController:homeVC];
+    [self.window makeKeyAndVisible];
     
     [self registerHUD];
     
@@ -55,10 +56,9 @@
 
 - (void)initBleSDK{
     [DHBleCentralManager setLogStatus:YES];
-    [DHBleCentralManager initWithServiceUuids:@[]];
-    
     //Demo里工具类初始化,可选择;
     [DHBluetoothManager shareInstance];
+    [DHBleCentralManager initWithServiceUuids:@[]];
 }
 
 @end

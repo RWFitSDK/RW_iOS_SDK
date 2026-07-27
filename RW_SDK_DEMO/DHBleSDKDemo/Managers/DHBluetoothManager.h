@@ -20,6 +20,16 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, strong, nullable) DeviceFuncV2Model *deviceFuncV2Model;
 
+- (void)saveDeviceInfoWithModel:(DHPeripheralModel *)model;
+
+- (void)clearSavedDeviceInfo;
+
+- (NSString *)savedDeviceName;
+
+- (NSString *)savedDeviceMac;
+
+- (NSString *)savedDeviceModel;
+
 - (void)bindedOk;
 
 - (void)unBindDevice;

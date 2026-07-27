@@ -199,6 +199,9 @@ DeviceFuncV2Model class attribute definitions:
 | attribute                   | illustrate                                                |
 | --------------------------- | --------------------------------------------------------- |
 | isPushMsgEnableSwitch       | Enable or disable message control switch                  |
+| pushMsgSwitchValue          | Supported message types, low 32 bits (bit0-bit31)        |
+| pushMsgSwitchValue2         | Supported message types, high 32 bits (bit32-bit63); defaults to 0 on old devices |
+| activityDataInterval        | Today's step-detail interval in minutes; an unconfigured value is normalized to 60 |
 | isAlarm                     | Does it support an alarm clock?                           |
 | isBackLight                 | Does it support screen sleep time settings?               |
 | isSupportWorkout3           | Does it support multiple sports modes?                    |
@@ -718,9 +721,22 @@ sleepModel.sleepEndMin = 00;
 
 ##### 3.2.1.14 Setting and retrieving notification push settings
 
->  Message push notification switch;
+> `DeviceFuncV2Model.isPushMsgEnableSwitch` indicates whether the device
+> supports message-push switch settings. `pushMsgSwitchValue` and
+> `pushMsgSwitchValue2` are capability masks for bit0-bit31 and bit32-bit63;
+> they are not the device's current switch states.
 >
->  Configuration table attributes: `isPushMsg` and `pushMsgSwitchValue` determine which applications on the device are supported.
+> When opening the message-push settings page, call `ringGetAncs:` to fetch
+> the current switches from the device. On success, `data` is a
+> `DHAncsSetModel`. Modify that model and call `ringSetAncs:block:` to write
+> the switches back to the device.
+
+| Purpose | Property/API | Result |
+| ------- | ------------ | ------ |
+| Check feature support | `DeviceFuncV2Model.isPushMsgEnableSwitch` | Whether message-push switches are supported |
+| Check supported message types | `pushMsgSwitchValue` / `pushMsgSwitchValue2` | Supported message types, bit0-bit63 |
+| Fetch current switches | `ringGetAncs:` | `DHAncsSetModel` |
+| Set current switches | `ringSetAncs:block:` | Setting result |
 
 Method Description:
 
@@ -748,7 +764,7 @@ tAncsModel.isSMS = YES;
 [DHBleCommand ringGetAncs:^(int code, id  _Nonnull data) {
   if (code == 0){
     DHAncsSetModel *ancsModel = data;
-
+    NSLog(@"SMS=%d Wechat=%d", ancsModel.isSMS, ancsModel.isWechat);
   }
 }];
 
@@ -1574,7 +1590,16 @@ tModeSetModel.interval = 60; //固定不可设置
 
 ##### 3.2.2.4 24/7 Monitoring - Health Data Explanation
 
-1. Step count data - DHDailyStepModel
+1. Today's and historical step data - DHDailyStepModel
+
+   Both today's and historical step data use `DHDailyStepModel`. Today's data
+   normally contains one model for the current day; historical data may contain
+   multiple dated models, one per day.
+
+   | Data | Returned content | Daily totals |
+   | ---- | ---------------- | ------------ |
+   | Today | One `DHDailyStepModel` for the current day | Uses the daily total steps, calories, and distance returned by the device |
+   | History | May contain multiple dated `DHDailyStepModel` objects | Sums the historical details for steps, calories, and distance |
 
    ```objective-c
    @interface DHDailyStepModel : NSObject
@@ -1590,14 +1615,21 @@ tModeSetModel.interval = 60; //固定不可设置
    @property (nonatomic, assign) NSInteger calorie; //当天总卡路里
    /// 步数（步）
    @property (nonatomic, assign) NSInteger step; //当天总步数
-   
-   /// 计步项 例：@[@{@"index":@0,@"step":@100,@"calorie":@10000,@"distance":@50},...]
-   /// index（序号）step（步数）calorie（消耗） distance（里程）单位同上
-   /// index从0开始，固定24个item，对应一天24小时
-   @property (nonatomic,strong) NSArray <NSDictionary *>*items; //一天时每小时的数据,总24条(今天未满24条)
+
+   /// Detail interval in minutes; defaults to 60 for old devices
+   @property (nonatomic, assign) NSInteger activityDataInterval;
+
+   /// Each item contains timestamp, index, step, calorie and distance
+   /// timestamp is a Unix timestamp in seconds; index is the detail slot within the day
+   @property (nonatomic,strong) NSMutableArray <NSDictionary *>*items;
    
    @end
    ```
+
+   `activityDataInterval` is the interval, in minutes, between step details in
+   `items`. A value of `60` means one detail per hour, and `10` means one detail
+   every 10 minutes. The default is `60` when unconfigured. Use `timestamp` as
+   the precise detail time.
 
    
 
@@ -2088,6 +2120,10 @@ Example of usage:
 
 ## SDK Revision History
 
+**V2.0.0_20260724** (2026.07.24)
+
+- Added support for step-detail intervals.
+
 **V2.0.0_20260706** (2026.07.06)
 
 - Added external `CBCentralManager` integration (3.1.8), allowing the customer App to scan devices with its unified scanner and let the SDK connect with the same Central.
@@ -2099,8 +2135,3 @@ Example of usage:
 ## 联系方式 / 技术支持
 
 - 技术支持邮箱  developer@dhouse88.com
-
-
-
-
-

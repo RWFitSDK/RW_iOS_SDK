@@ -7,19 +7,24 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		02BE4E0574D0B5A15EC0478E /* Pods_DHBleSDKDemo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8892605F06FC501A184CF26E /* Pods_DHBleSDKDemo.framework */; };
-		AB040BBE2F1E24C40024288C /* NewHomeController.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB040BB62F1E24C40024288C /* NewHomeController.xib */; };
-		AB040BBF2F1E24C40024288C /* WorkoutRunningController.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB040BB92F1E24C40024288C /* WorkoutRunningController.xib */; };
-		AB040BC02F1E24C40024288C /* WorkoutTypeController.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB040BBC2F1E24C40024288C /* WorkoutTypeController.xib */; };
-		AB040BC12F1E24C40024288C /* NewHomeController.m in Sources */ = {isa = PBXBuildFile; fileRef = AB040BB52F1E24C40024288C /* NewHomeController.m */; };
-		AB040BC22F1E24C40024288C /* WorkoutTypeController.m in Sources */ = {isa = PBXBuildFile; fileRef = AB040BBB2F1E24C40024288C /* WorkoutTypeController.m */; };
-		AB040BC32F1E24C40024288C /* WorkoutRunningController.m in Sources */ = {isa = PBXBuildFile; fileRef = AB040BB82F1E24C40024288C /* WorkoutRunningController.m */; };
-		AB040BCE2F1E257D0024288C /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = AB040BCC2F1E257D0024288C /* Localizable.strings */; };
+		AB036DA92D378CEA00B69787 /* BaseCellModel.m in Sources */ = {isa = PBXBuildFile; fileRef = AB036DA12D378CEA00B69787 /* BaseCellModel.m */; };
+		AB036DAA2D378CEA00B69787 /* BaseNavigationView.m in Sources */ = {isa = PBXBuildFile; fileRef = AB036DA32D378CEA00B69787 /* BaseNavigationView.m */; };
+		AB036DAB2D378CEA00B69787 /* BaseTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = AB036DA52D378CEA00B69787 /* BaseTableViewCell.m */; };
+		AB036DAC2D378CEA00B69787 /* BaseViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = AB036DA72D378CEA00B69787 /* BaseViewController.m */; };
+		AB1F609D2F1A397200758020 /* DHBleSDK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB846F312E27C188002AFDEE /* DHBleSDK.framework */; };
+		AB1F60A02F1A3A2000758020 /* DHUIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3AA1AD288A41D700FAC387 /* DHUIKit.framework */; };
+		AB1F60A12F1A3A2000758020 /* DHUIKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = AB3AA1AD288A41D700FAC387 /* DHUIKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		AB1F60A32F1A3A2200758020 /* Pods_DHBleSDKDemo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8892605F06FC501A184CF26E /* Pods_DHBleSDKDemo.framework */; };
+		AB1F60A52F1A3A2600758020 /* DHFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3AA1AC288A41D700FAC387 /* DHFoundation.framework */; };
+		AB1F60A62F1A3A2600758020 /* DHFoundation.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = AB3AA1AC288A41D700FAC387 /* DHFoundation.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		AB1F60AA2F1A61C700758020 /* NewHomeController.m in Sources */ = {isa = PBXBuildFile; fileRef = AB1F60A82F1A61C700758020 /* NewHomeController.m */; };
+		AB1F60AB2F1A61C700758020 /* NewHomeController.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB1F60A92F1A61C700758020 /* NewHomeController.xib */; };
+		AB1F60B02F1B438000758020 /* WorkoutTypeController.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB1F60AF2F1B438000758020 /* WorkoutTypeController.xib */; };
+		AB1F60B12F1B438000758020 /* WorkoutTypeController.m in Sources */ = {isa = PBXBuildFile; fileRef = AB1F60AE2F1B438000758020 /* WorkoutTypeController.m */; };
+		AB1F60B52F1B461F00758020 /* WorkoutRunningController.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB1F60B42F1B461F00758020 /* WorkoutRunningController.xib */; };
+		AB1F60B62F1B461F00758020 /* WorkoutRunningController.m in Sources */ = {isa = PBXBuildFile; fileRef = AB1F60B32F1B461F00758020 /* WorkoutRunningController.m */; };
+		AB1F60B92F1B475500758020 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = AB1F60B72F1B475500758020 /* Localizable.strings */; };
 		AB3AA1A5288A3EB700FAC387 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = AB3AA1A4288A3EB700FAC387 /* AppDelegate.m */; };
-		AB3AA1BE288A428900FAC387 /* BaseNavigationView.m in Sources */ = {isa = PBXBuildFile; fileRef = AB3AA1B3288A428800FAC387 /* BaseNavigationView.m */; };
-		AB3AA1C0288A428900FAC387 /* BaseCellModel.m in Sources */ = {isa = PBXBuildFile; fileRef = AB3AA1B5288A428800FAC387 /* BaseCellModel.m */; };
-		AB3AA1C2288A428900FAC387 /* BaseTableViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = AB3AA1B8288A428900FAC387 /* BaseTableViewCell.m */; };
-		AB3AA1C3288A428900FAC387 /* BaseViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = AB3AA1B9288A428900FAC387 /* BaseViewController.m */; };
 		AB483C54286418D7000234B0 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AB483C52286418D7000234B0 /* Main.storyboard */; };
 		AB483C56286418D7000234B0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB483C55286418D7000234B0 /* Assets.xcassets */; };
 		AB483C59286418D7000234B0 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AB483C57286418D7000234B0 /* LaunchScreen.storyboard */; };
@@ -27,12 +32,7 @@
 		AB483C66286418D7000234B0 /* DHBleSDKDemoTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AB483C65286418D7000234B0 /* DHBleSDKDemoTests.m */; };
 		AB483C70286418D7000234B0 /* DHBleSDKDemoUITests.m in Sources */ = {isa = PBXBuildFile; fileRef = AB483C6F286418D7000234B0 /* DHBleSDKDemoUITests.m */; };
 		AB483C72286418D7000234B0 /* DHBleSDKDemoUITestsLaunchTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AB483C71286418D7000234B0 /* DHBleSDKDemoUITestsLaunchTests.m */; };
-		AB4BE9D12FFCD627009FEF2E /* DHBleSDK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB4BE9D02FFCD627009FEF2E /* DHBleSDK.framework */; };
 		ABA6DB0828F84B4E0020FB5A /* DHBluetoothManager.m in Sources */ = {isa = PBXBuildFile; fileRef = ABA6DB0728F84B4E0020FB5A /* DHBluetoothManager.m */; };
-		ABB9E9932E311D58004BF4D7 /* DHUIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3AA1AD288A41D700FAC387 /* DHUIKit.framework */; };
-		ABB9E9942E311D58004BF4D7 /* DHUIKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = AB3AA1AD288A41D700FAC387 /* DHUIKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		ABB9E9962E311D5A004BF4D7 /* DHFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3AA1AC288A41D700FAC387 /* DHFoundation.framework */; };
-		ABB9E9972E311D5A004BF4D7 /* DHFoundation.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = AB3AA1AC288A41D700FAC387 /* DHFoundation.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		ABBE0C3F28DC6D8300534A34 /* ScanViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = ABBE0C3D28DC6D8300534A34 /* ScanViewController.m */; };
 /* End PBXBuildFile section */
 
@@ -54,14 +54,14 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		ABB9E9952E311D58004BF4D7 /* Embed Frameworks */ = {
+		AB1F60A22F1A3A2000758020 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				ABB9E9942E311D58004BF4D7 /* DHUIKit.framework in Embed Frameworks */,
-				ABB9E9972E311D5A004BF4D7 /* DHFoundation.framework in Embed Frameworks */,
+				AB1F60A12F1A3A2000758020 /* DHUIKit.framework in Embed Frameworks */,
+				AB1F60A62F1A3A2600758020 /* DHFoundation.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -71,29 +71,31 @@
 /* Begin PBXFileReference section */
 		598799A7BD535A7333CB9A2F /* Pods-DHBleSDKDemo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DHBleSDKDemo.release.xcconfig"; path = "Target Support Files/Pods-DHBleSDKDemo/Pods-DHBleSDKDemo.release.xcconfig"; sourceTree = "<group>"; };
 		8892605F06FC501A184CF26E /* Pods_DHBleSDKDemo.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_DHBleSDKDemo.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		AB040BB42F1E24C40024288C /* NewHomeController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NewHomeController.h; sourceTree = "<group>"; };
-		AB040BB52F1E24C40024288C /* NewHomeController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = NewHomeController.m; sourceTree = "<group>"; };
-		AB040BB62F1E24C40024288C /* NewHomeController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = NewHomeController.xib; sourceTree = "<group>"; };
-		AB040BB72F1E24C40024288C /* WorkoutRunningController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WorkoutRunningController.h; sourceTree = "<group>"; };
-		AB040BB82F1E24C40024288C /* WorkoutRunningController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = WorkoutRunningController.m; sourceTree = "<group>"; };
-		AB040BB92F1E24C40024288C /* WorkoutRunningController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = WorkoutRunningController.xib; sourceTree = "<group>"; };
-		AB040BBA2F1E24C40024288C /* WorkoutTypeController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WorkoutTypeController.h; sourceTree = "<group>"; };
-		AB040BBB2F1E24C40024288C /* WorkoutTypeController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = WorkoutTypeController.m; sourceTree = "<group>"; };
-		AB040BBC2F1E24C40024288C /* WorkoutTypeController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = WorkoutTypeController.xib; sourceTree = "<group>"; };
-		AB040BCD2F1E257D0024288C /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
-		AB040BCF2F1E258E0024288C /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		AB036DA02D378CEA00B69787 /* BaseCellModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BaseCellModel.h; sourceTree = "<group>"; };
+		AB036DA12D378CEA00B69787 /* BaseCellModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BaseCellModel.m; sourceTree = "<group>"; };
+		AB036DA22D378CEA00B69787 /* BaseNavigationView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BaseNavigationView.h; sourceTree = "<group>"; };
+		AB036DA32D378CEA00B69787 /* BaseNavigationView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BaseNavigationView.m; sourceTree = "<group>"; };
+		AB036DA42D378CEA00B69787 /* BaseTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BaseTableViewCell.h; sourceTree = "<group>"; };
+		AB036DA52D378CEA00B69787 /* BaseTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BaseTableViewCell.m; sourceTree = "<group>"; };
+		AB036DA62D378CEA00B69787 /* BaseViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BaseViewController.h; sourceTree = "<group>"; };
+		AB036DA72D378CEA00B69787 /* BaseViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BaseViewController.m; sourceTree = "<group>"; };
+		AB1F60A72F1A61C700758020 /* NewHomeController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NewHomeController.h; sourceTree = "<group>"; };
+		AB1F60A82F1A61C700758020 /* NewHomeController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = NewHomeController.m; sourceTree = "<group>"; };
+		AB1F60A92F1A61C700758020 /* NewHomeController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = NewHomeController.xib; sourceTree = "<group>"; };
+		AB1F60AD2F1B438000758020 /* WorkoutTypeController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WorkoutTypeController.h; sourceTree = "<group>"; };
+		AB1F60AE2F1B438000758020 /* WorkoutTypeController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = WorkoutTypeController.m; sourceTree = "<group>"; };
+		AB1F60AF2F1B438000758020 /* WorkoutTypeController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = WorkoutTypeController.xib; sourceTree = "<group>"; };
+		AB1F60B22F1B461F00758020 /* WorkoutRunningController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WorkoutRunningController.h; sourceTree = "<group>"; };
+		AB1F60B32F1B461F00758020 /* WorkoutRunningController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = WorkoutRunningController.m; sourceTree = "<group>"; };
+		AB1F60B42F1B461F00758020 /* WorkoutRunningController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = WorkoutRunningController.xib; sourceTree = "<group>"; };
+		AB1F60B82F1B475500758020 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		AB1F60BA2F1B477C00758020 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		AB1F60BB2F1B477C00758020 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/Localizable.strings; sourceTree = "<group>"; };
+		AB1F60BC2F1B477C00758020 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AB3AA1A3288A3EB700FAC387 /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		AB3AA1A4288A3EB700FAC387 /* AppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		AB3AA1AC288A41D700FAC387 /* DHFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DHFoundation.framework; path = Frameworks/DHFoundation.framework; sourceTree = "<group>"; };
 		AB3AA1AD288A41D700FAC387 /* DHUIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DHUIKit.framework; path = Frameworks/DHUIKit.framework; sourceTree = "<group>"; };
-		AB3AA1B3288A428800FAC387 /* BaseNavigationView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BaseNavigationView.m; sourceTree = "<group>"; };
-		AB3AA1B5288A428800FAC387 /* BaseCellModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BaseCellModel.m; sourceTree = "<group>"; };
-		AB3AA1B6288A428800FAC387 /* BaseNavigationView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BaseNavigationView.h; sourceTree = "<group>"; };
-		AB3AA1B8288A428900FAC387 /* BaseTableViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BaseTableViewCell.m; sourceTree = "<group>"; };
-		AB3AA1B9288A428900FAC387 /* BaseViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BaseViewController.m; sourceTree = "<group>"; };
-		AB3AA1BA288A428900FAC387 /* BaseTableViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BaseTableViewCell.h; sourceTree = "<group>"; };
-		AB3AA1BB288A428900FAC387 /* BaseCellModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BaseCellModel.h; sourceTree = "<group>"; };
-		AB3AA1BD288A428900FAC387 /* BaseViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BaseViewController.h; sourceTree = "<group>"; };
 		AB483C46286418D7000234B0 /* DHBleSDKDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DHBleSDKDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB483C53286418D7000234B0 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		AB483C55286418D7000234B0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -105,7 +107,7 @@
 		AB483C6B286418D7000234B0 /* DHBleSDKDemoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DHBleSDKDemoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB483C6F286418D7000234B0 /* DHBleSDKDemoUITests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DHBleSDKDemoUITests.m; sourceTree = "<group>"; };
 		AB483C71286418D7000234B0 /* DHBleSDKDemoUITestsLaunchTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DHBleSDKDemoUITestsLaunchTests.m; sourceTree = "<group>"; };
-		AB4BE9D02FFCD627009FEF2E /* DHBleSDK.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DHBleSDK.framework; path = Frameworks/DHBleSDK.framework; sourceTree = "<group>"; };
+		AB846F312E27C188002AFDEE /* DHBleSDK.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = DHBleSDK.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		ABA6DB0628F84B4E0020FB5A /* DHBluetoothManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DHBluetoothManager.h; sourceTree = "<group>"; };
 		ABA6DB0728F84B4E0020FB5A /* DHBluetoothManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DHBluetoothManager.m; sourceTree = "<group>"; };
 		ABBE0C3D28DC6D8300534A34 /* ScanViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ScanViewController.m; sourceTree = "<group>"; };
@@ -120,10 +122,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				02BE4E0574D0B5A15EC0478E /* Pods_DHBleSDKDemo.framework in Frameworks */,
-				ABB9E9962E311D5A004BF4D7 /* DHFoundation.framework in Frameworks */,
-				ABB9E9932E311D58004BF4D7 /* DHUIKit.framework in Frameworks */,
-				AB4BE9D12FFCD627009FEF2E /* DHBleSDK.framework in Frameworks */,
+				AB1F609D2F1A397200758020 /* DHBleSDK.framework in Frameworks */,
+				AB1F60A52F1A3A2600758020 /* DHFoundation.framework in Frameworks */,
+				AB1F60A32F1A3A2200758020 /* Pods_DHBleSDKDemo.framework in Frameworks */,
+				AB1F60A02F1A3A2000758020 /* DHUIKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -147,7 +149,7 @@
 		0D408F33A221141523F8B1F8 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				AB4BE9D02FFCD627009FEF2E /* DHBleSDK.framework */,
+				AB846F312E27C188002AFDEE /* DHBleSDK.framework */,
 				ABEF20A1288F96290000A953 /* AVFoundation.framework */,
 				AB3AA1AC288A41D700FAC387 /* DHFoundation.framework */,
 				AB3AA1AD288A41D700FAC387 /* DHUIKit.framework */,
@@ -165,15 +167,30 @@
 			path = Pods;
 			sourceTree = "<group>";
 		};
-		AB040BBD2F1E24C40024288C /* WorkOut */ = {
+		AB036DA82D378CEA00B69787 /* Base */ = {
 			isa = PBXGroup;
 			children = (
-				AB040BB72F1E24C40024288C /* WorkoutRunningController.h */,
-				AB040BB82F1E24C40024288C /* WorkoutRunningController.m */,
-				AB040BB92F1E24C40024288C /* WorkoutRunningController.xib */,
-				AB040BBA2F1E24C40024288C /* WorkoutTypeController.h */,
-				AB040BBB2F1E24C40024288C /* WorkoutTypeController.m */,
-				AB040BBC2F1E24C40024288C /* WorkoutTypeController.xib */,
+				AB036DA02D378CEA00B69787 /* BaseCellModel.h */,
+				AB036DA12D378CEA00B69787 /* BaseCellModel.m */,
+				AB036DA22D378CEA00B69787 /* BaseNavigationView.h */,
+				AB036DA32D378CEA00B69787 /* BaseNavigationView.m */,
+				AB036DA42D378CEA00B69787 /* BaseTableViewCell.h */,
+				AB036DA52D378CEA00B69787 /* BaseTableViewCell.m */,
+				AB036DA62D378CEA00B69787 /* BaseViewController.h */,
+				AB036DA72D378CEA00B69787 /* BaseViewController.m */,
+			);
+			path = Base;
+			sourceTree = "<group>";
+		};
+		AB1F60AC2F1B3FA700758020 /* WorkOut */ = {
+			isa = PBXGroup;
+			children = (
+				AB1F60AD2F1B438000758020 /* WorkoutTypeController.h */,
+				AB1F60AE2F1B438000758020 /* WorkoutTypeController.m */,
+				AB1F60AF2F1B438000758020 /* WorkoutTypeController.xib */,
+				AB1F60B22F1B461F00758020 /* WorkoutRunningController.h */,
+				AB1F60B32F1B461F00758020 /* WorkoutRunningController.m */,
+				AB1F60B42F1B461F00758020 /* WorkoutRunningController.xib */,
 			);
 			path = WorkOut;
 			sourceTree = "<group>";
@@ -190,7 +207,7 @@
 		AB3AA1A6288A3EC900FAC387 /* Resource */ = {
 			isa = PBXGroup;
 			children = (
-				AB040BCC2F1E257D0024288C /* Localizable.strings */,
+				AB1F60B72F1B475500758020 /* Localizable.strings */,
 			);
 			path = Resource;
 			sourceTree = "<group>";
@@ -198,10 +215,10 @@
 		AB3AA1A9288A3EC900FAC387 /* Controllers */ = {
 			isa = PBXGroup;
 			children = (
-				AB040BB42F1E24C40024288C /* NewHomeController.h */,
-				AB040BB52F1E24C40024288C /* NewHomeController.m */,
-				AB040BB62F1E24C40024288C /* NewHomeController.xib */,
-				AB040BBD2F1E24C40024288C /* WorkOut */,
+				AB1F60AC2F1B3FA700758020 /* WorkOut */,
+				AB1F60A72F1A61C700758020 /* NewHomeController.h */,
+				AB1F60A82F1A61C700758020 /* NewHomeController.m */,
+				AB1F60A92F1A61C700758020 /* NewHomeController.xib */,
 			);
 			path = Controllers;
 			sourceTree = "<group>";
@@ -213,21 +230,6 @@
 				ABA6DB0728F84B4E0020FB5A /* DHBluetoothManager.m */,
 			);
 			path = Managers;
-			sourceTree = "<group>";
-		};
-		AB3AA1AB288A419900FAC387 /* Base */ = {
-			isa = PBXGroup;
-			children = (
-				AB3AA1BD288A428900FAC387 /* BaseViewController.h */,
-				AB3AA1B9288A428900FAC387 /* BaseViewController.m */,
-				AB3AA1BA288A428900FAC387 /* BaseTableViewCell.h */,
-				AB3AA1B8288A428900FAC387 /* BaseTableViewCell.m */,
-				AB3AA1BB288A428900FAC387 /* BaseCellModel.h */,
-				AB3AA1B5288A428800FAC387 /* BaseCellModel.m */,
-				AB3AA1B6288A428800FAC387 /* BaseNavigationView.h */,
-				AB3AA1B3288A428800FAC387 /* BaseNavigationView.m */,
-			);
-			path = Base;
 			sourceTree = "<group>";
 		};
 		AB483C3D286418D7000234B0 = {
@@ -255,11 +257,11 @@
 		AB483C48286418D7000234B0 /* DHBleSDKDemo */ = {
 			isa = PBXGroup;
 			children = (
+				AB036DA82D378CEA00B69787 /* Base */,
 				AB3AA1A6288A3EC900FAC387 /* Resource */,
-				AB3AA1AB288A419900FAC387 /* Base */,
-				AB3AA1A2288A3EB700FAC387 /* AppDelegate */,
 				AB3AA1AA288A3EC900FAC387 /* Managers */,
 				ABBE0C3C28DC6D8300534A34 /* Scan */,
+				AB3AA1A2288A3EB700FAC387 /* AppDelegate */,
 				AB3AA1A9288A3EC900FAC387 /* Controllers */,
 				AB483C52286418D7000234B0 /* Main.storyboard */,
 				AB483C55286418D7000234B0 /* Assets.xcassets */,
@@ -308,7 +310,7 @@
 				AB483C42286418D7000234B0 /* Sources */,
 				AB483C43286418D7000234B0 /* Frameworks */,
 				AB483C44286418D7000234B0 /* Resources */,
-				ABB9E9952E311D58004BF4D7 /* Embed Frameworks */,
+				AB1F60A22F1A3A2000758020 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -385,6 +387,8 @@
 				en,
 				Base,
 				"zh-Hans",
+				ja,
+				ko,
 			);
 			mainGroup = AB483C3D286418D7000234B0;
 			productRefGroup = AB483C47286418D7000234B0 /* Products */;
@@ -403,12 +407,12 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AB040BBE2F1E24C40024288C /* NewHomeController.xib in Resources */,
-				AB040BBF2F1E24C40024288C /* WorkoutRunningController.xib in Resources */,
-				AB040BC02F1E24C40024288C /* WorkoutTypeController.xib in Resources */,
-				AB040BCE2F1E257D0024288C /* Localizable.strings in Resources */,
 				AB483C59286418D7000234B0 /* LaunchScreen.storyboard in Resources */,
+				AB1F60B52F1B461F00758020 /* WorkoutRunningController.xib in Resources */,
 				AB483C56286418D7000234B0 /* Assets.xcassets in Resources */,
+				AB1F60B02F1B438000758020 /* WorkoutTypeController.xib in Resources */,
+				AB1F60B92F1B475500758020 /* Localizable.strings in Resources */,
+				AB1F60AB2F1A61C700758020 /* NewHomeController.xib in Resources */,
 				AB483C54286418D7000234B0 /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -459,16 +463,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AB3AA1BE288A428900FAC387 /* BaseNavigationView.m in Sources */,
-				AB3AA1C3288A428900FAC387 /* BaseViewController.m in Sources */,
+				AB036DAB2D378CEA00B69787 /* BaseTableViewCell.m in Sources */,
+				AB1F60B62F1B461F00758020 /* WorkoutRunningController.m in Sources */,
+				AB036DAC2D378CEA00B69787 /* BaseViewController.m in Sources */,
 				AB3AA1A5288A3EB700FAC387 /* AppDelegate.m in Sources */,
+				AB1F60AA2F1A61C700758020 /* NewHomeController.m in Sources */,
+				AB036DA92D378CEA00B69787 /* BaseCellModel.m in Sources */,
+				AB1F60B12F1B438000758020 /* WorkoutTypeController.m in Sources */,
 				ABA6DB0828F84B4E0020FB5A /* DHBluetoothManager.m in Sources */,
-				AB3AA1C0288A428900FAC387 /* BaseCellModel.m in Sources */,
+				AB036DAA2D378CEA00B69787 /* BaseNavigationView.m in Sources */,
 				ABBE0C3F28DC6D8300534A34 /* ScanViewController.m in Sources */,
-				AB3AA1C2288A428900FAC387 /* BaseTableViewCell.m in Sources */,
-				AB040BC12F1E24C40024288C /* NewHomeController.m in Sources */,
-				AB040BC22F1E24C40024288C /* WorkoutTypeController.m in Sources */,
-				AB040BC32F1E24C40024288C /* WorkoutRunningController.m in Sources */,
 				AB483C5C286418D7000234B0 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -506,11 +510,13 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
-		AB040BCC2F1E257D0024288C /* Localizable.strings */ = {
+		AB1F60B72F1B475500758020 /* Localizable.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
-				AB040BCD2F1E257D0024288C /* en */,
-				AB040BCF2F1E258E0024288C /* zh-Hans */,
+				AB1F60B82F1B475500758020 /* en */,
+				AB1F60BA2F1B477C00758020 /* zh-Hans */,
+				AB1F60BB2F1B477C00758020 /* ja */,
+				AB1F60BC2F1B477C00758020 /* ko */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
@@ -538,6 +544,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
@@ -596,6 +603,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
@@ -652,7 +660,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7V6G998996;
 				ENABLE_BITCODE = NO;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -663,7 +671,6 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DHBleSDKDemo/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = BleSDKDemo;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "We need bluetooth access to connect smart wearable devices";
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "We need bluetooth access to connect smart wearable devices";
 				INFOPLIST_KEY_NSCameraUsageDescription = "We need to use camera permissions to upload avatars and feedback photos and scan code binding devices";
@@ -679,6 +686,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.1.8;
+				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.rw.bluetoothdemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -695,7 +703,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7V6G998996;
 				ENABLE_BITCODE = NO;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -706,7 +714,6 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DHBleSDKDemo/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = BleSDKDemo;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "We need bluetooth access to connect smart wearable devices";
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "We need bluetooth access to connect smart wearable devices";
 				INFOPLIST_KEY_NSCameraUsageDescription = "We need to use camera permissions to upload avatars and feedback photos and scan code binding devices";
@@ -722,6 +729,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.1.8;
+				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.rw.bluetoothdemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

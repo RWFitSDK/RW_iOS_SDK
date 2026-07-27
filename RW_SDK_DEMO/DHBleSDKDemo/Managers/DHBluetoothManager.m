@@ -7,6 +7,10 @@
 
 #import "DHBluetoothManager.h"
 
+static NSString * const DHSavedDeviceNameKey = @"DHSavedDeviceNameKey";
+static NSString * const DHSavedDeviceMacKey = @"DHSavedDeviceMacKey";
+static NSString * const DHSavedDeviceModelKey = @"DHSavedDeviceModelKey";
+
 @implementation DHBluetoothManager
 
 static DHBluetoothManager * _shared = nil;
@@ -47,10 +51,47 @@ static DHBluetoothManager * _shared = nil;
     [DHBleCentralManager setBindedStatus:YES];
 }
 
+- (void)saveDeviceInfoWithModel:(DHPeripheralModel *)model
+{
+    if (!model) {
+        return;
+    }
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:model.name ?: @"" forKey:DHSavedDeviceNameKey];
+    [defaults setObject:model.macAddr ?: @"" forKey:DHSavedDeviceMacKey];
+    [defaults setObject:model.deviceModel ?: @"" forKey:DHSavedDeviceModelKey];
+    [defaults synchronize];
+}
+
+- (void)clearSavedDeviceInfo
+{
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults removeObjectForKey:DHSavedDeviceNameKey];
+    [defaults removeObjectForKey:DHSavedDeviceMacKey];
+    [defaults removeObjectForKey:DHSavedDeviceModelKey];
+    [defaults synchronize];
+}
+
+- (NSString *)savedDeviceName
+{
+    return [[NSUserDefaults standardUserDefaults] objectForKey:DHSavedDeviceNameKey] ?: @"";
+}
+
+- (NSString *)savedDeviceMac
+{
+    return [[NSUserDefaults standardUserDefaults] objectForKey:DHSavedDeviceMacKey] ?: @"";
+}
+
+- (NSString *)savedDeviceModel
+{
+    return [[NSUserDefaults standardUserDefaults] objectForKey:DHSavedDeviceModelKey] ?: @"";
+}
+
 - (void)unBindDevice
 {
     [DHBleCentralManager setBindedStatus:NO];
     [DHBleCentralManager disconnectDevice];
+    [self clearSavedDeviceInfo];
 }
 
 
@@ -63,16 +104,19 @@ static DHBluetoothManager * _shared = nil;
 - (void)centralManagerDidFunctionMenu:(DeviceFuncV2Model *)deviceFuncModel peripheral:(DHPeripheralModel *)peripheral
 {
     self.deviceFuncV2Model = deviceFuncModel;
+    [self saveDeviceInfoWithModel:peripheral];
     
 }
 
 - (void)centralManagerDidDisconnectPeripheral:(CBPeripheral *)peripheral {
     self.isConnected = NO;
+    self.deviceFuncV2Model = nil;
     [[NSNotificationCenter defaultCenter] postNotificationName:BluetoothNotificationConnectStateChange object:nil];
 }
 
 - (void)centralManagerDidFailedPeripheral:(CBPeripheral *)peripheral {
     self.isConnected = NO;
+    self.deviceFuncV2Model = nil;
     [[NSNotificationCenter defaultCenter] postNotificationName:BluetoothNotificationConnectStateChange object:nil];
 }
 
