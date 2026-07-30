@@ -393,33 +393,59 @@ userInfoModel.age = 20;
 
 
 
-##### 3.2.1.3 Get firmware information
+##### 3.2.1.3 Get Device Information
 
-> Interface description: Retrieves the firmware model, firmware version number, and UI version number;
+> Retrieves the device model, firmware version, and UI version.
+
+Method:
+
+`+ (void)getFirmwareVersion:(void(^)(int code, id data))block`
+
+Return value:
+
+| DHFirmwareVersionModel property | Type | Description |
+| ------------------------------- | ---- | ----------- |
+| deviceModel | NSString | Device model, the unique identifier for each product model |
+| firmwareVersion | NSString | Firmware version |
+| uiVersion | NSString | UI version |
+
+> **Important:** Before an OTA update, verify that the device `deviceModel` matches the target device model of the firmware file. Start the update only when they match. Do not update a device with firmware for a different model.
+
+Example:
 
 ```objective-c
-[DHBleCommand getFirmwareVersion:^(int code, id  _Nonnull data) {
-            if (code == 0){
-                NSLog(@"getFirmwareVersion OK");
-                DHFirmwareVersionModel *model = data;
-                NSLog(@"model %@ version %@ UI version %@", model.deviceModel, model.firmwareVersion, model.uiVersion);
-            }
-        }];
+[DHBleCommand getFirmwareVersion:^(int code, id _Nonnull data) {
+    if (code == 0 && [data isKindOfClass:[DHFirmwareVersionModel class]]) {
+        DHFirmwareVersionModel *model = data;
+        NSLog(@"model %@ firmware %@ UI %@",
+              model.deviceModel, model.firmwareVersion, model.uiVersion);
+    }
+}];
 ```
 
+##### 3.2.1.4 Get Battery Level
 
+> Retrieves the current device battery level.
 
-##### 3.2.1.4 **Get battery level**
+Method:
 
-> Interface description: App retrieves device battery level.
+`+ (void)getBattery:(void(^)(int code, id data))block`
+
+Return value:
+
+| DHBatteryInfoModel property | Type | Description |
+| --------------------------- | ---- | ----------- |
+| battery | NSInteger | Remaining battery level, range 0-100 |
+
+Example:
 
 ```objective-c
-[DHBleCommand getBattery:^(int code, id  _Nonnull data) {
-            if (code == 0){
-                DHBatteryInfoModel *model = data;
-                NSLog(@"getBattery OK battery %zd", model.battery);
-            }
-        }];
+[DHBleCommand getBattery:^(int code, id _Nonnull data) {
+    if (code == 0 && [data isKindOfClass:[DHBatteryInfoModel class]]) {
+        DHBatteryInfoModel *model = data;
+        NSLog(@"battery %zd", model.battery);
+    }
+}];
 ```
 
 ##### 3.2.1.5 Get and set video control switches.
@@ -485,18 +511,42 @@ tModeSetModel.lightLevel = 3; //1 (dim light), 2 (soft light), 3 (bright light)
 
 ##### 3.2.1.7 Get and set the wearing position.
 
+> Gets or sets the ring wearing position.
+>
+> Configuration table property: `isWearDir`.
+
+Methods:
+
+`+ (void)getRingWearHand:(void(^)(int code, id data))block`
+
+`+ (void)setRingWearHand:(UInt8)wearHand block:(void(^)(int code, id data))block`
+
+Parameter:
+
+| Parameter | Type | Description | Values |
+| --------- | ---- | ----------- | ------ |
+| wearHand | UInt8 | Wearing position | 0: Left hand; 1: Right hand |
+
+Return value:
+
+| Return data | Type | Description |
+| ----------- | ---- | ----------- |
+| data | NSNumber | Wearing position: 0 for left hand, 1 for right hand |
+
+Example:
+
 ```objective-c
-// 获取佩戴位置
-[DHBleCommand getRingWearHand:^(int code, id  _Nonnull data) {
+// Get the wearing position
+[DHBleCommand getRingWearHand:^(int code, id _Nonnull data) {
   if (code == 0){
-    NSInteger tWearHand = [data intValue]; //0左手 1右手
-    NSLog(@"getRingWearHand OK 佩戴位置 %zd", tWearHand);
+    NSInteger wearHand = [data integerValue]; // 0: Left; 1: Right
+    NSLog(@"wearing position %zd", wearHand);
   }
 }];
 
-//设置佩戴位置
-uint8_t tModeSetModel = 0; 0: Left hand  1: Right hand
-[DHBleCommand setRingWearHand:tModeSetModel block:^(int code, id  _Nonnull data) {
+// Set the wearing position
+UInt8 wearHand = 0; // 0: Left; 1: Right
+[DHBleCommand setRingWearHand:wearHand block:^(int code, id _Nonnull data) {
   if (code == 0){
     NSLog(@"setRingWearHand OK");
   }
@@ -505,24 +555,48 @@ uint8_t tModeSetModel = 0; 0: Left hand  1: Right hand
 
 ##### 3.2.1.8 Starting and stopping photo taking
 
-> After activating the camera function, the device can use gesture control to take photos with the customized camera app.
+> Enable camera control when the APP enters its custom camera page. The device can then notify the APP to take a photo by gesture. Disable camera control when the APP leaves the camera page.
 >
-> Configuration table attribute: `isTakePhoto`
+> Configuration table property: `isTakePhoto`.
 >
-> The `BluetoothNotificationCameraTakePicture` device sends a notification to take a picture, and then takes the picture.
+> Receive device photo events through `BluetoothNotificationCameraTakePicture`.
+
+Method:
+
+`+ (void)controlCamera:(NSInteger)type block:(void(^)(int code, id data))block`
+
+Parameter:
+
+| Parameter | Type | Description | Values |
+| --------- | ---- | ----------- | ------ |
+| type | NSInteger | Camera control | 0: Disable; 1: Enable |
+
+Example:
 
 ```objective-c
-// When the app enters the camera interface, a value of 1 controls the device to enter the corresponding interface, and a value of 0 controls the device to exit.
-[DHBleCommand controlCamera:1 block:^(int code, id  _Nonnull data) {
+// Call when the APP enters the camera page
+- (void)openCameraPage {
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(cameraTakePictureNotification:)
+                                                 name:BluetoothNotificationCameraTakePicture
+                                               object:nil];
+    [DHBleCommand controlCamera:1 block:^(int code, id _Nonnull data) {
+        NSLog(@"enable camera control code=%d", code);
+    }];
+}
 
-}];
+// Call when the APP leaves the camera page
+- (void)closeCameraPage {
+    [DHBleCommand controlCamera:0 block:^(int code, id _Nonnull data) {
+        NSLog(@"disable camera control code=%d", code);
+    }];
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:BluetoothNotificationCameraTakePicture
+                                                  object:nil];
+}
 
-// The monitoring device issued a command to take a picture.
-[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(cameraTakePictureNotification) name:BluetoothNotificationCameraTakePicture object:nil];
-
-- (void)cameraTakePictureNotification {
-  // Take a photo
-  NSLog(@"cameraTakePictureNotification Take a photo");
+- (void)cameraTakePictureNotification:(NSNotification *)notification {
+    // Take a photo with the APP's custom camera here
 }
 ```
 
@@ -1012,6 +1086,8 @@ Example of usage:
 > Device touch event notification, actively reported by the device. Touch operations are reported regardless of screen state. The APP defines the response behavior.
 >
 > Received via `BluetoothNotificationTouchEvent` notification.
+>
+> **Note:** This is a device-side customization. Before using it, confirm that the device manufacturer has integrated and enabled it in the firmware. If it has not been customized or enabled, the APP will not receive touch event notifications.
 
 Notification userInfo data:
 
@@ -1580,6 +1656,12 @@ tModeSetModel.interval = 60; //固定不可设置
                             else if ([model isKindOfClass:[DHDailyMuslimCountModel class]]) { ///Muslim count
                                 NSLog(@"同步有 赞念数据");
                             }
+                            else if ([model isKindOfClass:[DHDailyTempModel class]]) { ///Body temperature
+                                NSLog(@"Body temperature data received");
+                            }
+                            else if ([model isKindOfClass:[DHDailyBpModel class]]) { ///Blood pressure
+                                NSLog(@"Blood pressure data received");
+                            }
                         }
                     }
                 }
@@ -1590,122 +1672,104 @@ tModeSetModel.interval = 60; //固定不可设置
 
 ##### 3.2.2.4 24/7 Monitoring - Health Data Explanation
 
-1. Today's and historical step data - DHDailyStepModel
+Each `dataBlock` call returns an array containing only one model type. Different health data types are not mixed in the same array.
 
-   Both today's and historical step data use `DHDailyStepModel`. Today's data
-   normally contains one model for the current day; historical data may contain
-   multiple dated models, one per day.
+> **Time fields:** `timestamp`, `beginTime`, `endTime`, and item-level `timestamp` values in this section are Unix timestamps in seconds. Model time properties use `NSString`; item dictionary timestamps use `NSNumber`.
 
-   | Data | Returned content | Daily totals |
-   | ---- | ---------------- | ------------ |
-   | Today | One `DHDailyStepModel` for the current day | Uses the daily total steps, calories, and distance returned by the device |
-   | History | May contain multiple dated `DHDailyStepModel` objects | Sums the historical details for steps, calories, and distance |
+Data overview:
 
-   ```objective-c
-   @interface DHDailyStepModel : NSObject
-   
-   /// 日期时间戳（秒）
-   @property (nonatomic, copy) NSString *timestamp;
-   /// 日期yyyyMMdd
-   @property (nonatomic, copy) NSString *date;
-   
-   /// 里程（米）
-   @property (nonatomic, assign) NSInteger distance; //当天的总距离
-   /// 消耗（卡路里）
-   @property (nonatomic, assign) NSInteger calorie; //当天总卡路里
-   /// 步数（步）
-   @property (nonatomic, assign) NSInteger step; //当天总步数
+| Data | Daily model | Main fields in each `items` dictionary |
+| ---- | ----------- | --------------------------------------- |
+| Steps | DHDailyStepModel | timestamp, index, step, calorie, distance |
+| Sleep | DHDailySleepModel | status, value |
+| Heart rate | DHDailyHrModel | timestamp, value |
+| Blood pressure | DHDailyBpModel | timestamp, systolic, diastolic |
+| Blood oxygen | DHDailyBoModel | timestamp, value |
+| Body temperature | DHDailyTempModel | timestamp, value |
+| Stress | DHDailyPressureModel | timestamp, value |
+| Blood glucose | DHDailyBloodSugarModel | timestamp, value |
+| HRV | DHDailyHrvModel | timestamp, value |
+| Dhikr count | DHDailyMuslimCountModel | timestamp, index, value |
 
-   /// Detail interval in minutes; defaults to 60 for old devices
-   @property (nonatomic, assign) NSInteger activityDataInterval;
+Regular measurement data:
 
-   /// Each item contains timestamp, index, step, calorie and distance
-   /// timestamp is a Unix timestamp in seconds; index is the detail slot within the day
-   @property (nonatomic,strong) NSMutableArray <NSDictionary *>*items;
-   
-   @end
-   ```
+The heart rate, blood pressure, blood oxygen, body temperature, stress, blood glucose, and HRV daily models contain:
 
-   `activityDataInterval` is the interval, in minutes, between step details in
-   `items`. A value of `60` means one detail per hour, and `10` means one detail
-   every 10 minutes. The default is `60` when unconfigured. Use `timestamp` as
-   the precise detail time.
+| Property | Type | Description |
+| -------- | ---- | ----------- |
+| timestamp | NSString | Unix timestamp for the date, in seconds |
+| date | NSString | Date in `yyyyMMdd` format |
+| items | NSMutableArray&lt;NSDictionary *&gt; | Measurement details for the day |
 
-   
+| Data | Item fields | Unit or conversion |
+| ---- | ----------- | ------------------ |
+| Heart rate | timestamp, value | bpm |
+| Blood pressure | timestamp, systolic, diastolic | systolic and diastolic pressure, in mmHg |
+| Blood oxygen | timestamp, value | % |
+| Body temperature | timestamp, value | Actual temperature = `value / 10.0`, in °C |
+| Stress | timestamp, value | Device stress value, no standard unit |
+| Blood glucose | timestamp, value | On iOS, `value` is a numeric string; convert it before numerical processing |
+| HRV | timestamp, value | ms |
 
-2. Sleep data - DHDailySleepModel
+> **Important:** Blood pressure contains both systolic and diastolic values and must not be handled as single-value data. The blood glucose `value` is a string.
 
-   ```objective-c
-   @interface DHDailySleepModel : NSObject
-   
-   /// 时间戳（秒）
-   @property (nonatomic, copy) NSString *timestamp;
-   /// 日期yyyyMMdd
-   @property (nonatomic, copy) NSString *date;
-   
-   /// 总时长（分钟）Total duration (minutes)
-   @property (nonatomic, assign) NSInteger duration;
-   /// 入睡时间（时间戳（秒））Time of falling asleep (timestamp in seconds)
-   @property (nonatomic, copy) NSString *beginTime;
-   /// 醒来时间（时间戳（秒））Wake-up time (timestamp in seconds)
-   @property (nonatomic, copy) NSString *endTime;
-   
-   /// 睡眠项 例：@[@{@"status":@0,@"value":@60},...]
-   /// status（睡眠类型）value（时长（分钟））
-   /// status（0.awake 1. light sleep 2. deep sleep 3. REM）
-   @property (nonatomic,strong) NSMutableArray <NSDictionary *>*items;
-   
-   @end
-   ```
+Step data — `DHDailyStepModel`:
 
-   
+| Property | Type | Description |
+| -------- | ---- | ----------- |
+| timestamp | NSString | Unix timestamp for the date, in seconds |
+| date | NSString | Date in `yyyyMMdd` format |
+| step | NSInteger | Total steps for the day |
+| calorie | NSInteger | Total calories for the day |
+| distance | NSInteger | Total distance for the day, in meters |
+| activityDataInterval | NSInteger | Detail interval in minutes; defaults to 60 when unconfigured |
+| items | NSMutableArray&lt;NSDictionary *&gt; | Each item contains timestamp, index, step, calorie, and distance |
 
-3. Heart rate data -  DHDailyHrModel;
+| Data | `progress` in `dataBlock` | Returned content and daily totals |
+| ---- | ------------------------- | --------------------------------- |
+| Today | 1 | Returns the current-day model; use the device-provided step, calorie, and distance totals |
+| History | 2 | May return multiple daily models; each day's totals are accumulated from that day's details |
 
-   ```objective-c
-   @interface DHDailyHrModel : NSObject
-   
-   /// 时间戳（秒）
-   @property (nonatomic, copy) NSString *timestamp;
-   /// 日期yyyyMMdd
-   @property (nonatomic, copy) NSString *date;
-   
-   /// 心率项 例：@[@{@"timestamp":@0,@"value":@80},...]
-   /// timestamp（时间戳（秒））value（心率值）
-   @property (nonatomic,strong) NSMutableArray <NSDictionary *>*items;
-   
-   
-   @end
-   ```
+`activityDataInterval=60` means one item per hour; `10` means one item every 10 minutes. Use each `items.timestamp` value as the exact detail time.
 
-   **HRV`DHDailyHrvModel`，压力`DHDailyPressureModel`, 血氧`DHDailyBoModel`,血糖`DHDailyBloodSugarModel`与心率类似可参考对应类**
+Sleep data — `DHDailySleepModel`:
 
-   
+| Property | Type | Description |
+| -------- | ---- | ----------- |
+| timestamp | NSString | Unix timestamp for the date, in seconds |
+| date | NSString | Date in `yyyyMMdd` format |
+| duration | NSInteger | Total sleep duration, in minutes |
+| beginTime | NSString | Sleep start time, Unix timestamp in seconds |
+| endTime | NSString | Wake-up time, Unix timestamp in seconds |
+| items | NSMutableArray&lt;NSDictionary *&gt; | Each item contains status and value |
 
-4. Muslim prayer data - DHDailyMuslimCountModel
+In each sleep item, `value` is the stage duration in minutes. `status`: 0 awake, 1 light sleep, 2 deep sleep, 3 REM.
 
-   ```objective-c
-   @interface DHDailyMuslimCountModel : NSObject
-   /// 时间戳（秒）
-   @property (nonatomic, copy) NSString *timestamp;
-   /// 日期yyyyMMdd
-   @property (nonatomic, copy) NSString *date;
-   
-   @property (nonatomic, assign) NSInteger muslimcount;
-   
-   /// 赞念项 例：@[@{@"timestamp":@0,@"value":@80},...]
-   /// timestamp（时间戳（秒））value（每小时赞念值）
-   @property (nonatomic,strong) NSMutableArray <NSDictionary *>*items; //注意,这里的每小时为累加值赞念
-   
-   @end
-   ```
+Dhikr count data — `DHDailyMuslimCountModel`:
+
+| Property | Type | Description |
+| -------- | ---- | ----------- |
+| timestamp | NSString | Unix timestamp for the date, in seconds |
+| date | NSString | Date in `yyyyMMdd` format |
+| muslimcount | NSInteger | Total count for the day |
+| items | NSMutableArray&lt;NSDictionary *&gt; | Each item contains timestamp, index, and value |
+
+Dhikr details are returned hourly; `value` is the cumulative count for that hour.
 
 
 #### 3.2.3 OTA upgrade
 
 > [!NOTE]
 >
-> The OTA update file must be obtained from the manufacturer and tested thoroughly before proceeding. This is to prevent update errors and device malfunction.
+> The OTA file must be provided by the manufacturer and confirmed for the current product. Before updating, follow [3.2.1.3 Get Device Information](#3213-get-device-information) to read `DHFirmwareVersionModel.deviceModel` and compare it with the firmware target model supplied by the manufacturer. Start the update only when they match. Abort when the model is empty or different to prevent an incompatible firmware file from making the device unusable.
+
+Pre-update validation:
+
+| Data | Source | Purpose |
+| ---- | ------ | ------- |
+| deviceModel | `DHFirmwareVersionModel.deviceModel` | Current device model and unique identifier for the product model |
+| Firmware target model | Supplied by the manufacturer with the firmware file | Must exactly match deviceModel |
+| firmwareVersion | `DHFirmwareVersionModel.firmwareVersion` | Can be used to decide whether an update is required |
 
 Method Description:
 
@@ -1721,10 +1785,27 @@ Parameter Description:
 Example of usage:
 
 ```objective-c
-NSString *tFilePath = @""; //bin file path, provided by manufacturer
-NSData *fileData = [NSData dataWithContentsOfFile:tFilePath];
-[DHBleCommand ringOtaWithFileData:fileData block:^(int code, CGFloat progress, id  _Nonnull data) {
-    NSLog(@"OTA code %d progress %.2f", code, progress);
+[DHBleCommand getFirmwareVersion:^(int code, id _Nonnull data) {
+    if (code != 0 || ![data isKindOfClass:[DHFirmwareVersionModel class]]) {
+        return;
+    }
+
+    DHFirmwareVersionModel *version = data;
+    NSString *firmwareTargetModel = @"target model supplied by manufacturer";
+    if (version.deviceModel.length == 0 ||
+        ![version.deviceModel isEqualToString:firmwareTargetModel]) {
+        NSLog(@"Device model mismatch; OTA is not allowed");
+        return;
+    }
+
+    NSString *filePath = @""; // Firmware file path supplied by manufacturer
+    NSData *fileData = [NSData dataWithContentsOfFile:filePath];
+    if (fileData.length == 0) {
+        return;
+    }
+    [DHBleCommand ringOtaWithFileData:fileData block:^(int otaCode, CGFloat progress, id _Nonnull otaData) {
+        NSLog(@"OTA code %d progress %.2f", otaCode, progress);
+    }];
 }];
 ```
 #### 3.2.4 Exercise more
@@ -1927,13 +2008,22 @@ Example of usage:
 
 #### 5.2.5 Sensor Raw Data
 
-> PPG/ACC/PPG Red/IR sensor raw data collection and sleep real-time data;
->
-> Configuration table properties: `isSupportSensorRawPPG` (PPG), `isSupportSensorRawACC` (ACC), `isSupportSensorRawPPGRed` (PPG Red), `isSupportSensorRawIR` (IR), `isSupportSensorRawSleep` (Sleep real-time);
->
-> **Note: Sleep real-time data (sensorType=5) does not require manual start/stop. When the device supports this feature, it will automatically push data during sleep. Receive it via the same notification `BluetoothNotificationHealthRingSenorRawChange`.**
+This section covers two different data retrieval methods:
 
-sensorType valid combinations:
+| Data | Retrieval method | Description |
+| ---- | ---------------- | ----------- |
+| PPG/ACC/PPG Red/IR raw data | History retrieval | The APP starts and stops collection, then actively synchronizes the stored data |
+| Sleep state data | Real-time push | The device automatically pushes data during sleep; the APP only needs to observe the notification |
+
+> [!IMPORTANT]
+>
+> PPG/ACC/PPG Red/IR raw data does not support real-time push and is available only through history retrieval. Sleep state data uses only real-time push and is not retrieved through the historical raw data API.
+>
+> The current historical raw data sampling rate can reach up to 100 Hz, with a maximum test duration of approximately one minute. Individual samples do not contain timestamps, so the absolute time of each sample cannot be reconstructed.
+>
+> Function table properties: `isSupportSensorRawPPG` (PPG), `isSupportSensorRawACC` (ACC), `isSupportSensorRawPPGRed` (PPG Red), `isSupportSensorRawIR` (IR), and `isSupportSensorRawSleep` (sleep real-time data).
+
+Valid `sensorType` combinations for PPG/ACC/PPG Red/IR historical collection:
 
 | Value | Meaning              | Description                          |
 | ----- | -------------------- | ------------------------------------ |
@@ -1948,17 +2038,8 @@ sensorType valid combinations:
 | 13    | PPG Red + ACC + IR   | PPG Red, ACC and IR simultaneously   |
 
 > **Rules: PPG Green and PPG Red cannot coexist; IR cannot start alone, must be combined with PPG Green or PPG Red.**
-
-Return Data format:
-
-| Field      | Description                                  |
-| ---------- | -------------------------------------------- |
-| sensorType | Type: 1=PPG, 2=ACC, 3=PPG Red, 4=IR, 5=Sleep real-time |
-| ppgData    | PPG data array, each item is int32           |
-| accData    | ACC data array, each item is {x,y,z} (int16) |
-| ppgRedData | PPG Red data array, each item is int32       |
-| irData     | IR infrared data array, each item is int32   |
-| sleepData  | Sleep data array when type=5, each item is {timestamp, mode}; mode: 17=Start, 34=End, 1=Deep, 2=Light, 3=Awake, 4=REM |
+>
+> **Note:** The control API's `sensorType` is a sensor bitmask, while the returned dictionary's `sensorType` is a data type. They use different numbering. For example, control `sensorType=1` starts ACC, while historical data `sensorType=1` means PPG. Control `sensorType=5` starts PPG Red + ACC, while sleep real-time data `sensorType=5` means a sleep state.
 
 
 ##### 5.2.5.0 PPG Timed Monitoring
@@ -2006,6 +2087,8 @@ tModeSetModel.interval = 60;
 
 ##### 5.2.5.1 Start and Stop Sensor Raw Data
 
+> This API controls only PPG/ACC/PPG Red/IR historical raw data collection. It is not required for sleep real-time data.
+>
 > block callback with code==0 indicates start/stop success;
 >
 > The device may also stop the sensor actively, notified via `BluetoothNotificationHealthRingSenorStopChange`.
@@ -2036,50 +2119,17 @@ Example of usage:
 
 //Stop PPG+ACC raw data output
 [DHBleCommand ringControlSensorRaw:2 type:3 block:^(int code, id data) {}];
+
+// Remove the observer when the page is destroyed or no longer needs the event.
+[[NSNotificationCenter defaultCenter] removeObserver:self
+                                                name:BluetoothNotificationHealthRingSenorStopChange
+                                              object:nil];
 ```
 
 
-##### 5.2.5.2 Data Retrieval Methods
+##### 5.2.5.2 Historical Raw Data Retrieval
 
-> There are two ways to retrieve sensor raw data. **The device determines which method is used, the APP cannot choose**:
->
-> (1) Real-time push: After starting, the device pushes data to the APP in real-time;
->
-> (2) History retrieval: The device collects and saves data first, then the APP actively syncs it later;
-
-###### 5.2.5.2.1 Real-time Push
-
-> After starting the sensor, the device pushes raw data in real-time;
->
-> Data is returned via the `BluetoothNotificationSensorRawData` notification.
-
-Example of usage:
-
-```objective-c
-[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(sensorRawDataUpdate:) name:BluetoothNotificationSensorRawData object:nil];
-
-- (void)sensorRawDataUpdate:(NSNotification *)ntf
-{
-    NSDictionary *tUserInfo = ntf.userInfo;
-    NSInteger tType = [tUserInfo[@"sensorType"] integerValue];
-    if (tType == 2) {
-        NSLog(@"ACC count=%zd", [tUserInfo[@"accData"] count]);
-    } else if (tType == 1) {
-        NSLog(@"PPG count=%zd", [tUserInfo[@"ppgData"] count]);
-    } else if (tType == 3) {
-        NSLog(@"PPG Red count=%zd", [tUserInfo[@"ppgRedData"] count]);
-    } else if (tType == 4) {
-        NSLog(@"IR count=%zd", [tUserInfo[@"irData"] count]);
-    } else if (tType == 5) {
-        NSArray *sleepData = tUserInfo[@"sleepData"];
-        NSLog(@"Sleep count=%zd", sleepData.count);
-    }
-}
-```
-
-###### 5.2.5.2.2 History Retrieval
-
-> Retrieve historical sensor raw data saved on the device, similar to the multi-sport data sync pattern;
+> PPG/ACC/PPG Red/IR raw data is available only through history retrieval. The device collects and stores the data first, and the APP later actively synchronizes it using `ringGetHistorySensorRaw`.
 >
 > Data is returned via `dataBlock` callback. `block` with `code==0` indicates sync is complete.
 
@@ -2087,19 +2137,19 @@ Method Description:
 
 `+(void)ringGetHistorySensorRaw:(void(^)(int code, id data))block dataBlock:(void(^)(int code, int progress, id data))dataBlock`
 
-dataBlock returns NSArray<NSDictionary>, each element contains:
+`dataBlock` returns `NSArray<NSDictionary *>`; each dictionary represents one sensor data packet:
 
-| Field    | Description     |
-| -------- | --------------- |
-| sensorType | Sensor type (1:PPG 2:ACC 3:PPG Red 4:IR) |
-| sequence | Sequence number |
-| count    | Data count      |
-| ppgData  | PPG data array (when sensorType==1) |
-| accData  | ACC data array (when sensorType==2), each item has x,y,z |
-| ppgRedData | PPG Red data array (when sensorType==3) |
-| irData   | IR data array (when sensorType==4) |
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| sensorType | NSNumber | Data type: 1=PPG, 2=ACC, 3=PPG Red, 4=IR |
+| sequence | NSNumber | Packet sequence starting from 1 and incrementing for every returned packet; all simultaneously enabled sensors share the same sequence |
+| count | NSNumber | Number of samples in the current packet |
+| ppgData | NSArray&lt;NSNumber *&gt; | PPG samples, each int32; present only when sensorType=1 |
+| accData | NSArray&lt;NSDictionary *&gt; | ACC samples, each containing x, y, and z int16 values; present only when sensorType=2 |
+| ppgRedData | NSArray&lt;NSNumber *&gt; | PPG Red samples, each int32; present only when sensorType=3 |
+| irData | NSArray&lt;NSNumber *&gt; | IR samples, each int32; present only when sensorType=4 |
 
-> dataBlock is called only once with the complete result array. progress is always 100.
+> `dataBlock` is called only once with the complete result array, and `progress` is always 100. Raw samples do not contain individual timestamps.
 
 Example of usage:
 
@@ -2114,6 +2164,63 @@ Example of usage:
         }
     }
 }];
+```
+
+##### 5.2.5.3 Sleep State Real-Time Push
+
+> Sleep state data supports only real-time push. Do not call `ringControlSensorRaw` to start or stop it. When supported by the device, sleep state data is automatically pushed during sleep.
+>
+> Function table property: `isSupportSensorRawSleep`.
+>
+> Receive it through the `BluetoothNotificationSensorRawData` notification. The notification `userInfo` contains:
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| sensorType | NSNumber | Fixed at 5, indicating sleep state data |
+| sleepData | NSArray&lt;NSDictionary *&gt; | Sleep state list; each item contains timestamp and mode |
+
+`sleepData` item:
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| timestamp | NSNumber | Unix timestamp in seconds |
+| mode | NSNumber | Sleep mode |
+
+Sleep modes:
+
+| Value | Description |
+| ----- | ----------- |
+| 17 | Sleep start |
+| 34 | Sleep end |
+| 1 | Deep sleep |
+| 2 | Light sleep |
+| 3 | Awake |
+| 4 | REM |
+
+Example:
+
+```objective-c
+// Register when the page is initialized.
+[[NSNotificationCenter defaultCenter] addObserver:self
+                                         selector:@selector(sensorRawDataUpdate:)
+                                             name:BluetoothNotificationSensorRawData
+                                           object:nil];
+
+- (void)sensorRawDataUpdate:(NSNotification *)notification {
+    NSDictionary *userInfo = notification.userInfo;
+    if ([userInfo[@"sensorType"] integerValue] != 5) {
+        return;
+    }
+    NSArray<NSDictionary *> *sleepData = userInfo[@"sleepData"];
+    for (NSDictionary *item in sleepData) {
+        NSLog(@"sleep timestamp=%@ mode=%@", item[@"timestamp"], item[@"mode"]);
+    }
+}
+
+// Remove when the page is destroyed or no longer needs the data.
+[[NSNotificationCenter defaultCenter] removeObserver:self
+                                                name:BluetoothNotificationSensorRawData
+                                              object:nil];
 ```
 
 

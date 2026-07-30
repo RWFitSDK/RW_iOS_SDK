@@ -395,33 +395,59 @@ userInfoModel.age = 20;
 
 
 
-##### 3.2.1.3 获取固件信息
+##### 3.2.1.3 获取设备信息
 
-> 接口说明: 获取固件型号,固件版本号,UI版本号; 
+> 获取设备型号、固件版本号和UI版本号.
+
+方法说明:
+
+`+ (void)getFirmwareVersion:(void(^)(int code, id data))block`
+
+返回说明:
+
+| DHFirmwareVersionModel属性 | 类型 | 说明 |
+| -------------------------- | ---- | ---- |
+| deviceModel | NSString | 设备型号, 每个型号产品的唯一标识 |
+| firmwareVersion | NSString | 固件版本号 |
+| uiVersion | NSString | UI版本号 |
+
+> **注意:** 升级固件前必须校验设备的 `deviceModel` 与升级固件对应的设备型号是否一致, 只有型号一致时才能进行升级, 型号不一致时禁止升级.
+
+调用示例:
 
 ```objective-c
-[DHBleCommand getFirmwareVersion:^(int code, id  _Nonnull data) {
-            if (code == 0){
-                NSLog(@"getFirmwareVersion OK");
-                DHFirmwareVersionModel *model = data;
-                NSLog(@"型号 %@ 固件版本 %@ UI版本 %@", model.deviceModel, model.firmwareVersion, model.uiVersion);
-            }
-        }];
+[DHBleCommand getFirmwareVersion:^(int code, id _Nonnull data) {
+    if (code == 0 && [data isKindOfClass:[DHFirmwareVersionModel class]]) {
+        DHFirmwareVersionModel *model = data;
+        NSLog(@"型号 %@ 固件版本 %@ UI版本 %@",
+              model.deviceModel, model.firmwareVersion, model.uiVersion);
+    }
+}];
 ```
 
+##### 3.2.1.4 获取电量
 
+> APP获取设备的电量信息.
 
-##### 3.2.1.4 **获取电量**
+方法说明:
 
-> 接口说明: app获取设备电量
+`+ (void)getBattery:(void(^)(int code, id data))block`
+
+返回说明:
+
+| DHBatteryInfoModel属性 | 类型 | 说明 |
+| ---------------------- | ---- | ---- |
+| battery | NSInteger | 剩余电量, 范围0-100 |
+
+调用示例:
 
 ```objective-c
-[DHBleCommand getBattery:^(int code, id  _Nonnull data) {
-            if (code == 0){
-                DHBatteryInfoModel *model = data;
-                NSLog(@"getBattery OK 电量值 %zd", model.battery);
-            }
-        }];
+[DHBleCommand getBattery:^(int code, id _Nonnull data) {
+    if (code == 0 && [data isKindOfClass:[DHBatteryInfoModel class]]) {
+        DHBatteryInfoModel *model = data;
+        NSLog(@"设备电量 %zd", model.battery);
+    }
+}];
 ```
 
 ##### 3.2.1.5 获取与设置视频控制开关
@@ -487,6 +513,30 @@ tModeSetModel.lightLevel = 3; //1微光2柔光3强光
 
 ##### 3.2.1.7 获取与设置佩戴位置
 
+> 获取或设置戒指的佩戴位置.
+>
+> 配置表属性: `isWearDir`.
+
+方法说明:
+
+`+ (void)getRingWearHand:(void(^)(int code, id data))block`
+
+`+ (void)setRingWearHand:(UInt8)wearHand block:(void(^)(int code, id data))block`
+
+参数说明:
+
+| 参数 | 类型 | 说明 | 值 |
+| ---- | ---- | ---- | -- |
+| wearHand | UInt8 | 佩戴位置 | 0.左手 1.右手 |
+
+返回说明:
+
+| 返回数据 | 类型 | 说明 |
+| -------- | ---- | ---- |
+| data | NSNumber | 佩戴位置: 0.左手 1.右手 |
+
+调用示例:
+
 ```objective-c
 // 获取佩戴位置
 [DHBleCommand getRingWearHand:^(int code, id  _Nonnull data) {
@@ -507,24 +557,48 @@ uint8_t tModeSetModel = 0; //0左手 1右手
 
 ##### 3.2.1.8 启动与关闭拍照
 
-> 启动拍照功能后,设备可通过手势控制app自定义相机拍照.
+> APP进入自定义相机页面时开启拍照控制, 开启后设备可通过手势通知APP执行拍照; APP退出相机页面时关闭拍照控制.
 >
-> 配置表属性: `isTakePhoto`
+> 配置表属性: `isTakePhoto`.
 >
-> `BluetoothNotificationCameraTakePicture` 设备发出拍照通知,进行拍照
+> 通过 `BluetoothNotificationCameraTakePicture` 接收设备发出的拍照通知.
+
+方法说明:
+
+`+ (void)controlCamera:(NSInteger)type block:(void(^)(int code, id data))block`
+
+参数说明:
+
+| 参数 | 类型 | 说明 | 值 |
+| ---- | ---- | ---- | -- |
+| type | NSInteger | 拍照控制 | 0.关闭拍照 1.开启拍照 |
+
+调用示例:
 
 ```objective-c
-//APP进相机界面启动 1为控制设备进对应界面, 0为控制设备退出
-[DHBleCommand controlCamera:1 block:^(int code, id  _Nonnull data) {
+// APP进入相机页面时调用
+- (void)openCameraPage {
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(cameraTakePictureNotification:)
+                                                 name:BluetoothNotificationCameraTakePicture
+                                               object:nil];
+    [DHBleCommand controlCamera:1 block:^(int code, id _Nonnull data) {
+        NSLog(@"开启拍照控制 code=%d", code);
+    }];
+}
 
-}];
+// APP退出相机页面时调用
+- (void)closeCameraPage {
+    [DHBleCommand controlCamera:0 block:^(int code, id _Nonnull data) {
+        NSLog(@"关闭拍照控制 code=%d", code);
+    }];
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:BluetoothNotificationCameraTakePicture
+                                                  object:nil];
+}
 
-//监听设备发出拍照指令
-[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(cameraTakePictureNotification) name:BluetoothNotificationCameraTakePicture object:nil];
-
-- (void)cameraTakePictureNotification {
-  //进行拍照
-  NSLog(@"cameraTakePictureNotification 进行拍照");
+- (void)cameraTakePictureNotification:(NSNotification *)notification {
+    // 设备发出拍照通知, APP在此执行自定义相机拍照
 }
 ```
 
@@ -1020,6 +1094,8 @@ tHRAlertModel.underValue = 0xff;
 > 设备触摸事件通知, 设备主动上报. 触摸操作无论熄屏与否都会上报, 由APP定义响应行为.
 >
 > 通过 `BluetoothNotificationTouchEvent` 通知返回.
+>
+> **提示:** 此功能为设备端定制功能, 使用前请确认设备厂家已在固件中集成并启用; 未定制或未启用时, APP无法收到触摸事件通知.
 
 通知 userInfo 数据说明:
 
@@ -1659,137 +1735,104 @@ tModeSetModel.interval = 60;
 
 ##### 3.2.2.4 全天检测-健康数据说明
 
-1. 今天与历史计步数据 DHDailyStepModel
+`dataBlock` 每次返回同一种数据类型的模型数组, 不会在同一个数组中混合多种类型.
 
-   今天与历史计步数据都使用 `DHDailyStepModel`。今天数据通常返回一个当天模型；
-   历史数据可能返回多个日期模型，每个模型代表一天。
+> **时间说明:** 本节模型中的 `timestamp`、`beginTime`、`endTime` 以及明细字典中的 `timestamp` 均为Unix时间戳, 单位为秒. 模型时间字段使用 `NSString`; 明细字典时间值为 `NSNumber`.
 
-   | 数据 | 返回内容 | 每日总数 |
-   | ---- | -------- | -------- |
-   | 今天计步 | 当天一个 `DHDailyStepModel` | 使用设备返回的当天总步数、总卡路里和总里程 |
-   | 历史计步 | 可能包含多个日期的 `DHDailyStepModel` | 对当天历史明细的步数、卡路里和里程分别求和 |
+数据类型总览:
 
-   ```objective-c
-   @interface DHDailyStepModel : NSObject
-   
-   /// 日期时间戳（秒）
-   @property (nonatomic, copy) NSString *timestamp;
-   /// 日期yyyyMMdd
-   @property (nonatomic, copy) NSString *date;
-   
-   /// 里程（米）
-   @property (nonatomic, assign) NSInteger distance; //当天的总距离
-   /// 消耗（卡路里）
-   @property (nonatomic, assign) NSInteger calorie; //当天总卡路里
-   /// 步数（步）
-   @property (nonatomic, assign) NSInteger step; //当天总步数
+| 数据 | 每日模型 | `items`明细字典主要字段 |
+| ---- | -------- | ----------------------- |
+| 计步 | DHDailyStepModel | timestamp、index、step、calorie、distance |
+| 睡眠 | DHDailySleepModel | status、value |
+| 心率 | DHDailyHrModel | timestamp、value |
+| 血压 | DHDailyBpModel | timestamp、systolic、diastolic |
+| 血氧 | DHDailyBoModel | timestamp、value |
+| 体温 | DHDailyTempModel | timestamp、value |
+| 压力 | DHDailyPressureModel | timestamp、value |
+| 血糖 | DHDailyBloodSugarModel | timestamp、value |
+| HRV | DHDailyHrvModel | timestamp、value |
+| 赞念 | DHDailyMuslimCountModel | timestamp、index、value |
 
-   /// 计步明细间隔，单位分钟；未配置时默认60
-   @property (nonatomic, assign) NSInteger activityDataInterval;
+普通测量数据:
 
-   /// 每条包含timestamp、index、step、calorie、distance
-   /// timestamp为Unix秒；index为当天按当前计步粒度划分后的明细序号
-   @property (nonatomic,strong) NSMutableArray <NSDictionary *>*items;
-   
-   @end
-   ```
+心率、血压、血氧、体温、压力、血糖和HRV每日模型均包含:
 
-   `activityDataInterval` 表示 `items` 的计步明细间隔，单位为分钟；
-   `60` 表示每小时一条，`10` 表示每10分钟一条，未配置时默认为 `60`。
-   请使用 `timestamp` 作为明细的准确时间。
+| 属性 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| timestamp | NSString | 当天日期对应的Unix时间戳, 单位秒 |
+| date | NSString | 日期, 格式`yyyyMMdd` |
+| items | NSMutableArray&lt;NSDictionary *&gt; | 当天测量明细 |
 
-   
+| 数据 | 明细字段 | 单位或换算 |
+| ---- | -------- | ---------- |
+| 心率 | timestamp、value | bpm |
+| 血压 | timestamp、systolic、diastolic | systolic为收缩压、diastolic为舒张压, 单位mmHg |
+| 血氧 | timestamp、value | % |
+| 体温 | timestamp、value | 实际体温=`value / 10.0`, 单位℃ |
+| 压力 | timestamp、value | 设备压力值, 无标准单位 |
+| 血糖 | timestamp、value | iOS返回的`value`为数值字符串, 数值运算前需先转换 |
+| HRV | timestamp、value | ms |
 
-2. 睡眠数据 DHDailySleepModel
+> **注意:** 血压包含收缩压和舒张压两个值, 不能按单值数据处理. 血糖 `value` 为字符串类型.
 
-   ```objective-c
-   @interface DHDailySleepModel : NSObject
-   
-   /// 时间戳（秒）
-   @property (nonatomic, copy) NSString *timestamp;
-   /// 日期yyyyMMdd
-   @property (nonatomic, copy) NSString *date;
-   
-   /// 总时长（分钟）
-   @property (nonatomic, assign) NSInteger duration;
-   /// 入睡时间（时间戳（秒））
-   @property (nonatomic, copy) NSString *beginTime;
-   /// 醒来时间（时间戳（秒））
-   @property (nonatomic, copy) NSString *endTime;
-   
-   /// 睡眠项 例：@[@{@"status":@0,@"value":@60},...]
-   /// status（睡眠类型）value（时长（分钟））
-   /// status（0.清醒 1.浅睡 2.深睡, 3. REM）
-   @property (nonatomic,strong) NSMutableArray <NSDictionary *>*items;
-   
-   @end
-   ```
+计步数据 `DHDailyStepModel`:
 
-   
+| 属性 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| timestamp | NSString | 当天日期对应的Unix时间戳, 单位秒 |
+| date | NSString | 日期, 格式`yyyyMMdd` |
+| step | NSInteger | 当天总步数 |
+| calorie | NSInteger | 当天总卡路里 |
+| distance | NSInteger | 当天总距离, 单位米 |
+| activityDataInterval | NSInteger | `items`明细间隔, 单位分钟; 未配置时默认60 |
+| items | NSMutableArray&lt;NSDictionary *&gt; | 明细字段为timestamp、index、step、calorie、distance |
 
-3. 心率数据  DHDailyHrModel;
+| 数据 | `dataBlock`中的progress | 返回内容与每日总数 |
+| ---- | ---------------------- | ------------------ |
+| 今天计步 | 1 | 返回当天模型; 总数直接使用设备返回的step、calorie、distance |
+| 历史计步 | 2 | 可能返回多天模型; 每天总数由当天明细分别累加 |
 
-   ```objective-c
-   @interface DHDailyHrModel : NSObject
-   
-   /// 时间戳（秒）
-   @property (nonatomic, copy) NSString *timestamp;
-   /// 日期yyyyMMdd
-   @property (nonatomic, copy) NSString *date;
-   
-   /// 心率项 例：@[@{@"timestamp":@0,@"value":@80},...]
-   /// timestamp（时间戳（秒））value（心率值）
-   @property (nonatomic,strong) NSMutableArray <NSDictionary *>*items;
-   
-   
-   @end
-   ```
+`activityDataInterval=60`表示每小时一条, `10`表示每10分钟一条. 明细时间请以每条 `items.timestamp` 为准.
 
-   **HRV`DHDailyHrvModel`，压力`DHDailyPressureModel`, 血氧`DHDailyBoModel`,血糖`DHDailyBloodSugarModel`与心率类似可参考对应类**
+睡眠数据 `DHDailySleepModel`:
 
-   
+| 属性 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| timestamp | NSString | 日期对应的Unix时间戳, 单位秒 |
+| date | NSString | 日期, 格式`yyyyMMdd` |
+| duration | NSInteger | 总睡眠时长, 单位分钟 |
+| beginTime | NSString | 入睡时间, Unix时间戳秒 |
+| endTime | NSString | 醒来时间, Unix时间戳秒 |
+| items | NSMutableArray&lt;NSDictionary *&gt; | 每条包含status和value |
 
-4. Muslim赞念数据 DHDailyMuslimCountModel
+睡眠明细中 `value` 为该阶段时长, 单位分钟; `status`: 0.清醒 1.浅睡 2.深睡 3.REM.
 
-   ```objective-c
-   @interface DHDailyMuslimCountModel : NSObject
-   /// 时间戳（秒）
-   @property (nonatomic, copy) NSString *timestamp;
-   /// 日期yyyyMMdd
-   @property (nonatomic, copy) NSString *date;
-   
-   @property (nonatomic, assign) NSInteger muslimcount;
-   
-   /// 赞念项 例：@[@{@"timestamp":@0,@"value":@80},...]
-   /// timestamp（时间戳（秒））value（每小时赞念值）
-   @property (nonatomic,strong) NSMutableArray <NSDictionary *>*items; //注意,这里的每小时为累加值赞念
-   
-   @end
-   ```
+赞念数据 `DHDailyMuslimCountModel`:
 
-5. 体温数据 DHDailyTempModel
+| 属性 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| timestamp | NSString | 日期对应的Unix时间戳, 单位秒 |
+| date | NSString | 日期, 格式`yyyyMMdd` |
+| muslimcount | NSInteger | 当天赞念总数 |
+| items | NSMutableArray&lt;NSDictionary *&gt; | 每条包含timestamp、index、value |
 
-   ```objective-c
-   @interface DHDailyTempModel : NSObject
-   
-   /// 时间戳（秒）
-   @property (nonatomic, copy) NSString *timestamp;
-   /// 日期yyyyMMdd
-   @property (nonatomic, copy) NSString *date;
-   
-   /// 体温项 例：@[@{@"timestamp":@0,@"value":@365},...]
-   /// timestamp（时间戳（秒））value（体温值*10, 如365=36.5°C）
-   @property (nonatomic,strong) NSMutableArray <NSDictionary *>*items;
-   
-   @end
-   ```
+赞念明细按小时返回, `value` 为小时累计值.
 
 
 #### 3.2.3 OTA升级
 
 > [!NOTE]
 >
-> ota升级文件需从厂家生成取得，确定无误后再进行测试. 防止升级出错变砖.
+> OTA升级文件需由厂家提供并确认适用于当前产品. 升级前必须先按[3.2.1.3 获取设备信息](#3213-获取设备信息)读取 `DHFirmwareVersionModel.deviceModel`, 与厂家提供的升级文件目标型号进行比较. 只有型号一致时才能升级, 型号为空或不一致时必须终止, 防止使用错误固件导致设备无法使用.
+
+升级前校验:
+
+| 数据 | 来源 | 用途 |
+| ---- | ---- | ---- |
+| deviceModel | `DHFirmwareVersionModel.deviceModel` | 当前设备型号, 每个型号产品的唯一标识 |
+| 固件目标型号 | 厂家随升级文件提供 | 必须与deviceModel完全一致 |
+| firmwareVersion | `DHFirmwareVersionModel.firmwareVersion` | 可用于判断当前版本是否需要升级 |
 
 方法说明:
 
@@ -1805,10 +1848,27 @@ tModeSetModel.interval = 60;
 调用示例:
 
 ```objective-c
-NSString *tFilePath = @""; //bin文件路径,厂家提供
-NSData *fileData = [NSData dataWithContentsOfFile:tFilePath];
-[DHBleCommand ringOtaWithFileData:fileData block:^(int code, CGFloat progress, id  _Nonnull data) {
-    NSLog(@"OTA code %d progress %.2f", code, progress);
+[DHBleCommand getFirmwareVersion:^(int code, id _Nonnull data) {
+    if (code != 0 || ![data isKindOfClass:[DHFirmwareVersionModel class]]) {
+        return;
+    }
+
+    DHFirmwareVersionModel *version = data;
+    NSString *firmwareTargetModel = @"厂家提供的升级文件目标型号";
+    if (version.deviceModel.length == 0 ||
+        ![version.deviceModel isEqualToString:firmwareTargetModel]) {
+        NSLog(@"设备型号不匹配, 禁止升级");
+        return;
+    }
+
+    NSString *filePath = @""; //厂家提供的固件文件路径
+    NSData *fileData = [NSData dataWithContentsOfFile:filePath];
+    if (fileData.length == 0) {
+        return;
+    }
+    [DHBleCommand ringOtaWithFileData:fileData block:^(int otaCode, CGFloat progress, id _Nonnull otaData) {
+        NSLog(@"OTA code %d progress %.2f", otaCode, progress);
+    }];
 }];
 ```
 #### 3.2.4 多运动Workout
@@ -2012,13 +2072,22 @@ BleActivityMode 对应名字见示例Demo 字符串里定义:
 
 #### 5.2.5 传感器原始数据
 
-> PPG/ACC/PPG Red/IR传感器原始数据采集与睡眠实时数据;
->
-> 配置表属性: `isSupportSensorRawPPG` (PPG), `isSupportSensorRawACC` (ACC), `isSupportSensorRawPPGRed` (PPG Red), `isSupportSensorRawIR` (IR), `isSupportSensorRawSleep` (睡眠实时数据);
->
-> **注意: 睡眠实时数据(sensorType=5)无需手动启动与关闭, 设备支持此功能时会在睡眠过程中自动推送, 通过相同的通知 `BluetoothNotificationHealthRingSenorRawChange` 接收即可.**
+本节包含两种不同的数据方式:
 
-sensorType 合法组合:
+| 数据 | 获取方式 | 说明 |
+| ---- | -------- | ---- |
+| PPG/ACC/PPG Red/IR原始数据 | 历史获取 | APP控制设备开始/停止采集, 采集完成后主动同步历史数据 |
+| 睡眠状态数据 | 实时推送 | 设备在睡眠过程中自动推送, APP只需监听通知 |
+
+> [!IMPORTANT]
+>
+> PPG/ACC/PPG Red/IR原始数据不支持实时推送, 仅支持历史方式获取; 睡眠状态数据只使用实时推送, 不通过历史原始数据接口获取.
+>
+> 当前历史原始数据采样率最高可达100Hz, 最多支持约1分钟测试数据. 每个采样点不单独记录时间戳, 无法还原每个采样点的绝对时间.
+>
+> 配置表属性: `isSupportSensorRawPPG` (PPG), `isSupportSensorRawACC` (ACC), `isSupportSensorRawPPGRed` (PPG Red), `isSupportSensorRawIR` (IR), `isSupportSensorRawSleep` (睡眠实时数据).
+
+PPG/ACC/PPG Red/IR历史采集的 `sensorType` 合法组合:
 
 | 值   | 含义              | 说明                    |
 | ---- | ----------------- | ----------------------- |
@@ -2033,17 +2102,8 @@ sensorType 合法组合:
 | 13   | 红光 + ACC + 红外 | 红光、ACC与红外同时输出 |
 
 > **规则: 绿光与红光不能共存; 红外不能单独启动,必须与绿光或红光组合使用.**
-
-返回数据格式说明:
-
-| 字段       | 说明                                |
-| ---------- | ----------------------------------- |
-| sensorType | 类型: 1=PPG, 2=ACC, 3=PPG Red, 4=IR, 5=睡眠实时数据 |
-| ppgData    | PPG数据数组, 每项为int32            |
-| accData    | ACC数据数组, 每项为{x,y,z} (int16)  |
-| ppgRedData | PPG Red数据数组, 每项为int32        |
-| irData     | IR红外数据数组, 每项为int32         |
-| sleepData  | type=5时的睡眠数据数组, 每项为{timestamp, mode}; mode: 17=睡眠开始, 34=睡眠结束, 1=深睡, 2=浅睡, 3=清醒, 4=REM |
+>
+> **注意:** 控制接口的 `sensorType` 是传感器按位组合值, 返回字典的 `sensorType` 是数据类型, 两者编号定义不同. 例如控制 `sensorType=1` 表示开启ACC, 而历史数据 `sensorType=1` 表示PPG; 控制 `sensorType=5` 表示红光+ACC, 而睡眠实时数据 `sensorType=5` 表示睡眠状态.
 
 
 ##### 5.2.5.0 PPG定时监测
@@ -2091,6 +2151,8 @@ tModeSetModel.interval = 60;
 
 ##### 5.2.5.1 启动与关闭传感器原始数据
 
+> 本接口仅用于控制PPG/ACC/PPG Red/IR历史原始数据采集, 睡眠实时数据无需调用此接口.
+>
 > block 回调 code==0 表示启动/关闭成功;
 >
 > 设备也可能主动停止传感器, 通过 `BluetoothNotificationHealthRingSenorStopChange` 通知.
@@ -2121,50 +2183,17 @@ tModeSetModel.interval = 60;
 
 //关闭PPG+ACC原始数据输出
 [DHBleCommand ringControlSensorRaw:2 type:3 block:^(int code, id data) {}];
+
+// 页面销毁或不再监听时移除
+[[NSNotificationCenter defaultCenter] removeObserver:self
+                                                name:BluetoothNotificationHealthRingSenorStopChange
+                                              object:nil];
 ```
 
 
-##### 5.2.5.2 数据获取方式
+##### 5.2.5.2 历史原始数据获取
 
-> 传感器原始数据有两种获取方式, **由设备端决定使用哪种,APP不可选择**:
->
-> (1) 实时推送: 启动后设备实时推送数据到APP;
->
-> (2) 历史获取: 设备先采集保存,APP后续主动同步获取;
-
-###### 5.2.5.2.1 实时推送
-
-> 启动传感器后, 设备实时推送原始数据;
->
-> 通过 `BluetoothNotificationSensorRawData` 通知返回.
-
-调用示例:
-
-```objective-c
-[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(sensorRawDataUpdate:) name:BluetoothNotificationSensorRawData object:nil];
-
-- (void)sensorRawDataUpdate:(NSNotification *)ntf
-{
-    NSDictionary *tUserInfo = ntf.userInfo;
-    NSInteger tType = [tUserInfo[@"sensorType"] integerValue];
-    if (tType == 2) {
-        NSLog(@"ACC count=%zd", [tUserInfo[@"accData"] count]);
-    } else if (tType == 1) {
-        NSLog(@"PPG count=%zd", [tUserInfo[@"ppgData"] count]);
-    } else if (tType == 3) {
-        NSLog(@"PPG Red count=%zd", [tUserInfo[@"ppgRedData"] count]);
-    } else if (tType == 4) {
-        NSLog(@"IR count=%zd", [tUserInfo[@"irData"] count]);
-    } else if (tType == 5) {
-        NSArray *sleepData = tUserInfo[@"sleepData"];
-        NSLog(@"Sleep count=%zd", sleepData.count);
-    }
-}
-```
-
-###### 5.2.5.2.2 历史获取
-
-> 获取设备保存的传感器历史原始数据, 类似多运动数据同步方式;
+> PPG/ACC/PPG Red/IR原始数据仅支持历史方式获取. 设备先采集并保存数据, APP后续通过 `ringGetHistorySensorRaw` 主动同步获取;
 >
 > 数据通过 `dataBlock` 回调返回, `block` 的 `code==0` 表示同步完成.
 
@@ -2172,19 +2201,19 @@ tModeSetModel.interval = 60;
 
 `+(void)ringGetHistorySensorRaw:(void(^)(int code, id data))block dataBlock:(void(^)(int code, int progress, id data))dataBlock`
 
-dataBlock 返回 NSArray<NSDictionary>, 每个元素包含以下字段:
+`dataBlock` 返回 `NSArray<NSDictionary *>`, 每个字典表示一个传感器数据包:
 
-| 字段     | 说明 |
-| -------- | ---- |
-| sensorType | 传感器类型(1:PPG 2:ACC 3:PPG Red 4:IR) |
-| sequence | 序号 |
-| count    | 数据个数 |
-| ppgData  | PPG数据数组(sensorType==1时) |
-| accData  | ACC数据数组(sensorType==2时), 每项含x,y,z |
-| ppgRedData | PPG Red数据数组(sensorType==3时) |
-| irData   | IR数据数组(sensorType==4时) |
+| 字段 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| sensorType | NSNumber | 数据类型: 1=PPG, 2=ACC, 3=PPG Red, 4=IR |
+| sequence | NSNumber | 数据包序号, 从1开始, 每返回一个数据包递增一次; 同时开启多个传感器时共用同一序号 |
+| count | NSNumber | 当前数据包的采样点数 |
+| ppgData | NSArray&lt;NSNumber *&gt; | PPG数据, 每项为int32; 仅sensorType=1时存在 |
+| accData | NSArray&lt;NSDictionary *&gt; | ACC数据, 每项包含x、y、z三个int16值; 仅sensorType=2时存在 |
+| ppgRedData | NSArray&lt;NSNumber *&gt; | PPG Red数据, 每项为int32; 仅sensorType=3时存在 |
+| irData | NSArray&lt;NSNumber *&gt; | IR数据, 每项为int32; 仅sensorType=4时存在 |
 
-> dataBlock 只回调一次，传入完整结果数组。progress 固定为100。
+> `dataBlock` 只回调一次并传入完整结果数组, `progress` 固定为100. 原始采样点不包含独立时间戳.
 
 调用示例:
 
@@ -2199,6 +2228,63 @@ dataBlock 返回 NSArray<NSDictionary>, 每个元素包含以下字段:
         }
     }
 }];
+```
+
+##### 5.2.5.3 睡眠状态实时推送
+
+> 睡眠状态数据只支持实时推送. 无需调用 `ringControlSensorRaw` 启动或关闭; 设备支持此功能时, 会在睡眠过程中自动推送.
+>
+> 配置表属性: `isSupportSensorRawSleep`.
+>
+> 通过 `BluetoothNotificationSensorRawData` 通知接收, 通知的 `userInfo` 包含以下字段:
+
+| 字段 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| sensorType | NSNumber | 固定为5, 表示睡眠状态数据 |
+| sleepData | NSArray&lt;NSDictionary *&gt; | 睡眠状态列表, 每项包含timestamp和mode |
+
+`sleepData`明细:
+
+| 字段 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| timestamp | NSNumber | Unix时间戳, 单位秒 |
+| mode | NSNumber | 睡眠模式 |
+
+睡眠模式:
+
+| 值 | 说明 |
+| -- | ---- |
+| 17 | 睡眠开始 |
+| 34 | 睡眠结束 |
+| 1 | 深睡 |
+| 2 | 浅睡 |
+| 3 | 清醒 |
+| 4 | REM |
+
+调用示例:
+
+```objective-c
+// 页面初始化时注册
+[[NSNotificationCenter defaultCenter] addObserver:self
+                                         selector:@selector(sensorRawDataUpdate:)
+                                             name:BluetoothNotificationSensorRawData
+                                           object:nil];
+
+- (void)sensorRawDataUpdate:(NSNotification *)notification {
+    NSDictionary *userInfo = notification.userInfo;
+    if ([userInfo[@"sensorType"] integerValue] != 5) {
+        return;
+    }
+    NSArray<NSDictionary *> *sleepData = userInfo[@"sleepData"];
+    for (NSDictionary *item in sleepData) {
+        NSLog(@"sleep timestamp=%@ mode=%@", item[@"timestamp"], item[@"mode"]);
+    }
+}
+
+// 页面销毁或不再接收时移除
+[[NSNotificationCenter defaultCenter] removeObserver:self
+                                                name:BluetoothNotificationSensorRawData
+                                              object:nil];
 ```
 
 
@@ -2253,7 +2339,7 @@ dataBlock 返回 NSArray<NSDictionary>, 每个元素包含以下字段:
 
 **V2.0.0_20260408** (2026.04.08)
 
-- 添加传感器原始数据历史获取功能(5.2.5.2.2)
+- 添加传感器原始数据历史获取功能(5.2.5.2)
 - 添加闹钟震动时长设置(3.2.1.20)
 - 修改设置睡眠模式、功能表用错问题
 - 添加触摸事件通知(3.2.1.21)
