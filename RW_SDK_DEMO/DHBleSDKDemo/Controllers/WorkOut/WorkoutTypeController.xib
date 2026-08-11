@@ -33,7 +33,7 @@
             <constraints>
                 <constraint firstItem="d6F-7N-mLN" firstAttribute="leading" secondItem="Q5M-cg-NOt" secondAttribute="leading" id="IZ5-eY-5H1"/>
                 <constraint firstItem="d6F-7N-mLN" firstAttribute="bottom" secondItem="Q5M-cg-NOt" secondAttribute="bottom" id="hpq-ZT-gbs"/>
-                <constraint firstItem="d6F-7N-mLN" firstAttribute="top" secondItem="Q5M-cg-NOt" secondAttribute="top" constant="80" id="n9d-V5-QTM"/>
+                <constraint firstItem="d6F-7N-mLN" firstAttribute="top" secondItem="Q5M-cg-NOt" secondAttribute="top" id="n9d-V5-QTM"/>
                 <constraint firstItem="Q5M-cg-NOt" firstAttribute="trailing" secondItem="d6F-7N-mLN" secondAttribute="trailing" id="oVq-cX-Y2A"/>
             </constraints>
             <point key="canvasLocation" x="-124.42748091603053" y="100"/>

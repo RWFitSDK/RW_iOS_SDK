@@ -5,11 +5,11 @@
 //  Created by DHS on 2025/1/14.
 //
 
-#import "BaseViewController.h"
+#import <UIKit/UIKit.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface NewHomeController : BaseViewController
+@interface NewHomeController : UIViewController
 
 @property (nonatomic, strong) DHPeripheralModel *deviceModel;
 

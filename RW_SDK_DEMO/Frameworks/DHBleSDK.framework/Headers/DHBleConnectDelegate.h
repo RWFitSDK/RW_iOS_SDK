@@ -11,6 +11,13 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/// 设备断开原因。新增值只追加在枚举尾部，避免影响已有取值。
+typedef NS_ENUM(NSInteger, DHBleDisconnectReason) {
+    DHBleDisconnectReasonUnknown = 0,
+    DHBleDisconnectReasonManualDisconnect,
+    DHBleDisconnectReasonPasswordAuthFailed,
+};
+
 @protocol DHBleConnectDelegate <NSObject>
 
 @optional
@@ -27,9 +34,15 @@ NS_ASSUME_NONNULL_BEGIN
 /// @param deviceFuncModel 设备
 - (void)centralManagerDidFunctionMenu:(DeviceFuncV2Model *)deviceFuncModel peripheral:(DHPeripheralModel *)peripheral;
 
-/// 断开连接
+/// 断开连接（已废弃），请使用 centralManagerDidDisconnectPeripheral:reason:
 /// @param peripheral 设备
-- (void)centralManagerDidDisconnectPeripheral:(CBPeripheral *)peripheral;
+- (void)centralManagerDidDisconnectPeripheral:(CBPeripheral *)peripheral
+    DEPRECATED_MSG_ATTRIBUTE("Use centralManagerDidDisconnectPeripheral:reason: instead.");
+
+/// 断开连接并返回原因。实现该方法后，SDK不再重复调用上面的旧断开回调。
+/// @param peripheral 设备
+/// @param reason 断开原因；密码认证失败对应DHBleDisconnectReasonPasswordAuthFailed
+- (void)centralManagerDidDisconnectPeripheral:(CBPeripheral *)peripheral reason:(DHBleDisconnectReason)reason;
 
 /// 连接失败
 /// @param peripheral 设备

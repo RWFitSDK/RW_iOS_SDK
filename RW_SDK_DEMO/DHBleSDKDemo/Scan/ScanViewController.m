@@ -26,6 +26,7 @@
 @property (nonatomic, strong) NSArray *deviceTempArray;
 
 @property (nonatomic, assign) BOOL isReady;
+@property (nonatomic, strong) UIButton *scanButton;
 
 @end
 
@@ -50,21 +51,27 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    
+    self.title = NSLocalizedString(@"rw_scan_device", nil);
+    self.edgesForExtendedLayout = UIRectEdgeNone;
+    self.view.backgroundColor = HomeColor_BackgroundColor;
     [self setupUI];
 }
 
-- (void)navRightButtonClick:(UIButton *)sender {
+- (void)scanButtonClick:(UIButton *)sender {
     [self startScan];
 }
 
 #pragma mark - custom action for UI 界面处理有关
 
 - (void)setupUI {
+    self.scanButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    self.scanButton.frame = CGRectMake(0, 0, 44, 44);
+    [self.scanButton setImage:[UIImage imageNamed:@"public_nav_refresh"] forState:UIControlStateNormal];
+    [self.scanButton addTarget:self action:@selector(scanButtonClick:) forControlEvents:UIControlEventTouchUpInside];
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:self.scanButton];
     [self.myTableView mas_makeConstraints:^(MASConstraintMaker *make) {
         make.left.right.offset(0);
-        make.top.equalTo(self.navigationView.mas_bottom).offset(10);
-        make.bottom.offset(-kBottomHeight);
+        make.top.bottom.offset(0);
     }];
 }
 
@@ -77,18 +84,18 @@
     animation.fillMode =kCAFillModeForwards;
     animation.removedOnCompletion = NO;
     animation.repeatCount = MAXFLOAT;
-    [self.navigationView.navRightButton.layer addAnimation:animation forKey:nil];
-    self.navigationView.navRightButton.userInteractionEnabled = NO;
+    [self.scanButton.layer addAnimation:animation forKey:nil];
+    self.scanButton.userInteractionEnabled = NO;
 }
 
 - (void)removeAnimation {
-    [self.navigationView.navRightButton.layer removeAllAnimations];
-    self.navigationView.navRightButton.userInteractionEnabled = YES;
+    [self.scanButton.layer removeAllAnimations];
+    self.scanButton.userInteractionEnabled = YES;
 }
 
 - (void)startScan {
     if ([DHBleCentralManager isPoweredOff]) {
-        SHOWHUD(@"手机蓝牙未开启")
+        SHOWHUD(NSLocalizedString(@"rw_bluetooth_off", nil))
         return;
     }
     
@@ -111,7 +118,7 @@
 
 - (void)checkConnecting {
     [DHBluetoothManager shareInstance].isConnected = NO;
-    SHOWHUD(@"连接失败")
+    SHOWHUD(NSLocalizedString(@"rw_connect_failed", nil))
     
     [DHBleCentralManager disconnectDevice];
 }
@@ -147,7 +154,7 @@
 
 - (void)centralManagerDidConnectPeripheral:(CBPeripheral *)peripheral {
     [NSObject cancelPreviousPerformRequestsWithTarget:self];
-    SHOWHUD(@"连接成功")
+    SHOWHUD(NSLocalizedString(@"rw_connect_success", nil))
     [DHBluetoothManager shareInstance].isConnected = YES;
     
 }
@@ -173,13 +180,18 @@
     [self.navigationController popToRootViewControllerAnimated:YES];
 }
 
-- (void)centralManagerDidDisconnectPeripheral:(CBPeripheral *)peripheral {
+- (void)handleDisconnectedPeripheral:(CBPeripheral *)peripheral {
     [NSObject cancelPreviousPerformRequestsWithTarget:self];
     [DHBluetoothManager shareInstance].isConnected = NO;
     
     [DHBluetoothManager shareInstance].deviceFuncV2Model = nil; //断开清理,防止使用老值
 
     HUDDISS
+}
+
+- (void)centralManagerDidDisconnectPeripheral:(CBPeripheral *)peripheral reason:(DHBleDisconnectReason)reason {
+    NSLog(@"centralManagerDidDisconnectPeripheral reason=%ld", (long)reason);
+    [self handleDisconnectedPeripheral:peripheral];
 }
 
 - (void)centralManagerDidFailedPeripheral:(CBPeripheral *)peripheral {
@@ -219,10 +231,10 @@
 
 -(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     if ([DHBleCentralManager isPoweredOff]) {
-        SHOWHUD(@"手机蓝牙未开启")
+        SHOWHUD(NSLocalizedString(@"rw_bluetooth_off", nil))
         return;
     }
-    SHOWHUDNODISS(@"正在连接")
+    SHOWHUDNODISS(NSLocalizedString(@"rw_connecting", nil))
     [self removeAnimation];
     [DHBleCentralManager stopScan];
 

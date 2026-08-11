@@ -120,9 +120,21 @@ DHPeripheralModel *deviceModel = self.deviceArray[indexPath.row];
 | centralManagerDidDiscoverPeripheral   | startScan 调用后,搜索到设备后会回调返回              |
 | centralManagerDidConnectPeripheral    | connectDeviceWithModel后,连接成功会返回.             |
 | centralManagerDidFunctionMenu         | 成功获取设备配置表后会返回;业务操作应该在此之后操作. |
-| centralManagerDidDisconnectPeripheral | 蓝牙断开会回调                                       |
+| centralManagerDidDisconnectPeripheral | 蓝牙断开会回调；实现带 `reason` 的新方法后，可获取断开原因 |
 | centralManagerDidFailedPeripheral     | 蓝牙失败会回调                                       |
 | centralManagerDidUpdateState          | 蓝牙开关状态变化会回调                               |
+
+带断开原因的回调:
+
+`-(void)centralManagerDidDisconnectPeripheral:(CBPeripheral *)peripheral reason:(DHBleDisconnectReason)reason`
+
+| 枚举值                                    | 说明             |
+| ----------------------------------------- | ---------------- |
+| `DHBleDisconnectReasonUnknown`            | 未知或普通断开   |
+| `DHBleDisconnectReasonManualDisconnect`   | App主动断开      |
+| `DHBleDisconnectReasonPasswordAuthFailed` | 设备密码认证失败 |
+
+> 实现带 `reason` 的新方法后，SDK不再重复调用原有的 `centralManagerDidDisconnectPeripheral:`；未实现新方法时，仍回调原有方法。
 
 > [!TIP]
 >
@@ -234,6 +246,7 @@ DeviceFuncV2Model类属性定义:
 | isSupportSensorRawSleep     | 是否支持睡眠实时数据       |
 | isSupportFallDetect         | 是否支持跌落提醒           |
 | isSupportRecording          | 是否支持录音功能           |
+| isSupportDevicePasswordAuth | 是否支持设备密码认证       |
 
 ##### 3.1.8 使用外部 CBCentralManager 搜索并由 SDK 连接
 
@@ -452,12 +465,18 @@ userInfoModel.age = 20;
 
 ##### 3.2.1.5 获取与设置视频控制开关
 
-> 设置是否开启戒指手势控制刷视频; <u>此功能需配对蓝牙HID.</u>
+> 设置戒指手势控制模式; <u>此功能需配对蓝牙HID.</u>
+
+参数说明:
+
+| 参数     | 类型 | 说明         | 值                                             |
+| -------- | ---- | ------------ | ---------------------------------------------- |
+| `isOpen` | int  | 视频控制模式 | `0`: 关闭，`1`: 视频，`2`: Book，`3`: Music |
 
 ```objective-c
 //设置视频控制开关
 DHVideoHidSetModel *tModeSetModel = [[DHVideoHidSetModel alloc] init];
-tModeSetModel.isOpen = YES;
+tModeSetModel.isOpen = 1; //0关闭，1视频，2 Book，3 Music
 [DHBleCommand setVideoHid:tModeSetModel block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"setVideoHid OK");
@@ -468,7 +487,7 @@ tModeSetModel.isOpen = YES;
 [DHBleCommand getVideoHid:^(int code, id  _Nonnull data) {
   if (code == 0){
     DHVideoHidSetModel *model = data;
-    NSLog(@"getVideoHid OK 开关 %d", model.isOpen);
+    NSLog(@"getVideoHid OK 模式 %d", model.isOpen);
   }
 }];
 ```
@@ -1274,6 +1293,72 @@ tHRAlertModel.underValue = 0xff;
 ```
 
 
+
+##### 3.2.1.26 设备密码认证
+
+> 设备是否支持密码认证通过功能配置表属性 `isSupportDevicePasswordAuth` 判断。
+>
+> 密码为4位数字。传入 `nil` 或空字符串时按默认密码 `0000` 处理。
+>
+> 支持密码认证的设备，认证成功后才回调 `centralManagerDidFunctionMenu`；认证失败时SDK主动断开，并返回 `DHBleDisconnectReasonPasswordAuthFailed`。不支持的设备沿用原连接流程。
+
+```mermaid
+flowchart TD
+    A["是否支持密码认证"] -->|不支持| B["进入业务可用状态<br/>回调 centralManagerDidFunctionMenu"]
+    A -->|支持| C["使用预设密码自动认证"]
+    C -->|认证成功| B
+    C -->|认证失败：PasswordAuthFailed| D["主动断开<br/>centralManagerDidDisconnectPeripheral:reason:"]
+```
+
+###### 3.2.1.26.1 设置自动认证密码
+
+`+(void)prepareAutoPassword:(nullable NSString *)password`
+
+> 设置SDK连接时自动认证使用的密码。可在SDK初始化后提前设置，但必须在连接设备前完成调用；该密码同时用于后续已绑定设备的自动重连。
+
+输入参数说明:
+
+| 参数       | 类型       | 说明                                               |
+| ---------- | ---------- | -------------------------------------------------- |
+| `password` | `NSString` | 4位数字密码；传入 `nil` 或空字符串时按 `0000` 处理 |
+
+返回回调说明:
+
+| 回调方法                                                  | 返回值                                      | 说明                               |
+| --------------------------------------------------------- | ------------------------------------------- | ---------------------------------- |
+| `centralManagerDidFunctionMenu:peripheral:`               | `DeviceFuncV2Model`                         | 密码认证成功，设备进入业务可用状态 |
+| `centralManagerDidDisconnectPeripheral:reason:`           | `DHBleDisconnectReasonPasswordAuthFailed`   | 密码认证失败，SDK会主动断开设备    |
+
+调用示例:
+
+```objective-c
+//可在SDK初始化后提前设置；连接前确保已经传入当前账号对应的4位密码。
+[DHBleCommand prepareAutoPassword:@"1234"];
+[DHBleCentralManager connectDeviceWithModel:deviceModel];
+
+//密码认证成功后，设备才进入业务可用状态。
+- (void)centralManagerDidFunctionMenu:(DeviceFuncV2Model *)deviceFuncModel
+                           peripheral:(DHPeripheralModel *)peripheral {
+    NSLog(@"Device ready");
+}
+```
+
+###### 3.2.1.26.2 修改设备密码
+
+`+(void)modifyDevicePwd:(nullable NSString *)password completion:(void (^ _Nullable)(BOOL success))completion`
+
+> 在设备已连接且密码认证成功后修改设备密码。`success` 为 `YES` 表示设备确认修改成功。正常解绑时，应先将设备密码修改为 `0000`，确认成功后再清除本地绑定并断开连接。
+
+调用示例:
+
+```objective-c
+[DHBleCommand modifyDevicePwd:@"0000" completion:^(BOOL success) {
+    if (success) {
+        [DHBleCentralManager setBindedStatus:NO];
+        [DHBleCentralManager disconnectDevice];
+    }
+}];
+```
 
 #### 3.2.2 健康数据同步(实时单次与全天检测)
 
@@ -2290,6 +2375,10 @@ tModeSetModel.interval = 60;
 
 
 ## SDK修订记录
+
+**V2.0.0_20260807** (2026.08.07)
+
+- 添加设备密码认证功能(3.2.1.26)
 
 **V2.0.0_20260724** (2026.07.24)
 

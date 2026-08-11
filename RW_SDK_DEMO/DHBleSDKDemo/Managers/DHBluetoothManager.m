@@ -65,6 +65,7 @@ static DHBluetoothManager * _shared = nil;
 
 - (void)clearSavedDeviceInfo
 {
+    self.deviceFuncV2Model = nil;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults removeObjectForKey:DHSavedDeviceNameKey];
     [defaults removeObjectForKey:DHSavedDeviceMacKey];
@@ -105,13 +106,19 @@ static DHBluetoothManager * _shared = nil;
 {
     self.deviceFuncV2Model = deviceFuncModel;
     [self saveDeviceInfoWithModel:peripheral];
-    
+    // 功能表到达后刷新首页与设备页，按设备能力生成对应功能项。
+    [[NSNotificationCenter defaultCenter] postNotificationName:BluetoothNotificationConnectStateChange object:nil];
 }
 
-- (void)centralManagerDidDisconnectPeripheral:(CBPeripheral *)peripheral {
+- (void)handleDisconnectedPeripheral:(CBPeripheral *)peripheral {
     self.isConnected = NO;
     self.deviceFuncV2Model = nil;
     [[NSNotificationCenter defaultCenter] postNotificationName:BluetoothNotificationConnectStateChange object:nil];
+}
+
+- (void)centralManagerDidDisconnectPeripheral:(CBPeripheral *)peripheral reason:(DHBleDisconnectReason)reason {
+    NSLog(@"centralManagerDidDisconnectPeripheral reason=%ld", (long)reason);
+    [self handleDisconnectedPeripheral:peripheral];
 }
 
 - (void)centralManagerDidFailedPeripheral:(CBPeripheral *)peripheral {

@@ -23,7 +23,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view from its nib.
-    self.navigationItem.title = @"All Run Type";
+    self.navigationItem.title = NSLocalizedString(@"rw_sport_types", nil);
     
     self.sportTypeList = @[//7
         @"str_jl_Running", @"str_jl_Treadmill", @"str_jl_Outdoorrunning", @"str_jl_Cycling",

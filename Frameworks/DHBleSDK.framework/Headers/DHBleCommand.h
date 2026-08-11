@@ -53,9 +53,20 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface DHBleCommand : NSObject
 
-#pragma mark - 基础功能指令
+#pragma mark - SDK信息
 
 + (NSString *)getSDKVersion;
+
+#pragma mark - 设备密码
+
+/// 连接前设置SDK自动认证使用的4位数字密码；空字符串按0000处理。
++ (void)prepareAutoPassword:(nullable NSString *)password;
+/// 修改设备密码并返回本次指令结果；正常解绑前应先修改为0000。
++ (void)modifyDevicePwd:(nullable NSString *)password completion:(void (^ _Nullable)(BOOL success))completion;
+/// 为下一次连接准备防伪Key授权重置参数。
++ (void)preparePasswordReset:(NSString *)antiCounterfeitKey targetPassword:(nullable NSString *)targetPassword;
+
+#pragma mark - 基础功能指令
 
 + (void)ringGetMacAddress:(void(^)(int code, id data))block;
 

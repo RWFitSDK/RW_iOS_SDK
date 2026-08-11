@@ -67,6 +67,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// 蓝牙连接代理
 @property (nonatomic, weak) id<DHBleConnectDelegate> connectDelegate;
+/// SDK内部自动重连状态。宿主切换设备前可设置为NO，停止遗留重连状态。
+@property (nonatomic, assign) BOOL isAutoReconnecting;
+/// SDK内部自动重连超时定时器。宿主切换设备前可主动失效，避免旧任务再次发起连接。
+@property (nonatomic, strong, nullable) NSTimer *reconnectTimeoutTimer;
 
 @end
 

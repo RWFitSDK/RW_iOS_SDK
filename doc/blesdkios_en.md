@@ -117,9 +117,21 @@ DHPeripheralModel *deviceModel = self.deviceArray[indexPath.row];
 | centralManagerDidDiscoverPeripheral   | After calling `startScan`, the system will return a callback when a device is found. |
 | centralManagerDidConnectPeripheral    | After calling `connectDeviceWithModel`, the function will return upon successful connection. |
 | centralManagerDidFunctionMenu         | The function will return after successfully obtaining the device configuration table; business operations should be performed after this point. |
-| centralManagerDidDisconnectPeripheral | A callback function will be triggered when the Bluetooth connection is disconnected. |
+| centralManagerDidDisconnectPeripheral | Called when Bluetooth disconnects. Implement the new method with `reason` to obtain the disconnection reason. |
 | centralManagerDidFailedPeripheral     | Bluetooth failure will trigger a callback.                   |
 | centralManagerDidUpdateState          | The Bluetooth switch state change will trigger a callback.   |
+
+Disconnection callback with reason:
+
+`-(void)centralManagerDidDisconnectPeripheral:(CBPeripheral *)peripheral reason:(DHBleDisconnectReason)reason`
+
+| Enum Value                                | Description                    |
+| ----------------------------------------- | ------------------------------ |
+| `DHBleDisconnectReasonUnknown`            | Unknown or normal disconnection |
+| `DHBleDisconnectReasonManualDisconnect`   | Disconnected by the App        |
+| `DHBleDisconnectReasonPasswordAuthFailed` | Device password authentication failed |
+
+> If the new method with `reason` is implemented, the SDK will not also call the original `centralManagerDidDisconnectPeripheral:` method. If it is not implemented, the original callback remains compatible.
 
 >  [!TIP]
 >
@@ -230,6 +242,7 @@ DeviceFuncV2Model class attribute definitions:
 | isSupportSensorRawSleep     | Does it support sleep real-time data?                     |
 | isSupportFallDetect         | Does it support fall detection alert?                     |
 | isSupportRecording          | Does it support recording function?                      |
+| isSupportDevicePasswordAuth | Does it support device password authentication?          |
 
 ##### 3.1.8 Use an External CBCentralManager for Scanning and Let the SDK Connect
 
@@ -448,25 +461,31 @@ Example:
 }];
 ```
 
-##### 3.2.1.5 Get and set video control switches.
+##### 3.2.1.5 Get and Set the Video Control Mode
 
-> Configure whether to enable ring gesture control for browsing videos; <u>This function requires pairing with a Bluetooth HID device.</u>
+> Set the ring gesture control mode; <u>this function requires pairing with Bluetooth HID.</u>
+
+Parameter Description:
+
+| Parameter | Type | Description        | Value                                      |
+| --------- | ---- | ------------------ | ------------------------------------------ |
+| `isOpen`  | int  | Video control mode | `0`: Off, `1`: Video, `2`: Book, `3`: Music |
 
 ```objective-c
-//Set video control switch
+//Set video control mode
 DHVideoHidSetModel *tModeSetModel = [[DHVideoHidSetModel alloc] init];
-tModeSetModel.isOpen = YES;
+tModeSetModel.isOpen = 1; //0 Off, 1 Video, 2 Book, 3 Music
 [DHBleCommand setVideoHid:tModeSetModel block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"setVideoHid OK");
   }
 }];
 
-// Get video control switch
+// Get video control mode
 [DHBleCommand getVideoHid:^(int code, id  _Nonnull data) {
   if (code == 0){
     DHVideoHidSetModel *model = data;
-    NSLog(@"getVideoHid OK isOpen %d", model.isOpen);
+    NSLog(@"getVideoHid OK mode %d", model.isOpen);
   }
 }];
 ```
@@ -1259,6 +1278,72 @@ Example of usage:
 ```
 
 
+
+##### 3.2.1.26 Device Password Authentication
+
+> Check `isSupportDevicePasswordAuth` in the device configuration table to determine whether the device supports password authentication.
+>
+> The password must contain four digits. A `nil` or empty value is treated as the default password `0000`.
+>
+> For a supported device, `centralManagerDidFunctionMenu` is called only after authentication succeeds. If authentication fails, the SDK disconnects and returns `DHBleDisconnectReasonPasswordAuthFailed`. Unsupported devices continue to use the original connection flow.
+
+```mermaid
+flowchart TD
+    A["Password authentication supported?"] -->|No| B["Business-ready<br/>centralManagerDidFunctionMenu callback"]
+    A -->|Yes| C["Authenticate with the preset password"]
+    C -->|Success| B
+    C -->|Failed: PasswordAuthFailed| D["Disconnect<br/>centralManagerDidDisconnectPeripheral:reason:"]
+```
+
+###### 3.2.1.26.1 Set the Automatic Authentication Password
+
+`+(void)prepareAutoPassword:(nullable NSString *)password`
+
+> Set the password used by the SDK for automatic authentication. It may be configured after SDK initialization, but it must be called before connecting. The same value is also used when reconnecting to a locally bound device.
+
+Input Parameter:
+
+| Parameter  | Type       | Description                                                  |
+| ---------- | ---------- | ------------------------------------------------------------ |
+| `password` | `NSString` | Four-digit password; `nil` or an empty string is treated as `0000` |
+
+Callback Result:
+
+| Callback Method                                           | Result                                      | Description                                      |
+| --------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------ |
+| `centralManagerDidFunctionMenu:peripheral:`               | `DeviceFuncV2Model`                         | Authentication succeeded; the device is business-ready |
+| `centralManagerDidDisconnectPeripheral:reason:`           | `DHBleDisconnectReasonPasswordAuthFailed`   | Authentication failed; the SDK disconnects the device |
+
+Example:
+
+```objective-c
+//Configure the current account's four-digit password before connecting.
+[DHBleCommand prepareAutoPassword:@"1234"];
+[DHBleCentralManager connectDeviceWithModel:deviceModel];
+
+//The device is business-ready only after authentication succeeds.
+- (void)centralManagerDidFunctionMenu:(DeviceFuncV2Model *)deviceFuncModel
+                           peripheral:(DHPeripheralModel *)peripheral {
+    NSLog(@"Device ready");
+}
+```
+
+###### 3.2.1.26.2 Modify the Device Password
+
+`+(void)modifyDevicePwd:(nullable NSString *)password completion:(void (^ _Nullable)(BOOL success))completion`
+
+> Modify the device password after the device is connected and authenticated. `success == YES` means the device confirmed the change. For a normal unbind operation, first change the device password to `0000`; only clear the local binding and disconnect after the change succeeds.
+
+Example:
+
+```objective-c
+[DHBleCommand modifyDevicePwd:@"0000" completion:^(BOOL success) {
+    if (success) {
+        [DHBleCentralManager setBindedStatus:NO];
+        [DHBleCentralManager disconnectDevice];
+    }
+}];
+```
 
 #### 3.2.2 Health data synchronization (real-time single measurement and all-day monitoring)
 

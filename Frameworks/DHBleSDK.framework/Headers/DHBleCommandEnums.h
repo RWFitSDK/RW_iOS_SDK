@@ -13,6 +13,8 @@
 #define BluetoothNotificationHealthDataChange @"BluetoothNotificationHealthDataChange"
 
 #define BluetoothNotificationHealthRingMeasureValueChange @"BluetoothNotificationHealthRingMeasureValueChange"
+// Protocol flag 0x21 设备主动推送；userInfo: dataType(DHDevicePushType)、dataValue、timestamp(Unix毫秒)
+#define BluetoothNotificationProtocolPush @"BluetoothNotificationProtocolPush"
 //健康戒指手动测量改变
 #define BluetoothNotificationHealthRingMeasureStateChange @"BluetoothNotificationHealthRingMeasureStateChange"
 
@@ -85,7 +87,6 @@ typedef enum : UInt8 {
     BLE_KEY_FLAG_READ_CONTINUE = 0x11,
     BLE_KEY_FLAG_CREATE = 0x20, //增操作，指令版本0
     BLE_KEY_FLAG_DELETE = 0x30, //删操作，指令版本0
-    BLE_KEY_FLAG_PUSH = 0x40, //设备主动PUSH,APP不需要回复
     BLE_KEY_FLAG_NONE
 } BleKeyFlag;
 
@@ -221,6 +222,7 @@ typedef enum : UInt16 {
      BLE_KEY_IDENTITY = 0x0301,     // 身份，代表绑定的意思
      BLE_KEY_SESSION = 0x0302,      // 会话，代表登陆的意思
      BLE_KEY_REQUEST_PAIR = 0x0303, // 请求配对
+     BLE_KEY_DEVICE_PASSWORD = 0x0304, // 设备密码认证、修改与授权重置
 
      // PUSH
      BLE_KEY_NOTIFICATION = 0x0401,
@@ -302,6 +304,12 @@ typedef enum : UInt16 {
      BLE_KEY_ALL_BIN_DATA_PXI = 0x070C, //原相大包升级(所有bin组合)
      BLE_KEY_NONE = 0xffff
 } BleKey;
+
+/// SDK 已公开支持的设备主动推送(Protocol flag 0x21)类型。
+/// 枚举值与对应协议 Key 保持一致，便于跨端识别以及与日志、抓包直接对应。
+typedef enum : UInt16 {
+    DHDevicePushTypePower = BLE_KEY_POWER
+} DHDevicePushType;
 
 typedef enum {
     BLE_ACTIVITY_START_INDEX = 7,        // 枚举值开始标记
