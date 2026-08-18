@@ -247,6 +247,7 @@ DeviceFuncV2Model类属性定义:
 | isSupportFallDetect         | 是否支持跌落提醒           |
 | isSupportRecording          | 是否支持录音功能           |
 | isSupportDevicePasswordAuth | 是否支持设备密码认证       |
+| isSupportScreenControl      | 是否支持即时屏幕亮灭控制   |
 
 ##### 3.1.8 使用外部 CBCentralManager 搜索并由 SDK 连接
 
@@ -1360,6 +1361,26 @@ flowchart TD
 }];
 ```
 
+##### 3.2.1.27 即时屏幕控制
+
+> 通过功能配置表属性 `isSupportScreenControl` 判断设备是否支持。
+
+方法说明：
+
+`+(void)setScreenOn:(BOOL)isOn block:(void(^)(int code, id data))block`
+
+| 参数 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| isOn | BOOL | `YES`：亮屏；`NO`：息屏 |
+
+调用示例：
+
+```objective-c
+[DHBleCommand setScreenOn:YES block:^(int code, id _Nonnull data) {
+    NSLog(@"set screen on, code=%d", code);
+}];
+```
+
 #### 3.2.2 健康数据同步(实时单次与全天检测)
 
 > 健康数据检测有两种方式: 实时单次检测与全天检测。健康数据包括心率,血氧,压力,HRV,睡眠等, **睡眠无实时检测**。 
@@ -1911,6 +1932,62 @@ tModeSetModel.interval = 60;
 >
 > OTA升级文件需由厂家提供并确认适用于当前产品. 升级前必须先按[3.2.1.3 获取设备信息](#3213-获取设备信息)读取 `DHFirmwareVersionModel.deviceModel`, 与厂家提供的升级文件目标型号进行比较. 只有型号一致时才能升级, 型号为空或不一致时必须终止, 防止使用错误固件导致设备无法使用.
 
+##### 3.2.3.1 获取可用固件
+
+可通过以下接口查询指定设备型号的可用固件列表：
+
+```http
+GET https://ruiwo168.com/api/device/getOtaListByModel?model=<deviceModel>
+```
+
+查询参数 `model` 对应 `getFirmwareVersion` 返回的 `DHFirmwareVersionModel.deviceModel`。请求接口前应先读取设备固件信息，并使用设备实际返回的型号。
+
+```objective-c
+[DHBleCommand getFirmwareVersion:^(int code, id _Nonnull data) {
+    if (code != 0 || ![data isKindOfClass:[DHFirmwareVersionModel class]]) {
+        return;
+    }
+    DHFirmwareVersionModel *version = data;
+    if (version.deviceModel.length == 0) {
+        return;
+    }
+    NSString *model = [version.deviceModel stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet];
+    NSString *url = [NSString stringWithFormat:@"https://ruiwo168.com/api/device/getOtaListByModel?model=%@", model];
+    NSLog(@"query firmware: %@, currentVersion=%@", url, version.firmwareVersion);
+    // 使用项目现有的网络组件请求该地址。
+}];
+```
+
+接口返回示例：
+
+```json
+{
+  "code": 0,
+  "msg": "操作成功",
+  "data": [
+    {
+      "deviceModel": "DEVICE_MODEL",
+      "toVersion": "X.Y.Z",
+      "size": 123456,
+      "downloadUrl": "https://example.com/path/firmware.bin"
+    }
+  ]
+}
+```
+
+| 字段 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| deviceModel | String | 固件适用的设备型号，应与 `DHFirmwareVersionModel.deviceModel` 完全一致 |
+| toVersion | String | 目标固件版本，正式发布环境用于判断是否有更高版本可升级 |
+| size | Int | 固件文件大小，单位为字节（Byte） |
+| downloadUrl | String | 固件文件下载地址 |
+
+正式发布时，应按 `X.Y.Z` 各段数值比较当前版本 `firmwareVersion` 与目标版本 `toVersion`，通常只提示升级到更高版本，不能直接按字符串比较。测试时可在确认固件有效后进行同版本升级或降级测试。
+
+下载及升级前均须确认 `deviceModel` 完全一致。固件下载到本地后，读取为 `NSData` 并传给 `ringOtaWithFileData`；如使用自有服务器，请自行维护设备型号、版本号与固件包的对应关系。
+
+##### 3.2.3.2 执行OTA升级
+
 升级前校验:
 
 | 数据 | 来源 | 用途 |
@@ -2375,6 +2452,11 @@ tModeSetModel.interval = 60;
 
 
 ## SDK修订记录
+
+**V2.0.0_20260817** (2026.08.17)
+
+- 添加即时屏幕控制功能(3.2.1.27)
+- 补充获取可用固件接口及 OTA 设备型号、版本校验说明(3.2.3.1)
 
 **V2.0.0_20260807** (2026.08.07)
 

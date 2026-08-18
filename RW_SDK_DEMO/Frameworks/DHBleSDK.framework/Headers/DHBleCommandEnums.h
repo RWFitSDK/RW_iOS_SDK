@@ -208,6 +208,7 @@ typedef enum : UInt16 {
      BLE_KEY_ALARM_VIBRATION_DURATION = 0x0282,// 闹钟震动时长设置
      BLE_KEY_VIBRATION_INTERVAL = 0x0283,   // 震动间隔时长设置
      BLE_KEY_COUNT_REMINDER_INTERVAL = 0x0284, // 计数提醒间隔设置
+     BLE_KEY_SCREEN_CONTROL = 0x0285, // 即时屏幕亮灭控制
     
      REALTIME_LOG = 0x02F9,
      BLE_KEY_GSENSOR_OUTPUT = 0x02FA, // 1: 开启GSensor输出；2: 关闭GSensor输出

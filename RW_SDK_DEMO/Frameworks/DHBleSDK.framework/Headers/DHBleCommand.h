@@ -225,6 +225,15 @@ NS_ASSUME_NONNULL_BEGIN
 /// @param block 回调
 + (void)setCountReminderInterval:(UInt8)interval block:(void(^)(int code, id data))block;
 
+/// 获取当前瞬时屏幕状态
+/// @param block 回调，data为NSNumber（NO息屏/YES亮屏）；查询不会重置亮屏倒计时
++ (void)getScreenOn:(void(^)(int code, id data))block;
+
+/// 即时控制屏幕亮灭，不修改设备已保存的亮屏时长
+/// @param isOn YES：立即亮屏或重置亮屏倒计时；NO：立即息屏
+/// @param block 执行结果回调
++ (void)setScreenOn:(BOOL)isOn block:(void(^)(int code, id data))block;
+
 #pragma mark- 传感器原始数据
 
 /// 控制传感器原始数据输出

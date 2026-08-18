@@ -243,6 +243,7 @@ DeviceFuncV2Model class attribute definitions:
 | isSupportFallDetect         | Does it support fall detection alert?                     |
 | isSupportRecording          | Does it support recording function?                      |
 | isSupportDevicePasswordAuth | Does it support device password authentication?          |
+| isSupportScreenControl      | Does it support instant screen on/off control?            |
 
 ##### 3.1.8 Use an External CBCentralManager for Scanning and Let the SDK Connect
 
@@ -1345,6 +1346,26 @@ Example:
 }];
 ```
 
+##### 3.2.1.27 Instant Screen Control
+
+> Check `isSupportScreenControl` in the device configuration table before using this feature.
+
+Methods:
+
+`+(void)setScreenOn:(BOOL)isOn block:(void(^)(int code, id data))block`
+
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| isOn | BOOL | `YES`: turn the screen on; `NO`: turn the screen off |
+
+Example:
+
+```objective-c
+[DHBleCommand setScreenOn:YES block:^(int code, id _Nonnull data) {
+    NSLog(@"set screen on, code=%d", code);
+}];
+```
+
 #### 3.2.2 Health data synchronization (real-time single measurement and all-day monitoring)
 
 > There are two ways to monitor health data: real-time single measurements and continuous 24-hour monitoring. Health data includes heart rate, blood oxygen, stress levels, HRV, and sleep, **but sleep is not monitored in real time**.
@@ -1848,6 +1869,62 @@ Dhikr details are returned hourly; `value` is the cumulative count for that hour
 >
 > The OTA file must be provided by the manufacturer and confirmed for the current product. Before updating, follow [3.2.1.3 Get Device Information](#3213-get-device-information) to read `DHFirmwareVersionModel.deviceModel` and compare it with the firmware target model supplied by the manufacturer. Start the update only when they match. Abort when the model is empty or different to prevent an incompatible firmware file from making the device unusable.
 
+##### 3.2.3.1 Get Available Firmware
+
+Use the following endpoint to query the available firmware list for a device model:
+
+```http
+GET https://ruiwo168.com/api/device/getOtaListByModel?model=<deviceModel>
+```
+
+The `model` parameter corresponds to `DHFirmwareVersionModel.deviceModel` returned by `getFirmwareVersion`. Read the device firmware information first and use the actual model reported by the device.
+
+```objective-c
+[DHBleCommand getFirmwareVersion:^(int code, id _Nonnull data) {
+    if (code != 0 || ![data isKindOfClass:[DHFirmwareVersionModel class]]) {
+        return;
+    }
+    DHFirmwareVersionModel *version = data;
+    if (version.deviceModel.length == 0) {
+        return;
+    }
+    NSString *model = [version.deviceModel stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet];
+    NSString *url = [NSString stringWithFormat:@"https://ruiwo168.com/api/device/getOtaListByModel?model=%@", model];
+    NSLog(@"query firmware: %@, currentVersion=%@", url, version.firmwareVersion);
+    // Request this URL using the app's existing networking component.
+}];
+```
+
+Example response:
+
+```json
+{
+  "code": 0,
+  "msg": "操作成功",
+  "data": [
+    {
+      "deviceModel": "DEVICE_MODEL",
+      "toVersion": "X.Y.Z",
+      "size": 123456,
+      "downloadUrl": "https://example.com/path/firmware.bin"
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| deviceModel | String | Target device model; it must exactly match `DHFirmwareVersionModel.deviceModel` |
+| toVersion | String | Target firmware version, used in production to determine whether a newer version is available |
+| size | Int | Firmware file size in bytes |
+| downloadUrl | String | Firmware download URL |
+
+For production releases, compare the current `firmwareVersion` with the target `toVersion` numerically by each `X.Y.Z` segment and normally prompt only for a newer version. Do not compare versions as plain strings. For testing, the same version or a downgrade may be installed after confirming that the firmware is valid.
+
+Verify that `deviceModel` matches before downloading and again before upgrading. After downloading the firmware, load it as `NSData` and pass it to `ringOtaWithFileData`. When hosting firmware on your own server, maintain the mapping between device models, versions, and firmware files.
+
+##### 3.2.3.2 Perform OTA Upgrade
+
 Pre-update validation:
 
 | Data | Source | Purpose |
@@ -2311,6 +2388,11 @@ Example:
 
 
 ## SDK Revision History
+
+**V2.0.0_20260817** (2026.08.17)
+
+- Added instant screen control (3.2.1.27).
+- Added the available-firmware endpoint and OTA device-model/version validation guidance (3.2.3.1).
 
 **V2.0.0_20260724** (2026.07.24)
 
