@@ -1361,6 +1361,26 @@ flowchart TD
 }];
 ```
 
+###### 3.2.1.26.3 准备授权密码重置
+
+`+(void)preparePasswordReset:(nullable NSString *)targetPassword`
+
+> 当无法获得设备原密码时，业务端可在确认用户具备设备重置权限后调用本方法，为下一次连接设置新的目标密码，避免已设置密码的设备无法继续使用。重置权限的确认方式由业务端决定，扫描包装盒二维码只是其中一种方式。
+
+参数说明:
+
+| 参数 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| `targetPassword` | `NSString` | 重置后的4位数字密码；传入 `nil` 或空字符串时按 `0000` 处理 |
+
+调用示例:
+
+```objective-c
+// 业务端确认用户具备重置权限后调用。
+[DHBleCommand preparePasswordReset:@"5678"];
+[DHBleCentralManager connectDeviceWithModel:deviceModel];
+```
+
 ##### 3.2.1.27 即时屏幕控制
 
 > 通过功能配置表属性 `isSupportScreenControl` 判断设备是否支持。
@@ -2452,6 +2472,11 @@ tModeSetModel.interval = 60;
 
 
 ## SDK修订记录
+
+**V2.0.0_20260820** (2026.08.20)
+
+- 添加调试、测试用自定义设备时间设置接口 `setDeviceTime`
+- 添加授权密码重置功能(3.2.1.26.3)
 
 **V2.0.0_20260817** (2026.08.17)
 

@@ -23,14 +23,14 @@
     if (@available(iOS 13.0, *)) {
         self.window.overrideUserInterfaceStyle = UIUserInterfaceStyleLight;
     }
-    
+
     [self initBleSDK];
-    
+
     [self.window setRootViewController:[self buildRootViewController]];
     [self.window makeKeyAndVisible];
-    
+
     [self registerHUD];
-    
+
     return YES;
 }
 
@@ -114,6 +114,8 @@
     //Demo里工具类初始化,可选择;
     [DHBluetoothManager shareInstance];
     [DHBleCentralManager initWithServiceUuids:@[]];
+
+//    [DHBleCommand preparePasswordReset:@"2345"];
 }
 
 @end

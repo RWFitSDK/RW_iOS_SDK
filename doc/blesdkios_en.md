@@ -1346,6 +1346,26 @@ Example:
 }];
 ```
 
+###### 3.2.1.26.3 Prepare an Authorized Password Reset
+
+`+(void)preparePasswordReset:(nullable NSString *)targetPassword`
+
+> If the original device password is unavailable, the app may call this method after confirming that the user is authorized to reset the device. It sets a new target password for the next connection so that a password-protected device does not become permanently unusable. The app decides how reset authorization is verified; scanning a QR code on the package is only one possible method.
+
+Parameter:
+
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| `targetPassword` | `NSString` | New four-digit password; `nil` or an empty string is treated as `0000` |
+
+Example:
+
+```objective-c
+// Call after the app confirms that the user is authorized to reset the device.
+[DHBleCommand preparePasswordReset:@"5678"];
+[DHBleCentralManager connectDeviceWithModel:deviceModel];
+```
+
 ##### 3.2.1.27 Instant Screen Control
 
 > Check `isSupportScreenControl` in the device configuration table before using this feature.
@@ -2388,6 +2408,11 @@ Example:
 
 
 ## SDK Revision History
+
+**V2.0.0_20260820** (2026.08.20)
+
+- Added the `setDeviceTime` custom device-time API for debugging and testing.
+- Added authorized password reset support (3.2.1.26.3).
 
 **V2.0.0_20260817** (2026.08.17)
 

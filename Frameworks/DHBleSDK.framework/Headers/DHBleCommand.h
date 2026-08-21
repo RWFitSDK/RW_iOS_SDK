@@ -10,7 +10,6 @@
 
 #import <DHBleSDK/DHFirmwareVersionModel.h>
 #import <DHBleSDK/DHBatteryInfoModel.h>
-#import <DHBleSDK/DHTimeSetModel.h>
 #import <DHBleSDK/DHDeviceInfoModel.h>
 
 #import <DHBleSDK/DHBindSetModel.h>
@@ -63,8 +62,8 @@ NS_ASSUME_NONNULL_BEGIN
 + (void)prepareAutoPassword:(nullable NSString *)password;
 /// 修改设备密码并返回本次指令结果；正常解绑前应先修改为0000。
 + (void)modifyDevicePwd:(nullable NSString *)password completion:(void (^ _Nullable)(BOOL success))completion;
-/// 为下一次连接准备防伪Key授权重置参数。
-+ (void)preparePasswordReset:(NSString *)antiCounterfeitKey targetPassword:(nullable NSString *)targetPassword;
+/// 业务端确认重置权限后，为下一次连接准备新的4位目标密码。
++ (void)preparePasswordReset:(nullable NSString *)targetPassword;
 
 #pragma mark - 基础功能指令
 
@@ -77,6 +76,12 @@ NS_ASSUME_NONNULL_BEGIN
 /// 获取电量信息
 /// @param block 回调
 + (void)getBattery:(void(^)(int code, id data))block;
+
+/// 设置自定义设备时间，精确到秒，仅建议用于调试或演示。SDK每次连接初始化时都会同步手机当前时间，因此重新连接后自定义时间会被覆盖。
+/// Sets a custom device time with second-level precision. This API is intended only for debugging or demonstrations. The SDK synchronizes the phone's current time during each connection initialization, so the custom time is overwritten after reconnecting.
+/// @param targetTime Unix时间戳，单位秒；按手机当前时区转换为设备显示时间 / Unix timestamp in seconds, converted using the phone's current time zone
+/// @param block 执行结果回调 / Execution result callback
++ (void)setDeviceTime:(NSTimeInterval)targetTime block:(void(^)(int code, id data))block;
 
 /// 设置个人信息
 /// @param model 模型
