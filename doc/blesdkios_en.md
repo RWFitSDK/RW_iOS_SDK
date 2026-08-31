@@ -21,7 +21,7 @@ This document applies only to RW company Bluetooth devices.
 
 1. This document uses Objective-C for all examples. If you use Swift, you must import the corresponding Objective-C header files in the project's Bridging Header.
 
-2. The SDK does not provide a simulator version, because BLE cannot be debugged on the simulator, and some third-party libraries used by the SDK do not support the simulator environment.
+2. The SDK is distributed as `DHBleSDK.xcframework` and supports both physical iOS devices and the iOS Simulator. The simulator can be used for UI, navigation, and regular business-logic testing; BLE scanning, connection, and device communication still require a physical device.
 
    
 
@@ -33,7 +33,7 @@ To develop with the RW BLE iOS SDK, Xcode must be installed.
 
 **Step 2: Manually add dependencies**
 
-Manually add `DHBleSDK.framework` to your project.
+Manually add `DHBleSDK.xcframework` to your project. Xcode automatically selects the appropriate physical-device or simulator variant. The SDK is static, so set it to `Do Not Embed` under the target's `Frameworks, Libraries, and Embedded Content` section.
 
 ![addlibpng](./Image/6314538e-82b5-4ccc-9103-724ab4b67647.png)
 
@@ -2408,6 +2408,10 @@ Example:
 
 
 ## SDK Revision History
+
+**V2.0.0_20260831** (2026.08.31)
+
+- Changed the SDK distribution to `DHBleSDK.xcframework`, with support for physical iOS devices and the iOS Simulator.
 
 **V2.0.0_20260820** (2026.08.20)
 

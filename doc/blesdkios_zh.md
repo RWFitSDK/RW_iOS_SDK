@@ -21,7 +21,7 @@
 
 1. 此文档只⽤Objective-C语言进行说明;如果是使用swifit语言开发,需要在项目的 `Bridging Header` 文件中导入相应的Objective-C 头文件;
 
-3. SDK不提供模拟器版本，因为在模拟器上⽆法调试BLE且我们依赖的第三⽅库部分也不⽀持模拟器环境下运⾏。
+2. SDK以`DHBleSDK.xcframework`形式提供，同时支持iOS真机与iOS模拟器。模拟器可用于界面、页面跳转及普通业务逻辑调试；BLE扫描、连接和设备通信仍需使用真机测试。
 
    
 
@@ -33,7 +33,7 @@
 
 **第2步: 手动部署添加依赖库**
 
-手动添加`DHBleSDK.framework`到工程;
+手动添加`DHBleSDK.xcframework`到工程；Xcode会根据运行目标自动选择真机或模拟器版本。该SDK为静态库，请在Target的`Frameworks, Libraries, and Embedded Content`中设置为`Do Not Embed`。
 
 ![addlibpng](./Image/6314538e-82b5-4ccc-9103-724ab4b67647.png)
 
@@ -2472,6 +2472,10 @@ tModeSetModel.interval = 60;
 
 
 ## SDK修订记录
+
+**V2.0.0_20260831** (2026.08.31)
+
+- SDK交付格式升级为`DHBleSDK.xcframework`，支持iOS真机与iOS模拟器工程。
 
 **V2.0.0_20260820** (2026.08.20)
 
