@@ -244,6 +244,7 @@ DeviceFuncV2Model class attribute definitions:
 | isSupportRecording          | Does it support recording function?                      |
 | isSupportDevicePasswordAuth | Does it support device password authentication?          |
 | isSupportScreenControl      | Does it support instant screen on/off control?            |
+| isSupportUnitSetting        | Does it support metric/imperial unit settings?             |
 
 ##### 3.1.8 Use an External CBCentralManager for Scanning and Let the SDK Connect
 
@@ -450,6 +451,7 @@ Return value:
 | DHBatteryInfoModel property | Type | Description |
 | --------------------------- | ---- | ----------- |
 | battery | NSInteger | Remaining battery level, range 0-100 |
+| status | NSInteger | Charging status: `0` not charging, `1` charging; requires device firmware support. Defaults to `0` when not returned by older firmware. |
 
 Example:
 
@@ -457,9 +459,32 @@ Example:
 [DHBleCommand getBattery:^(int code, id _Nonnull data) {
     if (code == 0 && [data isKindOfClass:[DHBatteryInfoModel class]]) {
         DHBatteryInfoModel *model = data;
-        NSLog(@"battery %zd", model.battery);
+        NSLog(@"battery %zd, charging status %zd", model.battery, model.status);
     }
 }];
+```
+
+###### 3.2.1.4.1 Real-time Battery Monitoring
+
+Supported devices actively push the current battery level and charging status when charging starts or stops. This capability requires device firmware support and is not a periodic update. Call `getBattery` when the app needs to actively query the current battery level.
+
+Observe `BluetoothNotificationProtocolPush` for real-time battery updates:
+
+```objective-c
+id observer = [[NSNotificationCenter defaultCenter]
+    addObserverForName:BluetoothNotificationProtocolPush
+                object:nil
+                 queue:NSOperationQueue.mainQueue
+            usingBlock:^(NSNotification *notification) {
+    NSDictionary *userInfo = notification.userInfo;
+    if ([userInfo[@"dataType"] unsignedIntegerValue] != DHDevicePushTypePower) return;
+
+    DHBatteryInfoModel *model = userInfo[@"dataValue"];
+    NSLog(@"real-time battery %zd, charging status %zd", model.battery, model.status);
+}];
+
+// Remove with the same observer instance when it is no longer needed.
+[[NSNotificationCenter defaultCenter] removeObserver:observer];
 ```
 
 ##### 3.2.1.5 Get and Set the Video Control Mode
@@ -1383,6 +1408,41 @@ Example:
 ```objective-c
 [DHBleCommand setScreenOn:YES block:^(int code, id _Nonnull data) {
     NSLog(@"set screen on, code=%d", code);
+}];
+```
+
+##### 3.2.1.28 Metric/Imperial Unit Settings and Retrieval
+
+> Configuration-table property: `isSupportUnitSetting`. Use this feature only when the device reports support.
+
+Methods:
+
+`+ (void)setMeasureUnit:(UInt8)type block:(void(^)(int code, id data))block`
+
+`+ (void)getMeasureUnit:(void(^)(int code, id data))block`
+
+Parameter:
+
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| type | UInt8 | `0`: metric; `1`: imperial |
+
+Return value:
+
+- A setting operation succeeds when `code == 0`.
+- For a successful query, `data` is an `NSNumber` whose value is the current unit type.
+
+Example:
+
+```objective-c
+[DHBleCommand setMeasureUnit:0 block:^(int code, id data) {
+    NSLog(@"set metric, code=%d", code);
+}];
+
+[DHBleCommand getMeasureUnit:^(int code, id data) {
+    if (code == 0 && [data isKindOfClass:NSNumber.class]) {
+        NSLog(@"current unit=%@", [data integerValue] == 1 ? @"imperial" : @"metric");
+    }
 }];
 ```
 
@@ -2408,6 +2468,11 @@ Example:
 
 
 ## SDK Revision History
+
+**V2.0.0_20260909** (2026.09.09)
+
+- Added metric/imperial unit settings and retrieval (3.2.1.28).
+- Added charging status and real-time battery monitoring (3.2.1.4).
 
 **V2.0.0_20260831** (2026.08.31)
 

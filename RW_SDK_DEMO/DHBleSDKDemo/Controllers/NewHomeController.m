@@ -303,6 +303,8 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
 
     self.functionBaseList = @[@"SDK Version", @"Get Bluetooth MAC address(获取蓝牙Mac地址)", @"Set user information(设置用户信息)", @"Get firmware information(获取固件信息)", @"Get Battery(获取电量)", @"Get Video Switch(获取视频控制开关)", @"Set Video Switch(设置视频控制开关)", @"Get LED brightness level(获取LED亮屏强度)", @"Set LED brightness level(设置LED亮屏强度)", @"Get Wearing position(获取佩戴位置)", @"Set Wearing position(设置佩戴位置)",@"Activate and deactivate the camera(启动与关闭拍照)", @"Find Device(查找设备)", @"Shut down and restore to factory settings(关机,恢复出厂设置)", @"Alarm Clock - Get Alarm Clock(闹钟-获取闹钟)", @"Alarm clock - Set alarm(闹钟-设置闹钟)", @"Alarm Clock - Delete all alarms(闹钟-删除所有闹钟)", @"Get the number of vibrations-震动次数获取",@"Set the number of vibrations-震动次数设置", @"Get screen sleep mode-睡眠模式获取", @"Set screen sleep mode-睡眠模式设置", @"Get Message push notification switch-消息推送开关获取", @"Set Message push notification switch-消息推送开关设置", @"Check if receiving likes/comments is enabled-获取赞念是否打开", @"Set whether the likes feature is enabled.-设置赞念是否打开", @"Get heart rate alarm configuration-获取心率报警配置", @"Set heart rate alarm configuration-设置心率报警配置", @"Get blood oxygen alarm configuration-获取血氧报警配置", @"Set blood oxygen alarm configuration-设置血氧报警配置", @"Set Time Format-设置12/24小时时间显示格式", @"Get Alarm Vibration Duration-获取闹钟震动时长", @"Set Alarm Vibration Duration-设置闹钟震动时长", @"Get Vibration Interval-获取震动间隔时长", @"Set Vibration Interval-设置震动间隔时长", @"Instant Screen Control-即时屏幕控制"];
 
+    self.functionBaseList = [self.functionBaseList arrayByAddingObject:@"Measurement Unit-公制/英制单位"];
+
     self.functionHealthList = @[@"Real-time, single-instance health data monitoring-实时单次启动健康数据检测(心率,血氧,HRV, 压力, 血糖)", @"Get HeartRate Monitor(获取心率监听)", @"Set HeartRate Monitor(设置心率监听)",@"Get Blood oxygen Monitor(获取血氧监听)", @"Set Blood oxygen Monitor(设置血氧监听)",@"Get HRV Monitor(获取HRV监听)", @"Set HRV Monitor(设置HRV监听)",@"Get PPG Monitor(获取PPG监听)", @"Set PPG Monitor(设置PPG监听)",@"Get Stress Monitor(获取压力监听)", @"Set Stress Monitor(设置压力监听)",@"Get Blood Sugar Monitor(获取血糖监听)", @"Set Blood Sugar Monitor(设置血糖监听)", @"Sync all your health data(同步所有健康数据)", @"Get Blood Pressure Monitor(获取血压监听)", @"Set Blood Pressure Monitor(设置血压监听)", @"Get Temperature Monitor(获取定时体温监测)", @"Set Temperature Monitor(设置定时体温监测)", @"Get Muslim Time Display Mode(获取Muslim时间显示模式)", @"Set Muslim Time Display Mode(设置Muslim时间显示模式)", @"Get Muslim Count Reset Mode(获取Muslim计数清零方式)", @"Set Muslim Count Reset Mode(设置Muslim计数清零方式)", @"PPG Raw Data(PPG原始数据：启动、停止采集或获取历史)", @"HR Calibration(心率校正)", @"Get Fall Detect(获取跌落提醒开关)", @"Set Fall Detect(设置跌落提醒)", @"Get Count Reminder(获取计数提醒间隔)", @"Set Count Reminder(设置计数提醒间隔)"];
 
     self.functionWorkoutList = @[@"Workout-多运动"];
@@ -323,6 +325,7 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(healthOverAlert:) name:BluetoothNotificationRingHealthOverAlert object:nil];
 
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(sensorRawDataNotification:) name:BluetoothNotificationSensorRawData object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(protocolPushNotification:) name:BluetoothNotificationProtocolPush object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(sensorRawStopNotification:) name:BluetoothNotificationHealthRingSenorStopChange object:nil];
 
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(touchEventNotification:) name:BluetoothNotificationTouchEvent object:nil];
@@ -687,6 +690,17 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
     }
 }
 
+- (void)protocolPushNotification:(NSNotification *)ntf
+{
+    NSDictionary *userInfo = ntf.userInfo;
+    if ([userInfo[@"dataType"] unsignedIntegerValue] != DHDevicePushTypePower) return;
+    DHBatteryInfoModel *model = userInfo[@"dataValue"];
+    if (![model isKindOfClass:DHBatteryInfoModel.class]) return;
+    NSLog(@"Realtime Battery power=%zd charging=%zd", model.battery, model.status);
+    NSString *charging = model.status == 1 ? RWChoiceText(@"charging", @"充电中") : RWChoiceText(@"not charging", @"未充电");
+    [self updateDetailText:[NSString stringWithFormat:@"%zd%%, %@", model.battery, charging] section:0 sourceRow:4];
+}
+
 - (void)sensorRawDataNotification:(NSNotification *)ntf
 {
     NSDictionary *tUserInfo = ntf.userInfo;
@@ -853,6 +867,7 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
         addPair(base, menu.isSupportAlarmVibrationDuration, 30, 31);
         addPair(base, menu.isSupportVibrationInterval, 32, 33);
         if (menu.isSupportScreenControl) [base addObject:@34];
+        if (menu.isSupportUnitSetting) [base addObject:@35];
 
         // 实时单次检测统一放在首页的健康详情页，设备设置页不重复显示。
         addPair(health, menu.isDataTypeHeart, 1, 2);
@@ -903,6 +918,7 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
             case 29: return @"12 / 24h";
             case 33: return @"100–1000 ms";
             case 34: return RWChoiceText(@"On / Off / Query", @"亮屏 / 息屏 / 查询");
+            case 35: return RWChoiceText(@"Metric / Imperial / Query", @"公制 / 英制 / 查询");
             default: return run;
         }
     }
@@ -1069,8 +1085,9 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
             [DHBleCommand getBattery:^(int code, id  _Nonnull data) {
                 if (code == 0){
                     DHBatteryInfoModel *model = data;
-                    NSLog(@"getBattery OK 电量值 %zd", model.battery);
-                    [self updateDetailText:[NSString stringWithFormat:@"%zd%%", model.battery] section:0 sourceRow:4];
+                    NSLog(@"getBattery OK 电量值 %zd 充电状态 %zd", model.battery, model.status);
+                    NSString *charging = model.status == 1 ? RWChoiceText(@"charging", @"充电中") : RWChoiceText(@"not charging", @"未充电");
+                    [self updateDetailText:[NSString stringWithFormat:@"%zd%%, %@", model.battery, charging] section:0 sourceRow:4];
                 }
             }];
         }
@@ -1513,6 +1530,36 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
                         if (code == 0) {
                             NSString *value = isOn ? RWChoiceText(@"Screen on", @"屏幕已亮") : RWChoiceText(@"Screen off", @"屏幕已灭");
                             [self updateDetailText:value section:0 sourceRow:34];
+                        }
+                    }];
+                }];
+            }
+            else {
+                SHOWHUD(NSLocalizedString(@"rw_not_supported", nil));
+            }
+        }
+        else if (indexPath.row == 35){ //公制/英制单位
+            DeviceFuncV2Model *menu = [DHBluetoothManager shareInstance].deviceFuncV2Model;
+            if (menu && menu.isSupportUnitSetting) {
+                NSArray *options = @[RWChoiceText(@"Metric", @"公制"),
+                                     RWChoiceText(@"Imperial", @"英制"),
+                                     RWChoiceText(@"Query current unit", @"查询当前单位")];
+                [self showPickerWithTitle:RWLocalizedFunctionTitle(self.functionBaseList[35]) options:options selectedIndex:0 selection:^(NSInteger selectedIndex) {
+                    if (selectedIndex == 2) {
+                        [DHBleCommand getMeasureUnit:^(int code, id data) {
+                            NSLog(@"getMeasureUnit code=%d data=%@", code, data);
+                            if (code == 0 && [data isKindOfClass:NSNumber.class]) {
+                                NSString *value = [data integerValue] == 1 ? RWChoiceText(@"Imperial", @"英制") : RWChoiceText(@"Metric", @"公制");
+                                [self updateDetailText:value section:0 sourceRow:35];
+                            }
+                        }];
+                        return;
+                    }
+                    UInt8 type = (UInt8)selectedIndex;
+                    [DHBleCommand setMeasureUnit:type block:^(int code, id data) {
+                        NSLog(@"setMeasureUnit type=%d code=%d", type, code);
+                        if (code == 0) {
+                            [self updateDetailText:options[selectedIndex] section:0 sourceRow:35];
                         }
                     }];
                 }];

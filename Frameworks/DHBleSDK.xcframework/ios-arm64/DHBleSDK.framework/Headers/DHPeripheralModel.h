@@ -24,6 +24,12 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic,assign) NSInteger rssi;
 /// 设备型号(从广播包解析)
 @property (nonatomic,strong) NSString *deviceModel;
+/// FF广播协议版本；旧格式为0
+@property (nonatomic,assign) NSInteger ffProtocolVersion;
+/// 芯片平台；仅新格式有效，旧格式为-1
+@property (nonatomic,assign) NSInteger chipPlatform;
+/// 客户代码；仅新格式有效，旧格式为-1
+@property (nonatomic,assign) NSInteger customerCode;
 
 @end
 

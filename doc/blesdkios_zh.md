@@ -248,6 +248,7 @@ DeviceFuncV2Model类属性定义:
 | isSupportRecording          | 是否支持录音功能           |
 | isSupportDevicePasswordAuth | 是否支持设备密码认证       |
 | isSupportScreenControl      | 是否支持即时屏幕亮灭控制   |
+| isSupportUnitSetting        | 是否支持公制/英制单位设置  |
 
 ##### 3.1.8 使用外部 CBCentralManager 搜索并由 SDK 连接
 
@@ -452,6 +453,7 @@ userInfoModel.age = 20;
 | DHBatteryInfoModel属性 | 类型 | 说明 |
 | ---------------------- | ---- | ---- |
 | battery | NSInteger | 剩余电量, 范围0-100 |
+| status | NSInteger | 充电状态：`0`未在充电，`1`正在充电；需设备固件支持，旧固件未返回时默认为`0` |
 
 调用示例:
 
@@ -459,9 +461,32 @@ userInfoModel.age = 20;
 [DHBleCommand getBattery:^(int code, id _Nonnull data) {
     if (code == 0 && [data isKindOfClass:[DHBatteryInfoModel class]]) {
         DHBatteryInfoModel *model = data;
-        NSLog(@"设备电量 %zd", model.battery);
+        NSLog(@"设备电量 %zd，充电状态 %zd", model.battery, model.status);
     }
 }];
+```
+
+###### 3.2.1.4.1 实时电量监听
+
+支持实时电量推送的设备，会在开始充电或停止充电时主动推送当前电量和充电状态。该能力需设备固件支持，并非固定周期持续上报；如需主动获取当前电量，请调用 `getBattery` 。
+
+通过 `BluetoothNotificationProtocolPush` 通知监听实时电量：
+
+```objective-c
+id observer = [[NSNotificationCenter defaultCenter]
+    addObserverForName:BluetoothNotificationProtocolPush
+                object:nil
+                 queue:NSOperationQueue.mainQueue
+            usingBlock:^(NSNotification *notification) {
+    NSDictionary *userInfo = notification.userInfo;
+    if ([userInfo[@"dataType"] unsignedIntegerValue] != DHDevicePushTypePower) return;
+
+    DHBatteryInfoModel *model = userInfo[@"dataValue"];
+    NSLog(@"实时电量 %zd，充电状态 %zd", model.battery, model.status);
+}];
+
+// 不再使用时移除，须传入添加时的同一实例
+[[NSNotificationCenter defaultCenter] removeObserver:observer];
 ```
 
 ##### 3.2.1.5 获取与设置视频控制开关
@@ -1398,6 +1423,41 @@ flowchart TD
 ```objective-c
 [DHBleCommand setScreenOn:YES block:^(int code, id _Nonnull data) {
     NSLog(@"set screen on, code=%d", code);
+}];
+```
+
+##### 3.2.1.28 公制/英制单位设置与获取
+
+> 功能配置表属性：`isSupportUnitSetting`。仅支持该能力的设备可使用。
+
+方法说明：
+
+`+ (void)setMeasureUnit:(UInt8)type block:(void(^)(int code, id data))block`
+
+`+ (void)getMeasureUnit:(void(^)(int code, id data))block`
+
+参数说明：
+
+| 参数 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| type | UInt8 | `0`：公制；`1`：英制 |
+
+返回说明：
+
+- 设置成功时 `code == 0`。
+- 查询成功时 `data` 为 `NSNumber`，数值表示当前单位类型。
+
+调用示例：
+
+```objective-c
+[DHBleCommand setMeasureUnit:0 block:^(int code, id data) {
+    NSLog(@"设置公制 code=%d", code);
+}];
+
+[DHBleCommand getMeasureUnit:^(int code, id data) {
+    if (code == 0 && [data isKindOfClass:NSNumber.class]) {
+        NSLog(@"当前单位=%@", [data integerValue] == 1 ? @"英制" : @"公制");
+    }
 }];
 ```
 
@@ -2472,6 +2532,11 @@ tModeSetModel.interval = 60;
 
 
 ## SDK修订记录
+
+**V2.0.0_20260909** (2026.09.09)
+
+- 添加公制/英制单位设置与获取接口(3.2.1.28)
+- 电量数据新增充电状态及实时电量监听(3.2.1.4)
 
 **V2.0.0_20260831** (2026.08.31)
 

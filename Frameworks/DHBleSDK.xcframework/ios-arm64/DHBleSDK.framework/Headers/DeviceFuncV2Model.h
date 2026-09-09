@@ -46,6 +46,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL isSupportWorkout3; //戒指多运动;
 @property (nonatomic, assign) BOOL isSupportRaisescreen; //默认不支持,支持抬腕亮屏;
 @property (nonatomic, assign) BOOL isSupportFallDetect; //是否支持跌落提醒;
+@property (nonatomic, assign) BOOL isSupportUnitSetting; //是否支持公制/英制单位设置;
 @property (nonatomic, assign) BOOL isSupportRecording; //是否支持录音功能;
 @property (nonatomic, assign) BOOL isSupportDevicePasswordAuth; //是否支持设备密码认证;
 

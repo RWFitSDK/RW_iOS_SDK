@@ -239,6 +239,14 @@ NS_ASSUME_NONNULL_BEGIN
 /// @param block 执行结果回调
 + (void)setScreenOn:(BOOL)isOn block:(void(^)(int code, id data))block;
 
+/// 获取设备当前公制/英制单位，data为NSNumber（0公制/1英制）
++ (void)getMeasureUnit:(void(^)(int code, id data))block;
+
+/// 设置设备公制/英制单位
+/// @param type 0：公制；1：英制
+/// @param block 执行结果回调
++ (void)setMeasureUnit:(UInt8)type block:(void(^)(int code, id data))block;
+
 #pragma mark- 传感器原始数据
 
 /// 控制传感器原始数据输出
