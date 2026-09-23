@@ -93,24 +93,14 @@
 }
 
 -(void)registerHUD{
-    [SVProgressHUD setDefaultMaskType:(SVProgressHUDMaskTypeClear)];
-    [SVProgressHUD setDefaultStyle:SVProgressHUDStyleCustom];
-    [SVProgressHUD setErrorImage:[UIImage imageNamed:@"nil"]];
-    [SVProgressHUD setSuccessImage:[UIImage imageNamed:@"nil"]];
-    [SVProgressHUD setInfoImage:[UIImage imageNamed:@"nil"]];
-    [SVProgressHUD setCornerRadius:10];
-    [SVProgressHUD setBackgroundColor:COLORANDALPHA(@"#CCCCCC", 0.9)];
-    [SVProgressHUD setForegroundColor:HomeColor_TitleColor];
-    [SVProgressHUD setFont:HomeFont_TitleFont];
-    [SVProgressHUD setMinimumDismissTimeInterval:1.5];
-    [SVProgressHUD setMaximumDismissTimeInterval:12.0];
+    // HUD 样式已收拢至 DHProgressHUD(MBProgressHUD 封装), 此处无需配置
 
 }
 
 - (void)initBleSDK{
     [DHBleCentralManager setLogStatus:YES];
-    //可在任意连接发生前提前设置；Demo使用1234测试设备密码认证。
-    [DHBleCommand prepareAutoPassword:@"1234"];
+    //可在任意连接发生前提前设置；Demo使用4567测试设备密码认证。
+    [DHBleCommand prepareAutoPassword:@"4567"];
     //Demo里工具类初始化,可选择;
     [DHBluetoothManager shareInstance];
     [DHBleCentralManager initWithServiceUuids:@[]];

@@ -8,7 +8,7 @@ This document applies only to RW company Bluetooth devices.
 
 #### 1.1 Supported Platforms and Languages
 
-- iOS 12 and above, Objective-C language.
+- iOS 15 and above, Objective-C language.
 
 #### 1.2 Terminology
 
@@ -63,7 +63,7 @@ Manually add `DHBleSDK.xcframework` to your project. Xcode automatically selects
 
 
 
-## 3. API Reference）
+## 3. API Reference
 
 ### 3.1 Device Scanning, Connection, Binding, and Reconnection
 
@@ -74,13 +74,13 @@ Manually add `DHBleSDK.xcframework` to your project. Xcode automatically selects
 >  If the returned `DHPeripheralModel` has an empty `macAddr`, it indicates that the device is already paired in system settings.
 
 ```objective-c
-// 1. 开始搜索
+// 1. Start scanning
 [DHBleCentralManager startScan];
 
-//2. 设备委托
+// 2. Device delegate
 [DHBleCentralManager shareInstance].connectDelegate = self;
 
-//3. DHBleConnectDelegate接口会回调搜索到的蓝牙设备
+// 3. DHBleConnectDelegate callbacks report discovered devices
 - (void)centralManagerDidDiscoverPeripheral:(NSArray <DHPeripheralModel *>*)peripherals
 ```
 
@@ -245,6 +245,9 @@ DeviceFuncV2Model class attribute definitions:
 | isSupportDevicePasswordAuth | Does it support device password authentication?          |
 | isSupportScreenControl      | Does it support instant screen on/off control?            |
 | isSupportUnitSetting        | Does it support metric/imperial unit settings?             |
+| isSupportDeviceChallenge    | Does it support device identity authentication?            |
+| isSupportSedentary          | Does it support sedentary reminder settings?               |
+| isDrink                     | Does it support drink reminder settings?                   |
 
 ##### 3.1.8 Use an External CBCentralManager for Scanning and Let the SDK Connect
 
@@ -363,7 +366,7 @@ Return parameter description:
 
 | parameter | type              | illustrate |                   |
 | --------- | ----------------- | ---------- | ----------------- |
-| model     | DHDeviceInfoModel | class      | macAddr:  Mac地址 |
+| model     | DHDeviceInfoModel | class      | macAddr:  MAC address |
 
 Example of usage:
 
@@ -537,7 +540,7 @@ Example of usage:
 [DHBleCommand getRingLEDLight:^(int code, id  _Nonnull data) {
   if (code == 0){
     DHLedLightSetModel *model = data;
-    NSLog(@"getRingLEDLight OK 开关 %d", model.isOpen);
+    NSLog(@"getRingLEDLight OK isOpen %d", model.isOpen);
   }
 }];
 
@@ -674,12 +677,12 @@ Parameter Description:
 
 | parameter | type      |      | illustrate                         |
 | --------- | --------- | ---- | ---------------------------------- |
-| type      | NSInteger | 整形 | 1: Turn off<br/>2: restore factory |
+| type      | NSInteger | Integer | 1: Turn off<br/>2: restore factory |
 
 Example of usage:
 
 ```objective-c
-// 1关机 2 恢复出厂
+// 1: power off, 2: restore factory settings
 [DHBleCommand controlDevice:1 block:^(int code, id  _Nonnull data) {
 
 }];
@@ -699,7 +702,7 @@ Method Description:
 Example of usage:
 
 ```objective-c
-//获取设备里已保存的闹钟
+// Get alarms saved in the device
 [DHBleCommand getAlarms:^(int code, id  _Nonnull data) {
   if (code == 0) {
     NSArray *tAlarmList = data;
@@ -725,18 +728,18 @@ Parameter Description:
 Example of usage:
 
 ```objective-c
-//设置闹钟        
+// Set an alarm        
 DHAlarmSetModel *tAlarm1 = [[DHAlarmSetModel alloc] init];
-tAlarm1.hour = 07; //时
-tAlarm1.minute = 00;//分
-tAlarm1.isOpen = true;//开关
-tAlarm1.repeats = @[@(0),@(0),@(0),@(0),@(0),@(0),@(1)]; //重复周期,周六重复
+tAlarm1.hour = 07; // hour
+tAlarm1.minute = 00; // minute
+tAlarm1.isOpen = true; // on/off switch
+tAlarm1.repeats = @[@(0),@(0),@(0),@(0),@(0),@(0),@(1)]; // Repeat schedule; repeats on Saturday
 
 DHAlarmSetModel *tAlarm2 = [[DHAlarmSetModel alloc] init];
 tAlarm2.hour = 8;
 tAlarm2.minute = 00;
 tAlarm2.isOpen = true;
-tAlarm2.repeats = @[]; //单次闹钟
+tAlarm2.repeats = @[]; // one-shot alarm
 
 [DHBleCommand setAlarms:@[tAlarm1, tAlarm2] block:^(int code, id  _Nonnull data) {
 
@@ -771,20 +774,20 @@ Parameter Description:
 
 | parameter  | type | illustrate | illustrate                                                   |
 | ---------- | ---- | ---------- | ------------------------------------------------------------ |
-| motorLevel | Int  | 整形       | Vibration intensity: 0: Off, 1: Low, 2: Medium, 3: High; *This function is not defined and can be ignored* |
-| motorNum   | Int  | 整形       | The number of vibrations can be set (0-6 times), with a default setting of 2 times. Setting it to 0 will disable vibration. |
+| motorLevel | Int  | Integer       | Vibration intensity: 0: Off, 1: Low, 2: Medium, 3: High; *This function is not defined and can be ignored* |
+| motorNum   | Int  | Integer       | The number of vibrations can be set (0-6 times), with a default setting of 2 times. Setting it to 0 will disable vibration. |
 
 Example of usage:
 
 ```objective-c
-//设置 
+// Set
 [DHBleCommand setRingMotorLevel:1 motorNum:2 block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"set ok");
   }
 }];
 
-//获取
+// Get
 [DHBleCommand getRingMotorLevel:^(int code, id  _Nonnull data) {
   if (code == 0){
     DHVibrationLevelModel *tVibrationModel = data;
@@ -816,7 +819,7 @@ Parameter Description:
 Example of usage:
 
 ```objective-c
-//设置 
+// Set
 DHBrightTimeSetModel *sleepModel = [[DHBrightTimeSetModel alloc] init];
 sleepModel.sleepOpen = YES;
 sleepModel.sleepStartHour = 20;
@@ -827,7 +830,7 @@ sleepModel.sleepEndMin = 00;
 
 }];
 
-//获取
+// Get
 [DHBleCommand getDisplaySleepMode:^(int code, id  _Nonnull data) {
   if (code == 0){
     DHBrightTimeSetModel *tModel = data;
@@ -872,14 +875,14 @@ Parameter Description:
 Example of usage:
 
 ```objective-c
-//设置 
+// Set
 DHAncsSetModel *tAncsModel = [[DHAncsSetModel alloc] init];
 tAncsModel.isSMS = YES;
 [DHBleCommand ringSetAncs:tAncsModel block:^(int code, id  _Nonnull data) {
 
 }];
 
-//获取
+// Get
 [DHBleCommand ringGetAncs:^(int code, id  _Nonnull data) {
   if (code == 0){
     DHAncsSetModel *ancsModel = data;
@@ -887,12 +890,12 @@ tAncsModel.isSMS = YES;
   }
 }];
 
-//按下面的顺序确定当前设备支持哪些应用消息.
+// Determine which app message types the device supports, in the order below.
 UInt8 tBitRow = i;
-if (i == 24){ //其它
+if (i == 24){ // others
   tBitRow = 0;
 }
-if (i > 0 && (tMsgSwitchValue & (1 << tBitRow)) < 1){ //不支持的消息全设置为false,不管从设备读到的值.
+if (i > 0 && (tMsgSwitchValue & (1 << tBitRow)) < 1){ // Force unsupported message types to false regardless of the values read from the device.
   continue;
 }
 
@@ -949,12 +952,12 @@ Parameter Description:
 Example of usage:
 
 ```objective-c
-//设置 
+// Set
 [DHBleCommand setMuslimCountSwitch:1 block:^(int code, id  _Nonnull data) {
 
 }];
 
-//获取
+// Get
 [DHBleCommand getMuslimCountSwitch:^(int code, id  _Nonnull data) {
   if (code == 0){
     Boolean tOpen = [data boolValue];
@@ -1126,33 +1129,63 @@ Example of usage:
 
 
 
-##### 3.2.1.21 Touch Event Notification
+##### 3.2.1.21 Device Push Listening
 
-> Device touch event notification, actively reported by the device. Touch operations are reported regardless of screen state. The APP defines the response behavior.
->
-> Received via `BluetoothNotificationTouchEvent` notification.
->
-> **Note:** This is a device-side customization. Before using it, confirm that the device manufacturer has integrated and enabled it in the firmware. If it has not been customized or enabled, the APP will not receive touch event notifications.
+Device-initiated data is delivered through `BluetoothNotificationProtocolPush`. Use `DHDevicePushType` to identify the event type. Dispatch to the main queue before updating the UI.
 
-Notification userInfo data:
+userInfo:
 
-| Field     | Description | Value                                                    |
-| --------- | ----------- | -------------------------------------------------------- |
-| keyType   | Key type    | 1: Touch key (default), 2: Fall (requires fall detect enabled 3.2.1.24) |
-| touchType | Touch type  | 1: Single tap, 2: Double tap, 3: Triple tap, 4: Long press, 5: Flick. <br>When key type=2 (fall), touch type defaults to 1 |
+| Key | Type | Description |
+| --- | ---- | ----------- |
+| dataType | NSNumber | Event type; see `DHDevicePushType` |
+| dataValue | id | Parsed business object for that type |
+| timestamp | NSNumber | Unix milliseconds when the SDK received the push |
 
-Example of usage:
+DHDevicePushType:
+
+| Type | dataValue | Description |
+| ---- | --------- | ----------- |
+| DHDevicePushTypePower | DHBatteryInfoModel | Battery and charging-status push, see 3.2.1.4.1 |
+| DHDevicePushTypeRecordStatus | NSDictionary | Recording-status push: status (1=recording), isRecording, startTime (Unix seconds), duration (seconds), totalCapacity, remainingCapacity |
+| DHDevicePushTypeTouchEvent | NSDictionary | Touch event: keyType (1 touch / 2 fall), touchType (1 single … 5 shake); see the field table below |
+
+Fields of the touch event `dataValue`:
+
+| Field | Description | Value |
+| ---- | ---- | ---- |
+| keyType | Key type | 1: Touch key; 2: Fall (requires the fall-detect reminder enabled, see 3.2.1.24) |
+| touchType | Touch type | 1: Single tap; 2: Double tap; 3: Triple tap; 4: Long press; 5: Flick. Defaults to 1 for fall events |
+
+> Touch operations are reported regardless of the screen state, and the APP defines the response behavior. This feature requires the device firmware to be customized and enabled.
+
+Example:
 
 ```objective-c
-[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(touchEventNotification:) name:BluetoothNotificationTouchEvent object:nil];
+id observer = [[NSNotificationCenter defaultCenter]
+    addObserverForName:BluetoothNotificationProtocolPush
+                object:nil
+                 queue:nil
+            usingBlock:^(NSNotification *notification) {
+    NSDictionary *userInfo = notification.userInfo;
+    switch ([userInfo[@"dataType"] unsignedIntegerValue]) {
+        case DHDevicePushTypePower: {
+            DHBatteryInfoModel *model = userInfo[@"dataValue"];
+            NSLog(@"battery push %zd%%", model.battery);
+            break;
+        }
+        case DHDevicePushTypeTouchEvent: {
+            NSDictionary *event = userInfo[@"dataValue"];
+            NSLog(@"touch push keyType=%zd touchType=%zd",
+                  [event[@"keyType"] integerValue], [event[@"touchType"] integerValue]);
+            break;
+        }
+        default:
+            break;
+    }
+}];
 
-- (void)touchEventNotification:(NSNotification *)ntf
-{
-    NSDictionary *tUserInfo = ntf.userInfo;
-    NSInteger keyType = [tUserInfo[@"keyType"] integerValue];   // 1: Touch key
-    NSInteger touchType = [tUserInfo[@"touchType"] integerValue]; // 1: Single tap, 2: Double tap, 3: Triple tap, 4: Long press, 5: Flick
-    NSLog(@"TouchEvent keyType=%zd touchType=%zd", keyType, touchType);
-}
+// Remove the observer when no longer needed; pass the same instance used to add it
+[[NSNotificationCenter defaultCenter] removeObserver:observer];
 ```
 
 
@@ -1231,7 +1264,7 @@ Example of usage:
 
 > Set or get the fall detection alert switch. When enabled, the device will report fall events via touch event notification (3.2.1.21).
 >
-> Fall events are reported through `BluetoothNotificationRingTouchEvent` notification, with keyType=2 indicating a fall event.
+> Fall events are returned through the `BluetoothNotificationProtocolPush` notification, with `dataType` = `DHDevicePushTypeTouchEvent`; `keyType=2` in `dataValue` indicates a fall event, see 3.2.1.21.
 >
 > Configuration table property: `isSupportFallDetect`
 
@@ -1391,6 +1424,37 @@ Example:
 [DHBleCentralManager connectDeviceWithModel:deviceModel];
 ```
 
+###### 3.2.1.26.4 Device Identity Authentication
+
+> Configuration-table property: `isSupportDeviceChallenge`. Use this feature only when the device reports support.
+
+Methods:
+
+`+ (void)deviceChallenge:(NSString *)challengeHex block:(void(^)(int code, id data))block`
+
+Parameter:
+
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| challengeHex | NSString | Challenge issued by the cloud, 64 hex characters (32 bytes); spaces, colons and dashes are accepted as separators |
+
+Return value:
+
+- When `code == 0`, `data` is an `NSString` (64 hex characters): the HMAC-SHA256 of the challenge computed with the factory-preset device key.
+- Response verification is performed by the app and the cloud; the SDK does not compare it.
+
+Example:
+
+```objective-c
+// Fixed test vector for debugging; use a random challenge issued by the cloud in production
+NSString *challengeHex = @"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
+[DHBleCommand deviceChallenge:challengeHex block:^(int code, id data) {
+    if (code == 0 && [data isKindOfClass:NSString.class]) {
+        NSLog(@"response=%@", data); // compare with the HMAC-SHA256 computed by the cloud
+    }
+}];
+```
+
 ##### 3.2.1.27 Instant Screen Control
 
 > Check `isSupportScreenControl` in the device configuration table before using this feature.
@@ -1446,6 +1510,75 @@ Example:
 }];
 ```
 
+##### 3.2.1.29 Sedentary Reminder Settings and Retrieval
+
+> Configuration-table property: `isSupportSedentary`. Use this feature only when the device reports support.
+
+Methods:
+
+`+ (void)setSedentaryRemind:(DrinkReminderBean *)reminderBean block:(void(^)(int code, id data))block`
+
+`+ (void)getSedentaryRemind:(void(^)(int code, id data))block`
+
+DrinkReminderBean properties:
+
+| Property | Type | Description |
+| -------- | ---- | ----------- |
+| isOpen | BOOL | On/off switch |
+| startHour / startMin | NSInteger | Start time (0–23 / 0–59) |
+| endHour / endMin | NSInteger | End time (0–23 / 0–59) |
+| remindDuration | NSInteger | Reminder interval in minutes |
+
+Return value:
+
+- A setting operation succeeds when `code == 0`.
+- For a successful query, `data` is a `DrinkReminderBean`.
+
+Example:
+
+```objective-c
+DrinkReminderBean *bean = [[DrinkReminderBean alloc] init];
+bean.isOpen = YES;
+bean.startHour = 9;
+bean.startMin = 0;
+bean.endHour = 18;
+bean.endMin = 0;
+bean.remindDuration = 60;
+[DHBleCommand setSedentaryRemind:bean block:^(int code, id data) {
+    NSLog(@"sedentary reminder set, code=%d", code);
+}];
+
+[DHBleCommand getSedentaryRemind:^(int code, id data) {
+    if (code == 0 && [data isKindOfClass:DrinkReminderBean.class]) {
+        DrinkReminderBean *bean = data;
+        NSLog(@"sedentary open=%d %02ld:%02ld-%02ld:%02ld every %ld min",
+              bean.isOpen, bean.startHour, bean.startMin, bean.endHour, bean.endMin, bean.remindDuration);
+    }
+}];
+```
+
+##### 3.2.1.30 Drink Reminder Settings and Retrieval
+
+> Configuration-table property: `isDrink`. Use this feature only when the device reports support.
+
+Methods:
+
+`+ (void)setDrinkRemind:(DrinkReminderBean *)reminderBean block:(void(^)(int code, id data))block`
+
+`+ (void)getDrinkRemind:(void(^)(int code, id data))block`
+
+Parameters and return value are the same as 3.2.1.29 (`DrinkReminderBean` is shared).
+
+Example:
+
+```objective-c
+[DHBleCommand getDrinkRemind:^(int code, id data) {
+    if (code == 0 && [data isKindOfClass:DrinkReminderBean.class]) {
+        NSLog(@"drink reminder open=%d", ((DrinkReminderBean *)data).isOpen);
+    }
+}];
+```
+
 #### 3.2.2 Health data synchronization (real-time single measurement and all-day monitoring)
 
 > There are two ways to monitor health data: real-time single measurements and continuous 24-hour monitoring. Health data includes heart rate, blood oxygen, stress levels, HRV, and sleep, **but sleep is not monitored in real time**.
@@ -1483,17 +1616,17 @@ Example of usage:
 
 ```objective-c
 + (void)controlOpen:(NSInteger)type dataType:(NSInteger)dataType block:(void(^)(int code, id data))block
-//启动心率测试
+// Start heart-rate measurement
 [DHBleCommand controlOpen:1 dataType:BLE_KEY_HEART_RATE block:^(int code, id  _Nonnull data) {
 
 }];
 
-//关闭心率测试
+// Stop heart-rate measurement
 [DHBleCommand controlOpen:0 dataType:BLE_KEY_HEART_RATE block:^(int code, id  _Nonnull data) {
 
 }];
 
-// 监听测量中实时数值改变
+// Observe real-time value changes during measurement
 [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateRingMeasureValueChange:) name:BluetoothNotificationHealthRingMeasureValueChange object:nil];
 
 - (void)updateRingMeasureValueChange:(NSNotification *)ntf
@@ -1558,25 +1691,25 @@ Parameter Description:
 Example of usage:
 
 ```objective-c
-// 1. Set HeartRate Monitor(设置心率监听)
+// 1. Set HeartRate Monitor
 DHHeartRateModeSetModel *tModeSetModel = [[DHHeartRateModeSetModel alloc] init];
 tModeSetModel.isOpen = YES;
-tModeSetModel.startHour = 00; //开始时间固定
+tModeSetModel.startHour = 00; // start time is fixed
 tModeSetModel.startMinute = 00;
-tModeSetModel.endHour = 23; //结束时间固定
+tModeSetModel.endHour = 23; // end time is fixed
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 30; //可设置30分钟或60分钟
+tModeSetModel.interval = 30; // settable to 30 or 60 minutes
 [DHBleCommand setHeartRateMode:tModeSetModel block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"setHeartRateMode OK");
   }
 }];
 
-//1. 获取心率监听
+// 1. Get HeartRate Monitor
 [DHBleCommand getHeartRateMode:^(int code, id  _Nonnull data) {
   if (code == 0){
     DHHeartRateModeSetModel *model = data;
-    NSLog(@"getHeartRateMode OK 开关 %d 检测周期 %d", model.isOpen, model.interval);
+    NSLog(@"getHeartRateMode OK isOpen %d interval %d", model.isOpen, model.interval);
   }
 }];
 ```
@@ -1600,25 +1733,25 @@ Parameter Description:
 Example of usage:
 
 ```objective-c
-// 2. Set Blood oxygen Monitor(设置血氧监听)
+// 2. Set Blood oxygen Monitor
 DHBoModeSetModel *tModeSetModel = [[DHBoModeSetModel alloc] init];
 tModeSetModel.isOpen = YES;
-tModeSetModel.startHour = 00; //开始时间固定
+tModeSetModel.startHour = 00; // start time is fixed
 tModeSetModel.startMinute = 00;
-tModeSetModel.endHour = 23; //结束时间固定
+tModeSetModel.endHour = 23; // end time is fixed
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 60; //固定不可设置
+tModeSetModel.interval = 60; // fixed, not settable
 [DHBleCommand setBoMode:tModeSetModel block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"setBoMode OK");
   }
 }];
 
-//2. 获取血氧监听
+// 2. Get Blood Oxygen Monitor
 [DHBleCommand getBoMode:^(int code, id  _Nonnull data) {
   if (code == 0){
     DHBoModeSetModel *model = data;
-    NSLog(@"getBoMode OK 开关 %d 检测周期 %d", model.isOpen, model.interval); 
+    NSLog(@"getBoMode OK isOpen %d interval %d", model.isOpen, model.interval); 
   }
 }];  
 
@@ -1643,25 +1776,25 @@ Parameter Description:
 Example of usage:
 
 ```objective-c
-// 3. Set HRV Monitor(设置HRV监听)
+// 3. Set HRV Monitor
 DHHrvModeSetModel *tModeSetModel = [[DHHrvModeSetModel alloc] init];
 tModeSetModel.isOpen = YES;
-tModeSetModel.startHour = 00;//开始时间固定
+tModeSetModel.startHour = 00;// start time is fixed
 tModeSetModel.startMinute = 00;
-tModeSetModel.endHour = 23; //结束时间固定
+tModeSetModel.endHour = 23; // end time is fixed
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 60; //固定不可设置
+tModeSetModel.interval = 60; // fixed, not settable
 [DHBleCommand setHrvMode:tModeSetModel block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"setHrvMode OK");
   }
 }];
 
-//3. 获取HRV监听
+// 3. Get HRV Monitor
 [DHBleCommand getHrvMode:^(int code, id  _Nonnull data) {
   if (code == 0){
     DHHrvModeSetModel *model = data;
-    NSLog(@"getHrvMode OK 开关 %d", model.isOpen);
+    NSLog(@"getHrvMode OK isOpen %d", model.isOpen);
   }
 }];
 
@@ -1686,25 +1819,25 @@ Parameter Description:
 Example of usage:
 
 ```objective-c
-// 4. 设置压力监听
+// 4. Set Stress Monitor
 DHStressModeSetModel *tModeSetModel = [[DHStressModeSetModel alloc] init];
 tModeSetModel.isOpen = YES;
-tModeSetModel.startHour = 00;//开始时间固定
+tModeSetModel.startHour = 00;// start time is fixed
 tModeSetModel.startMinute = 00;
-tModeSetModel.endHour = 23; //结束时间固定
+tModeSetModel.endHour = 23; // end time is fixed
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 60; //固定不可设置
+tModeSetModel.interval = 60; // fixed, not settable
 [DHBleCommand setStressMode:tModeSetModel block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"setStressMode OK");
   }
 }];
 
-//4. 获取压力监听
+// 4. Get Stress Monitor
 [DHBleCommand getStressMode:^(int code, id  _Nonnull data) {
   if (code == 0){
     DHStressModeSetModel *model = data;
-    NSLog(@"getStressMode OK 开关 %d", model.isOpen);
+    NSLog(@"getStressMode OK isOpen %d", model.isOpen);
   }
 }];
 
@@ -1731,25 +1864,25 @@ Parameter Description:
 Example of usage:
 
 ```objective-c
-// 5. 设置血糖监听
+// 5. Set Blood Sugar Monitor
 DHBloodSugarModeSetModel *tModeSetModel = [[DHBloodSugarModeSetModel alloc] init];
 tModeSetModel.isOpen = YES;
-tModeSetModel.startHour = 00;//开始时间固定
+tModeSetModel.startHour = 00;// start time is fixed
 tModeSetModel.startMinute = 00;
-tModeSetModel.endHour = 23; //结束时间固定
+tModeSetModel.endHour = 23; // end time is fixed
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 60; //固定不可设置
+tModeSetModel.interval = 60; // fixed, not settable
 [DHBleCommand setBloodSugarMode:tModeSetModel block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"setBloodSugarMode OK");
   }
 }];
 
-//5. 获取血糖监听
+// 5. Get Blood Sugar Monitor
 [DHBleCommand getBloodSugarMode:^(int code, id  _Nonnull data) {
   if (code == 0){
     DHBloodSugarModeSetModel *model = data;
-    NSLog(@"getBloodSugarMode OK 开关 %d", model.isOpen);
+    NSLog(@"getBloodSugarMode OK isOpen %d", model.isOpen);
   }
 }];
 
@@ -1778,14 +1911,14 @@ Parameter Description:
 Example of usage:
 
 ```objective-c
-// 6. Set Blood Pressure Monitor(设置血压监听)
+// 6. Set Blood Pressure Monitor
 DHBpModeSetModel *tModeSetModel = [[DHBpModeSetModel alloc] init];
 tModeSetModel.isOpen = YES;
-tModeSetModel.startHour = 00;//开始时间固定
+tModeSetModel.startHour = 00;// start time is fixed
 tModeSetModel.startMinute = 00;
-tModeSetModel.endHour = 23; //结束时间固定
+tModeSetModel.endHour = 23; // end time is fixed
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 60; //固定不可设置
+tModeSetModel.interval = 60; // fixed, not settable
 [DHBleCommand setBpMode:tModeSetModel block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"setBpMode OK");
@@ -1804,6 +1937,50 @@ tModeSetModel.interval = 60; //固定不可设置
 
 
 
+###### 3.2.2.2.7 Body Temperature Monitoring Settings and Retrieval
+
+> The interval can be set to 30 or 60 minutes;
+>
+> Configuration table property: `isSupportTemperatureMonitoring`
+
+Method Description:
+
+`+(void)setTimedBodyTemperature:(DHHeartRateModeSetModel *)model block:(void(^)(int code, id data))block`
+
+`+(void)getTimedBodyTemperature:(void(^)(int code, id data))block`
+
+Parameter Description:
+
+| Parameter | Type                    | Description | Value                                                        |
+| --------- | ------------------------ | ----------- | ------------------------------------------------------------ |
+| model     | DHHeartRateModeSetModel  | class       | isOpen: true on / false off<br>interval: interval, 30 or 60 minutes<br>startHour: fixed 0<br>startMinute: fixed 0<br>endHour: fixed 23<br>endMinute: fixed 59 |
+
+Example of usage:
+
+```objective-c
+// 7. Set body temperature monitoring
+DHHeartRateModeSetModel *tModeSetModel = [[DHHeartRateModeSetModel alloc] init];
+tModeSetModel.isOpen = YES;
+tModeSetModel.startHour = 00;
+tModeSetModel.startMinute = 00;
+tModeSetModel.endHour = 23;
+tModeSetModel.endMinute = 59;
+tModeSetModel.interval = 60;
+[DHBleCommand setTimedBodyTemperature:tModeSetModel block:^(int code, id  _Nonnull data) {
+    if (code == 0){ NSLog(@"setTimedBodyTemperature OK"); }
+}];
+
+//7. Get body temperature monitoring
+[DHBleCommand getTimedBodyTemperature:^(int code, id  _Nonnull data) {
+    if (code == 0){
+        DHHeartRateModeSetModel *model = data;
+        NSLog(@"getTimedBodyTemperature OK isOpen %d interval %zd", model.isOpen, model.interval);
+    }
+}];
+```
+
+
+
 ##### 3.2.2.3 24/7 monitoring - Synchronized health history data
 
 > Synchronizing health history data will automatically sync the corresponding health data based on the device's capabilities.
@@ -1812,35 +1989,35 @@ tModeSetModel.interval = 60; //固定不可设置
 
 ```objective-c
 [DHBleCommand startDataSyncing:^(int code, id data){
-                NSLog(@"同步完成 %d", code);
+                NSLog(@"sync done %d", code);
             } datablcok:^(int code, int progress, id  _Nonnull data) {
                 if (code == 0) {
                     if ([data isKindOfClass:[NSArray class]]) {
                         NSArray *array = data;
                         for (id model in array) {
                             if ([model isKindOfClass:[DHDailyStepModel class]]) {  //Step
-                                NSLog(@"同步有 计步数据");
+                                NSLog(@"sync contains step data");
                             }
                             else if ([model isKindOfClass:[DHDailySleepModel class]]) { //Sleep
-                                NSLog(@"同步有 睡眠数据");
+                                NSLog(@"sync contains sleep data");
                             }
                             else if ([model isKindOfClass:[DHDailyHrModel class]]) { //HeartRate
-                                NSLog(@"同步有 心率数据");
+                                NSLog(@"sync contains heart-rate data");
                             }
                             else if ([model isKindOfClass:[DHDailyBoModel class]]) { //BO
-                                NSLog(@"同步有 血氧数据");
+                                NSLog(@"sync contains blood-oxygen data");
                             }
                             else if ([model isKindOfClass:[DHDailyHrvModel class]]) { ///HRV
-                                NSLog(@"同步有 HRV数据");
+                                NSLog(@"sync contains HRV data");
                             }
                             else if ([model isKindOfClass:[DHDailyPressureModel class]]) { ///Stress
-                                NSLog(@"同步有 Stress数据");
+                                NSLog(@"sync contains stress data");
                             }
                             else if ([model isKindOfClass:[DHDailyBloodSugarModel class]]) { ///BloodSugar
-                                NSLog(@"同步有 血糖数据");
+                                NSLog(@"sync contains blood-sugar data");
                             }
                             else if ([model isKindOfClass:[DHDailyMuslimCountModel class]]) { ///Muslim count
-                                NSLog(@"同步有 赞念数据");
+                                NSLog(@"sync contains Muslim count data");
                             }
                             else if ([model isKindOfClass:[DHDailyTempModel class]]) { ///Body temperature
                                 NSLog(@"Body temperature data received");
@@ -2072,10 +2249,10 @@ Parameter Description:
 
 | WorkoutControlType | Type |      |          |
 | ------------------ | ---- | ---- | -------- |
-| Workout_Begin      | Int  | 整形 | Begin    |
-| Workout_Continue   | Int  | 整形 | Continue |
-| Workout_Pause      | Int  | 整形 | Pause    |
-| Workout_Finish     | Int  | 整形 | Finish   |
+| Workout_Begin      | Int  | Integer | Begin    |
+| Workout_Continue   | Int  | Integer | Continue |
+| Workout_Pause      | Int  | Integer | Pause    |
+| Workout_Finish     | Int  | Integer | Finish   |
 
 Example of usage:
 
@@ -2112,12 +2289,12 @@ Explanation of the data returned in the notification of changes in exercise data
 
 | Parameter        | Type |      |                                                              |
 | ---------------- | ---- | ---- | ------------------------------------------------------------ |
-| ActivityTime     | Int  | 整形 | Duration of exercise, in seconds (s);                        |
-| ActivitySteps    | Int  | 整形 | Steps taken during exercise                                  |
-| ActivityDistance | Int  | 整形 | Distance is generated during movement, measured in meters (m); |
-| ActivityCalorie  | Int  | 整形 | Heat is generated during exercise, measured in calories (cal); |
-| ActivityHr       | Int  | 整形 | Dynamic heart rate during exercise                           |
-| ActivityDataType | Int  | 整形 | The source type, which is also returned by `setRingEnterWorkOut`. |
+| ActivityTime     | Int  | Integer | Duration of exercise, in seconds (s);                        |
+| ActivitySteps    | Int  | Integer | Steps taken during exercise                                  |
+| ActivityDistance | Int  | Integer | Distance is generated during movement, measured in meters (m); |
+| ActivityCalorie  | Int  | Integer | Heat is generated during exercise, measured in calories (cal); |
+| ActivityHr       | Int  | Integer | Dynamic heart rate during exercise                           |
+| ActivityDataType | Int  | Integer | The source type, which is also returned by `setRingEnterWorkOut`. |
 
 
 
@@ -2125,13 +2302,13 @@ Example of usage:
 
 ```objective-c
 DHSportControlModel *model = [[DHSportControlModel alloc] init];
-model.controlType = Workout_Begin; //开始
+model.controlType = Workout_Begin; // begin
 model.sportType = tbleActivityMode;
 [DHBleCommand controlSportWithRing:model block:^(int code, id  _Nonnull data) {
   if (code == 0){
     WorkoutRunningController *runningC = [[WorkoutRunningController alloc] initWithNibName:@"WorkoutRunningController" bundle:nil];
     runningC.bleActivityMode = tbleActivityMode;
-    runningC.controllType = Workout_Begin; //开始
+    runningC.controllType = Workout_Begin; // begin
     runningC.modalPresentationStyle = UIModalPresentationOverFullScreen;
     [weakSelf presentViewController:runningC animated:YES completion:^{
 
@@ -2177,9 +2354,9 @@ The corresponding names for BleActivityMode can be found in the example Demo str
 
 ##### 3.2.4.3 Control enabling/disabling real-time notifications of motion data from the device.
 
-> 控制开启/关闭设备实时通知运动数据;
+> Controls enabling/disabling real-time workout-data notifications from the device;
 >
-> 运动中数据变化通过接收 `BluetoothNotificationRingRuningData` 通知获取,有时app关闭与进入后台,可告诉设备停止通知数据.
+> Workout data changes are received via the `BluetoothNotificationRingRuningData` notification; when the app closes or enters the background, you can tell the device to stop notifying.
 
 Method Description:
 
@@ -2196,7 +2373,7 @@ Parameter Description:
 Example of usage:
 
 ```objective-c
-//退出运动界面
+// Exit the workout screen
 [DHBleCommand setRingEnterWorkOut:0 block:^(int code, id  _Nonnull data) {
 
 }];
@@ -2212,7 +2389,7 @@ Method Description:
 
 Return data DHDailySportModel parameter description:
 
-| DHDailySportModel类 | Type     |      |                                                              |
+| DHDailySportModel class | Type     |      |                                                              |
 | ------------------- | -------- | ---- | ------------------------------------------------------------ |
 | timestamp           | NSString |      | Exercise start timestamp                                     |
 | date                | NSString |      | Date-yyyyMMdd                                                |
@@ -2227,14 +2404,14 @@ Example of usage:
 
 ```objective-c
 [DHBleCommand startRingWorkout3Syncing:^(int code, id  _Nonnull data) {
-  NSLog(@"startRingWorkout3Syncing 同步完成 code %d", code);
+  NSLog(@"startRingWorkout3Syncing done code %d", code);
 } dataBlock:^(int code, int progress, id  _Nonnull data) {
   if (code == 0) {
     if ([data isKindOfClass:[NSArray class]]){
       NSArray *array = data;
       for (id model in array) {
         if ([model isKindOfClass:[DHDailySportModel class]]) {
-          //保存数据库或其它操作
+          // Save to the database or perform other operations
 
         }
       }
@@ -2247,6 +2424,129 @@ Example of usage:
 ```
 
 
+
+#### 3.2.5 Recording
+
+> Check `isSupportRecording` in the device function menu. Recording requires compatible device hardware and firmware.
+>
+> Results are delivered through the supplied blocks. A nonzero `code` indicates failure. Wait for the current file-list or download operation to finish before starting another; do not invoke these operations concurrently.
+
+##### 3.2.5.1 Start/stop recording
+
+`+ (void)recordControl:(BOOL)start block:(void(^)(int code, id data))block`
+
+| Parameter | Type | Description |
+| ---- | ---- | ---- |
+| start | BOOL | YES: start; NO: stop |
+| block | Callback | data is an NSNumber containing the device response value; use getRecordStatus for the full recording state |
+
+```objective-c
+[DHBleCommand recordControl:YES block:^(int code, id data) {
+    NSLog(@"recordControl code=%d result=%@", code, data);
+}];
+// Pass NO to stop recording.
+```
+
+##### 3.2.5.2 Get recording status
+
+`+ (void)getRecordStatus:(void(^)(int code, id data))block`
+
+Query the status after device initialization. On success, `data` is an NSDictionary with NSNumber values:
+
+| Field | Description |
+| ---- | ---- |
+| status | 1: recording; 0: idle |
+| isRecording | Whether recording is active |
+| startTime | Recording start time in Unix seconds; 0 when idle |
+| duration | Elapsed recording time in seconds; 0 when idle |
+| totalCapacity | Total recording storage in bytes |
+| remainingCapacity | Available recording storage in bytes |
+
+```objective-c
+[DHBleCommand getRecordStatus:^(int code, id data) {
+    if (code != 0 || ![data isKindOfClass:NSDictionary.class]) return;
+    NSDictionary *status = data;
+    NSLog(@"recording=%@ duration=%@ remaining=%@",
+          status[@"isRecording"], status[@"duration"], status[@"remainingCapacity"]);
+}];
+```
+
+Recording status pushes use `BluetoothNotificationProtocolPush`, with `dataType = DHDevicePushTypeRecordStatus` and the status dictionary in `dataValue`. See the device push notification section.
+
+##### 3.2.5.3 Get recording file list
+
+`+ (void)getRecordFileList:(void(^)(int code, id data))block`
+
+The SDK collects all pages and returns the complete `NSArray<NSDictionary *>` once finished, or an empty array when no files exist. Each item contains NSNumber values:
+
+| Field | Description |
+| ---- | ---- |
+| fileId | File ID used for download or deletion |
+| fileSize | Original device file size in bytes |
+| duration | Recording duration in seconds |
+| timestamp | Recording time in Unix seconds, converted by the SDK |
+
+```objective-c
+[DHBleCommand getRecordFileList:^(int code, id data) {
+    if (code != 0 || ![data isKindOfClass:NSArray.class]) return;
+    for (NSDictionary *item in (NSArray *)data) {
+        NSLog(@"fileId=%@ size=%@ duration=%@",
+              item[@"fileId"], item[@"fileSize"], item[@"duration"]);
+    }
+}];
+```
+
+##### 3.2.5.4 Download a recording file
+
+`+ (void)transferRecordFile:(UInt32)fileId block:(void(^)(int code, id data))block progressBlock:(void(^)(int code, CGFloat progress, id data))progressBlock`
+
+| Parameter | Description |
+| ---- | ---- |
+| fileId | File ID obtained from the file list |
+| block | Completion callback; when code is 0, data is the complete Ogg Opus NSData |
+| progressBlock | Progress callback; progress ranges from 0 to 1. data contains fileId, fileSize, and received; sizes are in bytes |
+
+The SDK handles packet transfer and Ogg Opus conversion. Progress reaching 1 does not replace the completion callback. The SDK does not save a local file or return a path; the App can save the completed data as an `.opus` file. Its converted size may differ from the original `fileSize`.
+
+```objective-c
+// fileId comes from getRecordFileList.
+[DHBleCommand transferRecordFile:fileId block:^(int code, id data) {
+    if (code != 0 || ![data isKindOfClass:NSData.class]) return;
+    NSString *directory = NSSearchPathForDirectoriesInDomains(
+        NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+    NSString *path = [directory stringByAppendingPathComponent:
+        [NSString stringWithFormat:@"%u.opus", fileId]];
+    NSError *error = nil;
+    BOOL saved = [(NSData *)data writeToFile:path options:NSDataWritingAtomic error:&error];
+    NSLog(@"saved=%d path=%@ error=%@", saved, path, error);
+} progressBlock:^(int code, CGFloat progress, id data) {
+    if (code == 0) NSLog(@"download progress=%.0f%%", progress * 100);
+}];
+```
+
+##### 3.2.5.5 Delete a recording file
+
+`+ (void)deleteRecordFile:(UInt32)fileId block:(void(^)(int code, id data))block`
+
+Deletes one device file by ID. Deletion is irreversible; save the downloaded file first if needed.
+
+```objective-c
+[DHBleCommand deleteRecordFile:fileId block:^(int code, id data) {
+    NSLog(@"deleteRecordFile code=%d", code);
+}];
+```
+
+##### 3.2.5.6 Format recording storage
+
+`+ (void)formatRecordStorage:(void(^)(int code, id data))block`
+
+Deletes all recordings on the device. This is irreversible; obtain user confirmation before calling.
+
+```objective-c
+[DHBleCommand formatRecordStorage:^(int code, id data) {
+    NSLog(@"formatRecordStorage code=%d", code);
+}];
+```
 
 #### 5.2.5 Sensor Raw Data
 
@@ -2469,6 +2769,13 @@ Example:
 
 ## SDK Revision History
 
+**V2.0.0_260922** (2026.09.22)
+
+- Added recording API documentation (3.2.5), gated by `isSupportRecording`.
+- Added device identity authentication (3.2.1.26.4).
+- Added sedentary reminder settings and retrieval (3.2.1.29).
+- Added drink reminder settings and retrieval (3.2.1.30).
+
 **V2.0.0_20260909** (2026.09.09)
 
 - Added metric/imperial unit settings and retrieval (3.2.1.28).
@@ -2488,18 +2795,6 @@ Example:
 - Added instant screen control (3.2.1.27).
 - Added the available-firmware endpoint and OTA device-model/version validation guidance (3.2.3.1).
 
-**V2.0.0_20260724** (2026.07.24)
+## Contact / Technical Support
 
-- Added support for step-detail intervals.
-
-**V2.0.0_20260706** (2026.07.06)
-
-- Added external `CBCentralManager` integration (3.1.8), allowing the customer App to scan devices with its unified scanner and let the SDK connect with the same Central.
-
-
-
-
-
-## 联系方式 / 技术支持
-
-- 技术支持邮箱  developer@dhouse88.com
+- Technical support email: developer@dhouse88.com

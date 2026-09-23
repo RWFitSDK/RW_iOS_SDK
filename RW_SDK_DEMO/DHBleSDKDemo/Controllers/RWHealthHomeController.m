@@ -6,6 +6,7 @@
 #import "RWHealthHomeController.h"
 #import "RWHealthDetailController.h"
 #import "WorkoutTypeController.h"
+#import "RecordingViewController.h"
 #import "ScanViewController.h"
 #import <DHBleSDK/DHDailyStepModel.h>
 #import <DHBleSDK/DHDailySleepModel.h>
@@ -248,6 +249,7 @@ static UIColor *RWHealthColor(NSString *hex)
         add(menu.isDataTypeTemperature, @"temperature", NSLocalizedString(@"rw_temperature", nil), @"℃", BLE_KEY_TEMPERATURE);
         add(menu.isDataTypeMuslimCount, @"muslim", NSLocalizedString(@"rw_tasbeeh_count", nil), NSLocalizedString(@"rw_unit_times", nil), 0);
         add(menu.isSupportWorkout3, @"workout", NSLocalizedString(@"rw_multi_sport", nil), @"", 0);
+        add(menu.isSupportRecording, @"recording", NSLocalizedString(@"rw_recording", nil), @"", 0);
     }
     self.healthItems = items;
     [self.collectionView reloadData];
@@ -290,7 +292,7 @@ static UIColor *RWHealthColor(NSString *hex)
         if (code == 0) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (!weakSelf.syncingHealthData) return;
-                [SVProgressHUD showWithStatus:[NSString stringWithFormat:NSLocalizedString(@"rw_syncing_progress", nil), progress]];
+                [DHProgressHUD showStatus:[NSString stringWithFormat:NSLocalizedString(@"rw_syncing_progress", nil), progress]];
                 [weakSelf consumeHealthModels:data];
             });
         }
@@ -386,6 +388,10 @@ static UIColor *RWHealthColor(NSString *hex)
     cell.titleLabel.text = item[@"title"];
     cell.valueLabel.text = self.healthValues[item[@"id"]] ?: ([item[@"id"] isEqual:@"workout"] ? NSLocalizedString(@"rw_select_sport", nil) : NSLocalizedString(@"rw_no_data", nil));
     cell.detailLabel.text = [item[@"id"] isEqual:@"workout"] ? NSLocalizedString(@"rw_enter_multi_sport", nil) : NSLocalizedString(@"rw_view_details", nil);
+    if ([item[@"id"] isEqual:@"recording"]) {
+        cell.valueLabel.text = NSLocalizedString(@"rw_record_control", nil);
+        cell.detailLabel.text = NSLocalizedString(@"rw_record_file_management", nil);
+    }
     return cell;
 }
 
@@ -398,6 +404,12 @@ static UIColor *RWHealthColor(NSString *hex)
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
     NSDictionary *item = self.healthItems[indexPath.item];
+    if ([item[@"id"] isEqual:@"recording"]) {
+        RecordingViewController *controller = [[RecordingViewController alloc] init];
+        controller.hidesBottomBarWhenPushed = YES;
+        [self.navigationController pushViewController:controller animated:YES];
+        return;
+    }
     if ([item[@"id"] isEqual:@"workout"]) {
         WorkoutTypeController *controller = [[WorkoutTypeController alloc] initWithNibName:@"WorkoutTypeController" bundle:nil];
         controller.hidesBottomBarWhenPushed = YES;

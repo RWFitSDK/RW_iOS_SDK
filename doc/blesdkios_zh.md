@@ -8,7 +8,7 @@
 
 #### 1.1 适用平台与语言
 
-- iOS12及以上, 语言Objective-C.
+- iOS15及以上, 语言Objective-C.
 
 #### 1.2 相关术语
 
@@ -249,6 +249,9 @@ DeviceFuncV2Model类属性定义:
 | isSupportDevicePasswordAuth | 是否支持设备密码认证       |
 | isSupportScreenControl      | 是否支持即时屏幕亮灭控制   |
 | isSupportUnitSetting        | 是否支持公制/英制单位设置  |
+| isSupportDeviceChallenge    | 是否支持设备身份认证       |
+| isSupportSedentary          | 是否支持久坐提醒设置       |
+| isDrink                     | 是否支持喝水提醒设置       |
 
 ##### 3.1.8 使用外部 CBCentralManager 搜索并由 SDK 连接
 
@@ -470,24 +473,14 @@ userInfoModel.age = 20;
 
 支持实时电量推送的设备，会在开始充电或停止充电时主动推送当前电量和充电状态。该能力需设备固件支持，并非固定周期持续上报；如需主动获取当前电量，请调用 `getBattery` 。
 
-通过 `BluetoothNotificationProtocolPush` 通知监听实时电量：
+实时电量通过 [3.2.1.21 设备主动推送监听](#32121-设备主动推送监听) 统一接收，无需单独注册监听：
 
-```objective-c
-id observer = [[NSNotificationCenter defaultCenter]
-    addObserverForName:BluetoothNotificationProtocolPush
-                object:nil
-                 queue:NSOperationQueue.mainQueue
-            usingBlock:^(NSNotification *notification) {
-    NSDictionary *userInfo = notification.userInfo;
-    if ([userInfo[@"dataType"] unsignedIntegerValue] != DHDevicePushTypePower) return;
+| 字段 | 说明 |
+| ---- | ---- |
+| dataType | `DHDevicePushTypePower` |
+| dataValue | `DHBatteryInfoModel`：`battery` 为电量百分比；`status` 为充电状态，`0` 未充电，`1` 充电中（需固件支持） |
 
-    DHBatteryInfoModel *model = userInfo[@"dataValue"];
-    NSLog(@"实时电量 %zd，充电状态 %zd", model.battery, model.status);
-}];
-
-// 不再使用时移除，须传入添加时的同一实例
-[[NSNotificationCenter defaultCenter] removeObserver:observer];
-```
+监听注册、事件分发和取消监听的示例见 3.2.1.21。
 
 ##### 3.2.1.5 获取与设置视频控制开关
 
@@ -1134,36 +1127,64 @@ tHRAlertModel.underValue = 0xff;
 
 
 
-##### 3.2.1.21 触摸事件通知
+##### 3.2.1.21 设备主动推送监听
 
-> 设备触摸事件通知, 设备主动上报. 触摸操作无论熄屏与否都会上报, 由APP定义响应行为.
->
-> 通过 `BluetoothNotificationTouchEvent` 通知返回.
->
-> **提示:** 此功能为设备端定制功能, 使用前请确认设备厂家已在固件中集成并启用; 未定制或未启用时, APP无法收到触摸事件通知.
+设备主动上报的数据统一通过 `BluetoothNotificationProtocolPush` 通知接收，使用 `DHDevicePushType` 区分事件类型。更新 UI 时请切换到主线程。
 
-通知 userInfo 数据说明:
+userInfo 说明：
 
-| 字段      | 说明     | 值                                                    |
-| --------- | -------- | ----------------------------------------------------- |
-| keyType   | 按键类型 | 1: 触摸按键(默认), 2: 跌落(需开启跌落提醒3.2.1.24)    |
-| touchType | 触摸类型 | 1: 单击, 2: 双击, 3: 三击, 4: 长按, 5: 甩动. <br>按键类型为2(跌落)时, 触摸类型默认为1 |
+| 键 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| dataType | NSNumber | 事件类型，见 `DHDevicePushType` |
+| dataValue | id | 该类型解析后的业务对象 |
+| timestamp | NSNumber | SDK 收到推送的 Unix 毫秒 |
 
-调用示例:
+DHDevicePushType 说明：
+
+| 类型 | dataValue | 说明 |
+| ---- | ---- | ---- |
+| DHDevicePushTypePower | DHBatteryInfoModel | 电量与充电状态推送，见 3.2.1.4.1 |
+| DHDevicePushTypeRecordStatus | NSDictionary | 录音状态推送：status(1=录音中)、isRecording、startTime(Unix秒)、duration(秒)、totalCapacity、remainingCapacity |
+| DHDevicePushTypeTouchEvent | NSDictionary | 触摸事件：keyType(1触摸/2跌落)、touchType(1单击~5甩动) |
+
+触摸事件的 `dataValue` 字段说明：
+
+| 字段 | 说明 | 值 |
+| ---- | ---- | ---- |
+| keyType | 按键类型 | 1：触摸按键；2：跌落（需开启跌落提醒，见 3.2.1.24） |
+| touchType | 触摸类型 | 1：单击；2：双击；3：三击；4：长按；5：甩动。跌落事件时默认为 1 |
+
+> 触摸操作无论熄屏与否都会上报，由 APP 定义响应行为。此功能需设备固件定制支持并启用。
+
+调用示例：
 
 ```objective-c
-[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(touchEventNotification:) name:BluetoothNotificationTouchEvent object:nil];
+id observer = [[NSNotificationCenter defaultCenter]
+    addObserverForName:BluetoothNotificationProtocolPush
+                object:nil
+                 queue:nil
+            usingBlock:^(NSNotification *notification) {
+    NSDictionary *userInfo = notification.userInfo;
+    switch ([userInfo[@"dataType"] unsignedIntegerValue]) {
+        case DHDevicePushTypePower: {
+            DHBatteryInfoModel *model = userInfo[@"dataValue"];
+            NSLog(@"电量推送 %zd%%", model.battery);
+            break;
+        }
+        case DHDevicePushTypeTouchEvent: {
+            NSDictionary *event = userInfo[@"dataValue"];
+            NSLog(@"触摸推送 keyType=%zd touchType=%zd",
+                  [event[@"keyType"] integerValue], [event[@"touchType"] integerValue]);
+            break;
+        }
+        default:
+            break;
+    }
+}];
 
-- (void)touchEventNotification:(NSNotification *)ntf
-{
-    NSDictionary *tUserInfo = ntf.userInfo;
-    NSInteger keyType = [tUserInfo[@"keyType"] integerValue];   // 1:触摸按键
-    NSInteger touchType = [tUserInfo[@"touchType"] integerValue]; // 1:单击 2:双击 3:三击 4:长按 5:甩动
-    NSLog(@"TouchEvent keyType=%zd touchType=%zd", keyType, touchType);
-}
+// 不再使用时移除，须传入添加时的同一实例
+[[NSNotificationCenter defaultCenter] removeObserver:observer];
 ```
-
-
 
 ##### 3.2.1.22 震动间隔时长设置与获取
 
@@ -1239,7 +1260,7 @@ tHRAlertModel.underValue = 0xff;
 
 > 设置或获取跌落提醒开关. 开启后设备检测到跌落时会通过触摸事件通知(3.2.1.21)上报.
 >
-> 跌落事件通过 `BluetoothNotificationRingTouchEvent` 通知返回, 按键类型(keyType)=2 表示跌落事件.
+> 跌落事件通过 `BluetoothNotificationProtocolPush` 通知返回，`dataType` 为 `DHDevicePushTypeTouchEvent`，`dataValue` 中 `keyType=2` 表示跌落事件，见 3.2.1.21。
 >
 > 配置表属性: `isSupportFallDetect`
 
@@ -1406,6 +1427,37 @@ flowchart TD
 [DHBleCentralManager connectDeviceWithModel:deviceModel];
 ```
 
+###### 3.2.1.26.4 设备身份认证
+
+> 功能配置表属性：`isSupportDeviceChallenge`。仅支持该能力的设备可使用。
+
+方法说明：
+
+`+ (void)deviceChallenge:(NSString *)challengeHex block:(void(^)(int code, id data))block`
+
+参数说明：
+
+| 参数 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| challengeHex | NSString | 云端生成的挑战值，64个hex字符(32字节)，兼容空格/冒号/横线分隔 |
+
+返回说明：
+
+- `code == 0` 时 `data` 为设备应答的 `NSString`(64个hex字符);
+- 应答校验由 APP 与云端完成，SDK 不做比对。
+
+调用示例：
+
+```objective-c
+// 调试用固定测试向量；正式接入请使用云端下发的随机挑战值
+NSString *challengeHex = @"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
+[DHBleCommand deviceChallenge:challengeHex block:^(int code, id data) {
+    if (code == 0 && [data isKindOfClass:NSString.class]) {
+        NSLog(@"response=%@", data); // 与云端计算的 HMAC-SHA256 比对
+    }
+}];
+```
+
 ##### 3.2.1.27 即时屏幕控制
 
 > 通过功能配置表属性 `isSupportScreenControl` 判断设备是否支持。
@@ -1457,6 +1509,75 @@ flowchart TD
 [DHBleCommand getMeasureUnit:^(int code, id data) {
     if (code == 0 && [data isKindOfClass:NSNumber.class]) {
         NSLog(@"当前单位=%@", [data integerValue] == 1 ? @"英制" : @"公制");
+    }
+}];
+```
+
+##### 3.2.1.29 久坐提醒设置与获取
+
+> 功能配置表属性：`isSupportSedentary`。仅支持该能力的设备可使用。
+
+方法说明：
+
+`+ (void)setSedentaryRemind:(DrinkReminderBean *)reminderBean block:(void(^)(int code, id data))block`
+
+`+ (void)getSedentaryRemind:(void(^)(int code, id data))block`
+
+DrinkReminderBean 属性说明：
+
+| 属性 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| isOpen | BOOL | 开关 |
+| startHour / startMin | NSInteger | 起始时间(0–23 / 0–59) |
+| endHour / endMin | NSInteger | 结束时间(0–23 / 0–59) |
+| remindDuration | NSInteger | 提醒间隔，分钟 |
+
+返回说明：
+
+- 设置成功时 `code == 0`。
+- 查询成功时 `data` 为 `DrinkReminderBean`。
+
+调用示例：
+
+```objective-c
+DrinkReminderBean *bean = [[DrinkReminderBean alloc] init];
+bean.isOpen = YES;
+bean.startHour = 9;
+bean.startMin = 0;
+bean.endHour = 18;
+bean.endMin = 0;
+bean.remindDuration = 60;
+[DHBleCommand setSedentaryRemind:bean block:^(int code, id data) {
+    NSLog(@"久坐提醒设置 code=%d", code);
+}];
+
+[DHBleCommand getSedentaryRemind:^(int code, id data) {
+    if (code == 0 && [data isKindOfClass:DrinkReminderBean.class]) {
+        DrinkReminderBean *bean = data;
+        NSLog(@"久坐提醒 open=%d %02ld:%02ld-%02ld:%02ld 间隔%ld分钟",
+              bean.isOpen, bean.startHour, bean.startMin, bean.endHour, bean.endMin, bean.remindDuration);
+    }
+}];
+```
+
+##### 3.2.1.30 喝水提醒设置与获取
+
+> 功能配置表属性：`isDrink`。仅支持该能力的设备可使用。
+
+方法说明：
+
+`+ (void)setDrinkRemind:(DrinkReminderBean *)reminderBean block:(void(^)(int code, id data))block`
+
+`+ (void)getDrinkRemind:(void(^)(int code, id data))block`
+
+参数与返回同 3.2.1.29(共用 `DrinkReminderBean`)。
+
+调用示例：
+
+```objective-c
+[DHBleCommand getDrinkRemind:^(int code, id data) {
+    if (code == 0 && [data isKindOfClass:DrinkReminderBean.class]) {
+        NSLog(@"喝水提醒 open=%d", ((DrinkReminderBean *)data).isOpen);
     }
 }];
 ```
@@ -2312,6 +2433,128 @@ BleActivityMode 对应名字见示例Demo 字符串里定义:
 
 
 
+#### 3.2.5 录音功能
+
+> 通过功能配置表属性 `isSupportRecording` 判断是否支持，需设备硬件和固件支持录音功能。
+>
+
+##### 3.2.5.1 开始/停止录音
+
+`+ (void)recordControl:(BOOL)start block:(void(^)(int code, id data))block`
+
+| 参数 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| start | BOOL | YES：开始录音；NO：停止录音 |
+| block | 回调 | data 为 NSNumber，返回设备应答值；当前完整录音状态通过 getRecordStatus 查询 |
+
+```objective-c
+[DHBleCommand recordControl:YES block:^(int code, id data) {
+    NSLog(@"recordControl code=%d result=%@", code, data);
+}];
+// 停止录音时将 YES 改为 NO。
+```
+
+##### 3.2.5.2 查询录音状态
+
+`+ (void)getRecordStatus:(void(^)(int code, id data))block`
+
+连接完成后可先查询一次状态。成功时 `data` 为 NSDictionary，以下值均以 NSNumber 返回：
+
+| 字段 | 说明 |
+| ---- | ---- |
+| status | 1：录音中；0：空闲 |
+| isRecording | 是否正在录音 |
+| startTime | 本次录音开始时间，Unix 秒时间戳；非录音状态为 0 |
+| duration | 已录音时长，单位秒；非录音状态为 0 |
+| totalCapacity | 录音区总容量，单位字节 |
+| remainingCapacity | 录音区剩余容量，单位字节 |
+
+```objective-c
+[DHBleCommand getRecordStatus:^(int code, id data) {
+    if (code != 0 || ![data isKindOfClass:NSDictionary.class]) return;
+    NSDictionary *status = data;
+    NSLog(@"recording=%@ duration=%@ remaining=%@",
+          status[@"isRecording"], status[@"duration"], status[@"remainingCapacity"]);
+}];
+```
+
+录音状态主动推送通过 `BluetoothNotificationProtocolPush` 接收，`dataType` 为 `DHDevicePushTypeRecordStatus`，`dataValue` 为上述状态字典。监听方式见 3.2.1.21。
+
+##### 3.2.5.3 获取录音文件列表
+
+`+ (void)getRecordFileList:(void(^)(int code, id data))block`
+
+SDK 自动接收所有分页，完成后一次性返回 `NSArray<NSDictionary *>`；没有文件时返回空数组。每项字段如下，值均为 NSNumber：
+
+| 字段 | 说明 |
+| ---- | ---- |
+| fileId | 文件 ID，用于下载或删除文件 |
+| fileSize | 设备原始文件大小，单位字节 |
+| duration | 录音时长，单位秒 |
+| timestamp | 设备录音时间，Unix 秒时间戳，SDK 已完成转换 |
+
+```objective-c
+[DHBleCommand getRecordFileList:^(int code, id data) {
+    if (code != 0 || ![data isKindOfClass:NSArray.class]) return;
+    for (NSDictionary *item in (NSArray *)data) {
+        NSLog(@"fileId=%@ size=%@ duration=%@",
+              item[@"fileId"], item[@"fileSize"], item[@"duration"]);
+    }
+}];
+```
+
+##### 3.2.5.4 下载录音文件
+
+`+ (void)transferRecordFile:(UInt32)fileId block:(void(^)(int code, id data))block progressBlock:(void(^)(int code, CGFloat progress, id data))progressBlock`
+
+| 参数 | 说明 |
+| ---- | ---- |
+| fileId | 来自文件列表的文件 ID |
+| block | 完成回调；code 为 0 时 data 为完整的 Ogg Opus NSData |
+| progressBlock | 进度回调；progress 为 0～1，data 为包含 fileId、fileSize、received 的字典，大小单位为字节 |
+
+SDK 自动处理分包并转换为 Ogg Opus。进度达到 1 不代替完成回调，应以 `block` 成功为准。SDK 不保存本地文件，也不返回本地路径；App 可将完成数据保存为 `.opus` 文件，转换后的大小可能与设备原始 `fileSize` 不同。
+
+```objective-c
+// fileId 来自 getRecordFileList。
+[DHBleCommand transferRecordFile:fileId block:^(int code, id data) {
+    if (code != 0 || ![data isKindOfClass:NSData.class]) return;
+    NSString *directory = NSSearchPathForDirectoriesInDomains(
+        NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+    NSString *path = [directory stringByAppendingPathComponent:
+        [NSString stringWithFormat:@"%u.opus", fileId]];
+    NSError *error = nil;
+    BOOL saved = [(NSData *)data writeToFile:path options:NSDataWritingAtomic error:&error];
+    NSLog(@"saved=%d path=%@ error=%@", saved, path, error);
+} progressBlock:^(int code, CGFloat progress, id data) {
+    if (code == 0) NSLog(@"download progress=%.0f%%", progress * 100);
+}];
+```
+
+##### 3.2.5.5 删除录音文件
+
+`+ (void)deleteRecordFile:(UInt32)fileId block:(void(^)(int code, id data))block`
+
+按文件 ID 删除设备上的单个录音文件。删除不可恢复，建议先确认文件已下载保存。
+
+```objective-c
+[DHBleCommand deleteRecordFile:fileId block:^(int code, id data) {
+    NSLog(@"deleteRecordFile code=%d", code);
+}];
+```
+
+##### 3.2.5.6 格式化录音区
+
+`+ (void)formatRecordStorage:(void(^)(int code, id data))block`
+
+此操作删除设备上的全部录音文件，不可恢复；请在用户确认后调用。
+
+```objective-c
+[DHBleCommand formatRecordStorage:^(int code, id data) {
+    NSLog(@"formatRecordStorage code=%d", code);
+}];
+```
+
 #### 5.2.5 传感器原始数据
 
 本节包含两种不同的数据方式:
@@ -2532,6 +2775,13 @@ tModeSetModel.interval = 60;
 
 
 ## SDK修订记录
+
+**V2.0.0_260922** (2026.09.22)
+
+- 添加录音功能接口说明(3.2.5)，功能配置表属性为 `isSupportRecording`
+- 添加设备身份认证接口(3.2.1.26.4)
+- 添加久坐提醒设置与获取接口(3.2.1.29)
+- 添加喝水提醒设置与获取接口(3.2.1.30)
 
 **V2.0.0_20260909** (2026.09.09)
 

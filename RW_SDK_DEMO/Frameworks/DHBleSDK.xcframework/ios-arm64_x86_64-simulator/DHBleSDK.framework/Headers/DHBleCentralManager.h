@@ -67,6 +67,10 @@ NS_ASSUME_NONNULL_BEGIN
 + (void)setLogStatus:(BOOL)isLog;
 ///是否为Telink平台设备
 + (BOOL)isTelinkDevice;
+///是否为带中科OTA服务(FF12)的设备
++ (BOOL)isZkOtaDevice;
+///是否为带Nordic DFU服务的设备
++ (BOOL)isNordicOtaDevice;
 
 /// 蓝牙连接代理
 @property (nonatomic, weak) id<DHBleConnectDelegate> connectDelegate;

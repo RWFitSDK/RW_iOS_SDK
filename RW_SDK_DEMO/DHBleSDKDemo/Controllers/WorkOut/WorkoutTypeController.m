@@ -62,9 +62,9 @@
     
     
     WEAKSELF
-    [SVProgressHUD show];
+    SHOWINDETERMINATE
     [DHBleCommand getControlSportWithRing:^(int code, id  _Nonnull data) {
-        [SVProgressHUD dismiss];
+        HUDDISS
        // @{@"keySportType":@(tSportType), @"keyControlType":@(tControlType)}
         if (code == 0 && [data isKindOfClass:[NSDictionary class]]){
             NSDictionary *tDic = data;
@@ -131,9 +131,9 @@
     BleActivityMode tbleActivityMode = (BleActivityMode)indexPath.row + BLE_ACTIVITY_START_INDEX;
 
     WEAKSELF
-    [SVProgressHUD show];
+    SHOWINDETERMINATE
     [DHBleCommand getControlSportWithRing:^(int code, id  _Nonnull data) {
-        [SVProgressHUD dismiss];
+        HUDDISS
        // @{@"keySportType":@(tSportType), @"keyControlType":@(tControlType)}
         if (code == 0 && [data isKindOfClass:[NSDictionary class]]){
             NSDictionary *tDic = data;

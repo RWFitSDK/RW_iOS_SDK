@@ -6,6 +6,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <DHBleSDK/DrinkReminderBean.h>
 #import <DHBleSDK/DHBleCommandEnums.h>
 
 #import <DHBleSDK/DHFirmwareVersionModel.h>
@@ -64,6 +65,21 @@ NS_ASSUME_NONNULL_BEGIN
 + (void)modifyDevicePwd:(nullable NSString *)password completion:(void (^ _Nullable)(BOOL success))completion;
 /// 业务端确认重置权限后，为下一次连接准备新的4位目标密码。
 + (void)preparePasswordReset:(nullable NSString *)targetPassword;
+
+/// 设备身份认证(2.1.5): challengeHex为64个hex字符(32字节, 兼容空格/冒号/横线), block data为response hex字符串(64字符)
++ (void)deviceChallenge:(NSString *)challengeHex block:(void(^)(int code, id data))block;
+
+/// 设置久坐提醒(2.2.18), 需功能表 isSupportSedentary
++ (void)setSedentaryRemind:(DrinkReminderBean *)reminderBean block:(void(^)(int code, id data))block;
+
+/// 查询久坐提醒配置, data为DrinkReminderBean
++ (void)getSedentaryRemind:(void(^)(int code, id data))block;
+
+/// 设置喝水提醒(2.2.19), 需功能表 isDrink
++ (void)setDrinkRemind:(DrinkReminderBean *)reminderBean block:(void(^)(int code, id data))block;
+
+/// 查询喝水提醒配置, data为DrinkReminderBean
++ (void)getDrinkRemind:(void(^)(int code, id data))block;
 
 #pragma mark - 基础功能指令
 
@@ -246,6 +262,42 @@ NS_ASSUME_NONNULL_BEGIN
 /// @param type 0：公制；1：英制
 /// @param block 执行结果回调
 + (void)setMeasureUnit:(UInt8)type block:(void(^)(int code, id data))block;
+
+#pragma mark- 录音功能
+
+/// 控制录音开始/停止
+/// @param start YES:开始录音 NO:停止录音
+/// @param block 回调, code=0成功
++ (void)recordControl:(BOOL)start block:(void(^)(int code, id data))block;
+
+/// 查询录音状态
+/// @param block 回调, data为NSDictionary, 包含status/isRecording/startTime/duration/totalCapacity/remainingCapacity, startTime为Unix时间戳, duration单位秒
++ (void)getRecordStatus:(void(^)(int code, id data))block;
+
+/// 查询录音文件列表
+/// @param block 同步完成回调, data为NSArray<NSDictionary>, 每项含fileId/fileSize/duration/timestamp
++ (void)getRecordFileList:(void(^)(int code, id data))block;
+
+/// 查询录音文件列表
+/// @param block 同步完成回调, data为NSArray<NSDictionary>, 每项含fileId/fileSize/duration/timestamp
+/// @param dataBlock 分页数据回调, data为NSDictionary, 包含totalCount/startIndex/items
++ (void)getRecordFileList:(void(^)(int code, id data))block dataBlock:(void(^)(int code, id data))dataBlock;
+
+
+/// 按文件ID传输录音文件
+/// @param fileId 文件ID
+/// @param block 传输完成回调, code=0时data为SDK内部转换完成的Ogg Opus NSData
+/// @param progressBlock 传输进度回调, data为NSDictionary, 包含fileId/fileSize/received
++ (void)transferRecordFile:(UInt32)fileId block:(void(^)(int code, id data))block progressBlock:(void(^)(int code, CGFloat progress, id data))progressBlock;
+
+/// 删除指定录音文件
+/// @param fileId 文件ID
+/// @param block 回调, code=0成功
++ (void)deleteRecordFile:(UInt32)fileId block:(void(^)(int code, id data))block;
+
+/// 格式化录音区(删除全部录音)
+/// @param block 回调, code=0成功
++ (void)formatRecordStorage:(void(^)(int code, id data))block;
 
 #pragma mark- 传感器原始数据
 

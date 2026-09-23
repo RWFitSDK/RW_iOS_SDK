@@ -14,10 +14,12 @@
 #import <DHBleSDK/DHDeviceInfoModel.h>
 #import <DHBleSDK/DHBpModeSetModel.h>
 #import <DHBleSDK/DHDailyBpModel.h>
+#import <DHBleSDK/DrinkReminderBean.h>
 
 #import "WorkoutTypeController.h"
+#import "FirmwareUpgradeController.h"
 #import "ScanViewController.h"
-#import <DHFoundation/SSZipArchive.h>
+#import "RWDemo-Swift.h"
 
 static UIColor *RWColor(NSString *hex)
 {
@@ -75,12 +77,10 @@ typedef void (^RWMonitoringSelectionBlock)(BOOL enabled, NSInteger interval);
     self.view.backgroundColor = [UIColor colorWithWhite:0 alpha:0.32];
 
     UIControl *backdrop = [[UIControl alloc] init];
-    backdrop.translatesAutoresizingMaskIntoConstraints = NO;
     [backdrop addTarget:self action:@selector(cancelButtonClick) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:backdrop];
 
     UIView *sheetView = [[UIView alloc] init];
-    sheetView.translatesAutoresizingMaskIntoConstraints = NO;
     if (@available(iOS 13.0, *)) {
         sheetView.backgroundColor = UIColor.systemBackgroundColor;
         sheetView.layer.cornerCurve = kCACornerCurveContinuous;
@@ -95,13 +95,11 @@ typedef void (^RWMonitoringSelectionBlock)(BOOL enabled, NSInteger interval);
     [self.view addSubview:sheetView];
 
     UIButton *cancelButton = [UIButton buttonWithType:UIButtonTypeSystem];
-    cancelButton.translatesAutoresizingMaskIntoConstraints = NO;
     [cancelButton setTitle:NSLocalizedString(@"rw_cancel", nil) forState:UIControlStateNormal];
     [cancelButton addTarget:self action:@selector(cancelButtonClick) forControlEvents:UIControlEventTouchUpInside];
     [sheetView addSubview:cancelButton];
 
     UILabel *titleLabel = [[UILabel alloc] init];
-    titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
     titleLabel.text = self.pickerTitle;
     titleLabel.textAlignment = NSTextAlignmentCenter;
     titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightSemibold];
@@ -110,58 +108,60 @@ typedef void (^RWMonitoringSelectionBlock)(BOOL enabled, NSInteger interval);
     [sheetView addSubview:titleLabel];
 
     UIButton *confirmButton = [UIButton buttonWithType:UIButtonTypeSystem];
-    confirmButton.translatesAutoresizingMaskIntoConstraints = NO;
     confirmButton.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightSemibold];
     [confirmButton setTitle:NSLocalizedString(@"rw_confirm", nil) forState:UIControlStateNormal];
     [confirmButton addTarget:self action:@selector(confirmButtonClick) forControlEvents:UIControlEventTouchUpInside];
     [sheetView addSubview:confirmButton];
 
     UIView *separator = [[UIView alloc] init];
-    separator.translatesAutoresizingMaskIntoConstraints = NO;
     separator.backgroundColor = [UIColor colorWithWhite:0.88 alpha:1];
     [sheetView addSubview:separator];
 
     self.pickerView = [[UIPickerView alloc] init];
-    self.pickerView.translatesAutoresizingMaskIntoConstraints = NO;
     self.pickerView.dataSource = self;
     self.pickerView.delegate = self;
     [sheetView addSubview:self.pickerView];
 
-    NSLayoutConstraint *pickerBottomConstraint = nil;
-    if (@available(iOS 11.0, *)) {
-        pickerBottomConstraint = [self.pickerView.bottomAnchor constraintEqualToAnchor:sheetView.safeAreaLayoutGuide.bottomAnchor];
-    } else {
-        pickerBottomConstraint = [self.pickerView.bottomAnchor constraintEqualToAnchor:sheetView.bottomAnchor];
-    }
-    [NSLayoutConstraint activateConstraints:@[
-        [backdrop.topAnchor constraintEqualToAnchor:self.view.topAnchor],
-        [backdrop.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
-        [backdrop.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
-        [backdrop.bottomAnchor constraintEqualToAnchor:sheetView.topAnchor],
-        [sheetView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
-        [sheetView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
-        [sheetView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
-        [sheetView.heightAnchor constraintEqualToConstant:300],
-        [cancelButton.leadingAnchor constraintEqualToAnchor:sheetView.leadingAnchor constant:12],
-        [cancelButton.topAnchor constraintEqualToAnchor:sheetView.topAnchor constant:8],
-        [cancelButton.widthAnchor constraintGreaterThanOrEqualToConstant:56],
-        [cancelButton.heightAnchor constraintEqualToConstant:44],
-        [confirmButton.trailingAnchor constraintEqualToAnchor:sheetView.trailingAnchor constant:-12],
-        [confirmButton.topAnchor constraintEqualToAnchor:sheetView.topAnchor constant:8],
-        [confirmButton.widthAnchor constraintGreaterThanOrEqualToConstant:56],
-        [confirmButton.heightAnchor constraintEqualToConstant:44],
-        [titleLabel.leadingAnchor constraintEqualToAnchor:cancelButton.trailingAnchor constant:8],
-        [titleLabel.trailingAnchor constraintEqualToAnchor:confirmButton.leadingAnchor constant:-8],
-        [titleLabel.centerYAnchor constraintEqualToAnchor:cancelButton.centerYAnchor],
-        [separator.topAnchor constraintEqualToAnchor:cancelButton.bottomAnchor constant:4],
-        [separator.leadingAnchor constraintEqualToAnchor:sheetView.leadingAnchor],
-        [separator.trailingAnchor constraintEqualToAnchor:sheetView.trailingAnchor],
-        [separator.heightAnchor constraintEqualToConstant:0.5],
-        [self.pickerView.topAnchor constraintEqualToAnchor:separator.bottomAnchor],
-        [self.pickerView.leadingAnchor constraintEqualToAnchor:sheetView.leadingAnchor],
-        [self.pickerView.trailingAnchor constraintEqualToAnchor:sheetView.trailingAnchor],
-        pickerBottomConstraint
-    ]];
+    [backdrop mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.leading.and.trailing.equalTo(self.view);
+        make.bottom.equalTo(sheetView.mas_top);
+    }];
+    [sheetView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.leading.and.trailing.equalTo(self.view);
+        make.bottom.equalTo(self.view);
+        make.height.equalTo(@300);
+    }];
+    [cancelButton mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.leading.equalTo(sheetView).offset(12);
+        make.top.equalTo(sheetView).offset(8);
+        make.width.greaterThanOrEqualTo(@56);
+        make.height.equalTo(@44);
+    }];
+    [confirmButton mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.trailing.equalTo(sheetView).offset(-12);
+        make.top.equalTo(sheetView).offset(8);
+        make.width.greaterThanOrEqualTo(@56);
+        make.height.equalTo(@44);
+    }];
+    [titleLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.leading.equalTo(cancelButton.mas_trailing).offset(8);
+        make.trailing.equalTo(confirmButton.mas_leading).offset(-8);
+        make.centerY.equalTo(cancelButton);
+    }];
+    [separator mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(cancelButton.mas_bottom).offset(4);
+        make.leading.and.trailing.equalTo(sheetView);
+        make.height.equalTo(@0.5);
+    }];
+    [self.pickerView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(separator.mas_bottom);
+        make.leading.and.trailing.equalTo(sheetView);
+        if (@available(iOS 11.0, *)) {
+            make.bottom.equalTo(sheetView.mas_safeAreaLayoutGuideBottom);
+        } else {
+            make.bottom.equalTo(sheetView);
+        }
+    }];
     if (self.options.count > 0) {
         [self.pickerView selectRow:self.selectedIndex inComponent:0 animated:NO];
     }
@@ -304,6 +304,7 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
     self.functionBaseList = @[@"SDK Version", @"Get Bluetooth MAC address(获取蓝牙Mac地址)", @"Set user information(设置用户信息)", @"Get firmware information(获取固件信息)", @"Get Battery(获取电量)", @"Get Video Switch(获取视频控制开关)", @"Set Video Switch(设置视频控制开关)", @"Get LED brightness level(获取LED亮屏强度)", @"Set LED brightness level(设置LED亮屏强度)", @"Get Wearing position(获取佩戴位置)", @"Set Wearing position(设置佩戴位置)",@"Activate and deactivate the camera(启动与关闭拍照)", @"Find Device(查找设备)", @"Shut down and restore to factory settings(关机,恢复出厂设置)", @"Alarm Clock - Get Alarm Clock(闹钟-获取闹钟)", @"Alarm clock - Set alarm(闹钟-设置闹钟)", @"Alarm Clock - Delete all alarms(闹钟-删除所有闹钟)", @"Get the number of vibrations-震动次数获取",@"Set the number of vibrations-震动次数设置", @"Get screen sleep mode-睡眠模式获取", @"Set screen sleep mode-睡眠模式设置", @"Get Message push notification switch-消息推送开关获取", @"Set Message push notification switch-消息推送开关设置", @"Check if receiving likes/comments is enabled-获取赞念是否打开", @"Set whether the likes feature is enabled.-设置赞念是否打开", @"Get heart rate alarm configuration-获取心率报警配置", @"Set heart rate alarm configuration-设置心率报警配置", @"Get blood oxygen alarm configuration-获取血氧报警配置", @"Set blood oxygen alarm configuration-设置血氧报警配置", @"Set Time Format-设置12/24小时时间显示格式", @"Get Alarm Vibration Duration-获取闹钟震动时长", @"Set Alarm Vibration Duration-设置闹钟震动时长", @"Get Vibration Interval-获取震动间隔时长", @"Set Vibration Interval-设置震动间隔时长", @"Instant Screen Control-即时屏幕控制"];
 
     self.functionBaseList = [self.functionBaseList arrayByAddingObject:@"Measurement Unit-公制/英制单位"];
+    self.functionBaseList = [self.functionBaseList arrayByAddingObjectsFromArray:@[@"Device Challenge-设备身份认证", @"Sedentary Reminder-久坐提醒", @"Drink Reminder-喝水提醒"]];
 
     self.functionHealthList = @[@"Real-time, single-instance health data monitoring-实时单次启动健康数据检测(心率,血氧,HRV, 压力, 血糖)", @"Get HeartRate Monitor(获取心率监听)", @"Set HeartRate Monitor(设置心率监听)",@"Get Blood oxygen Monitor(获取血氧监听)", @"Set Blood oxygen Monitor(设置血氧监听)",@"Get HRV Monitor(获取HRV监听)", @"Set HRV Monitor(设置HRV监听)",@"Get PPG Monitor(获取PPG监听)", @"Set PPG Monitor(设置PPG监听)",@"Get Stress Monitor(获取压力监听)", @"Set Stress Monitor(设置压力监听)",@"Get Blood Sugar Monitor(获取血糖监听)", @"Set Blood Sugar Monitor(设置血糖监听)", @"Sync all your health data(同步所有健康数据)", @"Get Blood Pressure Monitor(获取血压监听)", @"Set Blood Pressure Monitor(设置血压监听)", @"Get Temperature Monitor(获取定时体温监测)", @"Set Temperature Monitor(设置定时体温监测)", @"Get Muslim Time Display Mode(获取Muslim时间显示模式)", @"Set Muslim Time Display Mode(设置Muslim时间显示模式)", @"Get Muslim Count Reset Mode(获取Muslim计数清零方式)", @"Set Muslim Count Reset Mode(设置Muslim计数清零方式)", @"PPG Raw Data(PPG原始数据：启动、停止采集或获取历史)", @"HR Calibration(心率校正)", @"Get Fall Detect(获取跌落提醒开关)", @"Set Fall Detect(设置跌落提醒)", @"Get Count Reminder(获取计数提醒间隔)", @"Set Count Reminder(设置计数提醒间隔)"];
 
@@ -328,7 +329,6 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(protocolPushNotification:) name:BluetoothNotificationProtocolPush object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(sensorRawStopNotification:) name:BluetoothNotificationHealthRingSenorStopChange object:nil];
 
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(touchEventNotification:) name:BluetoothNotificationTouchEvent object:nil];
 
     // 设备信息已改为 tableHeaderView 展示。移除 XIB 中的旧头部视图，
     // 避免旧的“表格位于标签下方”约束与新的表格铺满约束冲突。
@@ -397,7 +397,9 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
     SHOWHUDNODISS(NSLocalizedString(@"rw_packaging_logs", nil));
     __weak typeof(self) weakSelf = self;
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
-        BOOL success = [SSZipArchive createZipFileAtPath:archivePath withContentsOfDirectory:logDirectoryPath];
+        NSError *archiveError = nil;
+        BOOL success = [RWLogArchive createArchiveAtPath:archivePath fromDirectory:logDirectoryPath error:&archiveError];
+        if (!success) NSLog(@"Log archive failed: %@", archiveError);
         dispatch_async(dispatch_get_main_queue(), ^{
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) {
@@ -693,7 +695,15 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
 - (void)protocolPushNotification:(NSNotification *)ntf
 {
     NSDictionary *userInfo = ntf.userInfo;
-    if ([userInfo[@"dataType"] unsignedIntegerValue] != DHDevicePushTypePower) return;
+    NSUInteger dataType = [userInfo[@"dataType"] unsignedIntegerValue];
+    if (dataType == DHDevicePushTypeTouchEvent) { // 触摸事件统一通过 flag 0x21 主动推送
+        NSDictionary *event = userInfo[@"dataValue"];
+        if (![event isKindOfClass:NSDictionary.class]) return;
+        NSLog(@"ProtocolPush TouchEvent keyType=%zd touchType=%zd",
+              [event[@"keyType"] integerValue], [event[@"touchType"] integerValue]);
+        return;
+    }
+    if (dataType != DHDevicePushTypePower) return;
     DHBatteryInfoModel *model = userInfo[@"dataValue"];
     if (![model isKindOfClass:DHBatteryInfoModel.class]) return;
     NSLog(@"Realtime Battery power=%zd charging=%zd", model.battery, model.status);
@@ -817,15 +827,53 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
     NSLog(@"Muslim Count Reset Mode set successfully");
 }
 
-- (void)touchEventNotification:(NSNotification *)ntf
+// 久坐/喝水提醒共用编辑流(与 Android Demo 对齐): 间隔选择 -> 时段选择 -> 设置, 成功后回读设备确认值
+- (void)editReminderWithSourceRow:(NSInteger)sourceRow isDrink:(BOOL)isDrink
 {
-    NSDictionary *tUserInfo = ntf.userInfo;
-    NSInteger keyType = [tUserInfo[@"keyType"] integerValue];   // 1:触摸按键 2:跌落
-    NSInteger touchType = [tUserInfo[@"touchType"] integerValue]; // 1:单击 2:双击 3:三击 4:长按 5:甩动
-    NSLog(@"TouchEvent keyType=%zd touchType=%zd", keyType, touchType);
-    if (keyType == 2) {
-        NSLog(@"Fall Detected!");
+    NSString *title = RWLocalizedFunctionTitle(self.functionBaseList[sourceRow]);
+    NSArray<NSNumber *> *intervals = @[@15, @30, @45, @60, @90, @120];
+    NSMutableArray<NSString *> *intervalOptions = [NSMutableArray array];
+    for (NSNumber *minutes in intervals) {
+        [intervalOptions addObject:[NSString stringWithFormat:RWChoiceText(@"Every %zd min", @"每%zd分钟"), minutes.integerValue]];
     }
+    NSArray<NSArray<NSNumber *> *> *ranges = @[@[@9, @0, @18, @0], @[@8, @0, @22, @0], @[@10, @0, @20, @0]];
+    NSMutableArray<NSString *> *rangeOptions = [NSMutableArray arrayWithObject:RWChoiceText(@"Off", @"关闭")];
+    for (NSArray<NSNumber *> *range in ranges) {
+        [rangeOptions addObject:[NSString stringWithFormat:@"%02zd:%02zd-%02zd:%02zd",
+                                 range[0].integerValue, range[1].integerValue, range[2].integerValue, range[3].integerValue]];
+    }
+    [self showPickerWithTitle:title options:intervalOptions selectedIndex:3 selection:^(NSInteger intervalIndex) {
+        [self showPickerWithTitle:title options:rangeOptions selectedIndex:1 selection:^(NSInteger rangeIndex) {
+            DrinkReminderBean *bean = [[DrinkReminderBean alloc] init];
+            bean.isOpen = rangeIndex > 0;
+            NSArray<NSNumber *> *range = ranges[MAX(rangeIndex - 1, 0)];
+            bean.startHour = range[0].integerValue;
+            bean.startMin = range[1].integerValue;
+            bean.endHour = range[2].integerValue;
+            bean.endMin = range[3].integerValue;
+            bean.remindDuration = intervals[intervalIndex].integerValue;
+            void (^getFinish)(int, id) = ^(int getCode, id getData) {
+                if (getCode != 0 || ![getData isKindOfClass:DrinkReminderBean.class]) return;
+                DrinkReminderBean *confirm = getData;
+                NSLog(@"getReminder row=%zd isDrink=%d open=%d %02zd:%02zd-%02zd:%02zd interval=%zdmin",
+                      sourceRow, isDrink, confirm.isOpen, confirm.startHour, confirm.startMin,
+                      confirm.endHour, confirm.endMin, confirm.remindDuration);
+                NSString *value = confirm.isOpen
+                    ? [NSString stringWithFormat:RWChoiceText(@"%02zd:%02zd-%02zd:%02zd / %zd min", @"%02zd:%02zd-%02zd:%02zd / %zd分钟"),
+                        confirm.startHour, confirm.startMin, confirm.endHour, confirm.endMin, confirm.remindDuration]
+                    : RWChoiceText(@"Off", @"关闭");
+                [self updateDetailText:value section:0 sourceRow:sourceRow];
+            };
+            void (^setFinish)(int, id) = ^(int code, id data) {
+                NSLog(@"setReminder row=%zd isDrink=%d code=%d", sourceRow, isDrink, code);
+                if (code != 0) return;
+                if (isDrink) [DHBleCommand getDrinkRemind:getFinish];
+                else [DHBleCommand getSedentaryRemind:getFinish];
+            };
+            if (isDrink) [DHBleCommand setDrinkRemind:bean block:setFinish];
+            else [DHBleCommand setSedentaryRemind:bean block:setFinish];
+        }];
+    }];
 }
 
 /*
@@ -868,6 +916,9 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
         addPair(base, menu.isSupportVibrationInterval, 32, 33);
         if (menu.isSupportScreenControl) [base addObject:@34];
         if (menu.isSupportUnitSetting) [base addObject:@35];
+        if (menu.isSupportDeviceChallenge) [base addObject:@36];
+        if (menu.isSupportSedentary) [base addObject:@37];
+        if (menu.isDrink) [base addObject:@38];
 
         // 实时单次检测统一放在首页的健康详情页，设备设置页不重复显示。
         addPair(health, menu.isDataTypeHeart, 1, 2);
@@ -1568,6 +1619,51 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
                 SHOWHUD(NSLocalizedString(@"rw_not_supported", nil));
             }
         }
+        else if (indexPath.row == 36){ //设备身份认证(协议2.1.5): 发送固定challenge, 弹窗展示设备HMAC response
+            DeviceFuncV2Model *menu = [DHBluetoothManager shareInstance].deviceFuncV2Model;
+            if (menu && menu.isSupportDeviceChallenge) {
+                // 固定测试向量, 与 Android Demo 对齐
+                NSString *challengeHex = @"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
+                [DHBleCommand deviceChallenge:challengeHex block:^(int code, id data) {
+                    NSLog(@"deviceChallenge code=%d", code);
+                    if (code != 0 || ![data isKindOfClass:NSString.class]) return;
+                    NSString *responseHex = data;
+                    NSString *preview = responseHex.length > 16 ? [responseHex substringToIndex:16] : responseHex;
+                    [self updateDetailText:[NSString stringWithFormat:@"%@…", preview] section:0 sourceRow:36];
+                    NSString *message = [NSString stringWithFormat:@"challenge:\n%@\n\nresponse:\n%@", challengeHex, responseHex];
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        UIAlertController *alert = [UIAlertController alertControllerWithTitle:RWLocalizedFunctionTitle(self.functionBaseList[36])
+                                                                                        message:message
+                                                                                 preferredStyle:UIAlertControllerStyleAlert];
+                        [alert addAction:[UIAlertAction actionWithTitle:RWChoiceText(@"OK", @"确定")
+                                                                  style:UIAlertActionStyleDefault
+                                                                handler:nil]];
+                        [self presentViewController:alert animated:YES completion:nil];
+                    });
+                }];
+            }
+            else {
+                SHOWHUD(NSLocalizedString(@"rw_not_supported", nil));
+            }
+        }
+        else if (indexPath.row == 37){ //久坐提醒(协议2.2.18)
+            DeviceFuncV2Model *menu = [DHBluetoothManager shareInstance].deviceFuncV2Model;
+            if (menu && menu.isSupportSedentary) {
+                [self editReminderWithSourceRow:37 isDrink:NO];
+            }
+            else {
+                SHOWHUD(NSLocalizedString(@"rw_not_supported", nil));
+            }
+        }
+        else if (indexPath.row == 38){ //喝水提醒(协议2.2.19)
+            DeviceFuncV2Model *menu = [DHBluetoothManager shareInstance].deviceFuncV2Model;
+            if (menu && menu.isDrink) {
+                [self editReminderWithSourceRow:38 isDrink:YES];
+            }
+            else {
+                SHOWHUD(NSLocalizedString(@"rw_not_supported", nil));
+            }
+        }
     }
     else if (indexPath.section == 1){
         if (indexPath.row == 0){ //
@@ -2000,21 +2096,17 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
     else if (indexPath.section == 2){ //多运动
         if ([DHBluetoothManager shareInstance].deviceFuncV2Model && [DHBluetoothManager shareInstance].deviceFuncV2Model.isSupportWorkout3){
             WorkoutTypeController *typeC = [[WorkoutTypeController alloc] initWithNibName:@"WorkoutTypeController" bundle:nil];
+            typeC.hidesBottomBarWhenPushed = YES;
             [self.navigationController pushViewController:typeC animated:YES];
         }
         else{
                 SHOWHUD(NSLocalizedString(@"rw_not_supported", nil));
         }
     }
-    else{
-        NSString *tFilePath = @""; //bin文件,厂家提供
-
-        if (tFilePath.length > 0){ //注意 有升级文件后再测试
-            NSData *fileData = [NSData dataWithContentsOfFile:tFilePath];
-            [DHBleCommand ringOtaWithFileData:fileData block:^(int code, CGFloat progress, id  _Nonnull data) {
-                NSLog(@"OTA code %d progress %.2f", code, progress);
-            }];
-        }
+    else{ //固件升级: 进入固件升级页面选择文件并升级
+        FirmwareUpgradeController *upgradeC = [[FirmwareUpgradeController alloc] init];
+        upgradeC.hidesBottomBarWhenPushed = YES;
+        [self.navigationController pushViewController:upgradeC animated:YES];
     }
 }
 

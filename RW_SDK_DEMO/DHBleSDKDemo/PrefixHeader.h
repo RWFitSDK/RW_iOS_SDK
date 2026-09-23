@@ -8,16 +8,21 @@
 #ifndef PrefixHeader_h
 #define PrefixHeader_h
 
-#import <DHFoundation/DHFoundation.h>
-#import <DHUIKit/DHUIKit.h>
+// OC 导入仅对 Objective-C 编译单元生效。
+#ifdef __OBJC__
+
 #import <DHBleSDK/DHBleSDK.h>
+#import <Masonry/Masonry.h>
+
+#import "UIColor+DHColor.h"
+#import "DHProgressHUD.h"
 
 #import "DHBluetoothManager.h"
 #import "BaseTableViewCell.h"
 
-#define COLOR(HEXSTR) [DHUIHelp colorWithHexString:HEXSTR]
-#define HEXColor(_hex_)  [DHUIHelp colorWithHexString:((__bridge NSString *)CFSTR(#_hex_))]
-#define COLORANDALPHA(HEXSTR, ALPHA) [DHUIHelp colorWithHexString:HEXSTR alpha:ALPHA]
+#define COLOR(HEXSTR) [UIColor dh_colorWithHexString:HEXSTR]
+#define HEXColor(_hex_)  [UIColor dh_colorWithHexString:((__bridge NSString *)CFSTR(#_hex_))]
+#define COLORANDALPHA(HEXSTR, ALPHA) [UIColor dh_colorWithHexString:HEXSTR alpha:ALPHA]
 
 #define HomeColor_BackgroundColor COLOR(@"#EEEEEE")
 #define HomeColor_BlockColor COLOR(@"#FFFFFF")
@@ -56,11 +61,11 @@
 
 #define WEAKSELF __weak typeof(self) weakSelf = self;
 
-//配置吐司
-#define SHOWINDETERMINATE [SVProgressHUD show];
-#define SHOWHUD(s) [SVProgressHUD showImage:[UIImage imageNamed:@"nil"] status:s];
-#define SHOWHUDNODISS(s) [SVProgressHUD showWithStatus:s];
-#define HUDDISS [SVProgressHUD dismiss];
+//配置吐司(MBProgressHUD 封装)
+#define SHOWINDETERMINATE [DHProgressHUD show];
+#define SHOWHUD(s) [DHProgressHUD showText:s];
+#define SHOWHUDNODISS(s) [DHProgressHUD showStatus:s];
+#define HUDDISS [DHProgressHUD dismiss];
 
 
 
@@ -77,5 +82,6 @@
 //同步文件进度
 #define BluetoothNotificationFileSyncing @"BluetoothNotificationFileSyncing"
 
+#endif // __OBJC__
 
 #endif /* PrefixHeader_h */

@@ -55,20 +55,20 @@
 
 - (void)setupSubViews {
     self.contentView.backgroundColor = HomeColor_BackgroundColor;
-    
+
     [self.bgView mas_makeConstraints:^(MASConstraintMaker *make) {
         make.top.offset(0);
         make.left.offset(15);
         make.right.offset(-15);
         make.bottom.offset(-10);
     }];
-    
+
     [self.rightImageView mas_makeConstraints:^(MASConstraintMaker *make) {
         make.width.height.offset(12);
         make.right.offset(-10);
         make.centerY.equalTo(self.bgView);
     }];
-    
+
     [self.subTitleLabel mas_makeConstraints:^(MASConstraintMaker *make) {
         make.centerY.equalTo(self.bgView);
         make.right.equalTo(self.rightImageView.mas_left).offset(-10);
@@ -80,7 +80,7 @@
         make.left.offset(15);
         make.right.equalTo(self.subTitleLabel.mas_left).offset(-5);
     }];
-    
+
     [self.contentLabel mas_remakeConstraints:^(MASConstraintMaker *make) {
         make.left.offset(15);
         make.top.equalTo(self.leftTitleLabel.mas_bottom).offset(10);

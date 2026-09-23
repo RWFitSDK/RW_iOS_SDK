@@ -20,8 +20,6 @@
 
 #define BluetoothNotificationHealthRingSenorStopChange @"BluetoothNotificationHealthRingSenorStopChange"
 
-#define BluetoothNotificationTouchEvent @"BluetoothNotificationTouchEvent"
-
 //开始寻找手机通知
 #define BluetoothNotificationFindPhoneStart @"BluetoothNotificationFindPhoneStart"
 //结束寻找手机通知
@@ -224,6 +222,7 @@ typedef enum : UInt16 {
      BLE_KEY_SESSION = 0x0302,      // 会话，代表登陆的意思
      BLE_KEY_REQUEST_PAIR = 0x0303, // 请求配对
      BLE_KEY_DEVICE_PASSWORD = 0x0304, // 设备密码认证、修改与授权重置
+     BLE_KEY_DEVICE_CHALLENGE = 0x0305, // 设备身份认证(HMAC-SHA256挑战应答)
 
      // PUSH
      BLE_KEY_NOTIFICATION = 0x0401,
@@ -303,13 +302,25 @@ typedef enum : UInt16 {
      BLE_KEY_THIRD_APP_DATA = 0x070A, //第三方应用的数据
      BLE_KEY_ALL_BIN_DATA = 0x070B, //大包升级(所有bin组合)
      BLE_KEY_ALL_BIN_DATA_PXI = 0x070C, //原相大包升级(所有bin组合)
+    // 录音相关指令；保留旧 BLE_KEY_UPLOAD_FILE 名称兼容已有调用。
+    BLE_KEY_RECORD_TRANSFER_ALL = 0x0706,
+    BLE_KEY_RECORD_CONTROL = 0x0801,
+    BLE_KEY_RECORD_STATUS = 0x0802,
+    BLE_KEY_RECORD_FILE_LIST = 0x0807,
+    BLE_KEY_RECORD_TRANSFER_FILE = 0x0808,
+    BLE_KEY_RECORD_FILE_DELETE = 0x0809,
+    BLE_KEY_RECORD_FORMAT = 0x080A,
+
      BLE_KEY_NONE = 0xffff
 } BleKey;
 
 /// SDK 已公开支持的设备主动推送(Protocol flag 0x21)类型。
 /// 枚举值与对应协议 Key 保持一致，便于跨端识别以及与日志、抓包直接对应。
 typedef enum : UInt16 {
-    DHDevicePushTypePower = BLE_KEY_POWER
+    DHDevicePushTypePower = BLE_KEY_POWER,
+    DHDevicePushTypeRecordStatus = BLE_KEY_RECORD_STATUS,
+    /// 触摸事件通知(协议2.2.7): keyType(1触摸/2跌落) + touchType(1单击/2双击/3三击/4长按/5甩动), Protocol flag 0x21
+    DHDevicePushTypeTouchEvent = BLE_KEY_HID_COMMAND
 } DHDevicePushType;
 
 typedef enum {

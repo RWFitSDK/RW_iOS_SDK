@@ -49,6 +49,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL isSupportUnitSetting; //是否支持公制/英制单位设置;
 @property (nonatomic, assign) BOOL isSupportRecording; //是否支持录音功能;
 @property (nonatomic, assign) BOOL isSupportDevicePasswordAuth; //是否支持设备密码认证;
+@property (nonatomic, assign) BOOL isSupportDeviceChallenge; //是否支持设备身份认证;
+@property (nonatomic, assign) BOOL isSupportSedentary; //是否支持久坐提醒设置;
+@property (nonatomic, assign) BOOL isDrink; //是否支持喝水提醒设置;
 
 @property (nonatomic, assign) BOOL isSupportAppStatus; //戒指App前后台指令是否支持;
 @property (nonatomic, assign) BOOL isSupportMuslimCountSwitch; //戒指Muslim计数开关;
