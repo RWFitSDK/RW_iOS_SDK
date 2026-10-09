@@ -38,7 +38,9 @@
     UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
     [button setTitle:NSLocalizedString(key, nil) forState:UIControlStateNormal];
     [button addTarget:self action:action forControlEvents:UIControlEventTouchUpInside];
-    [button.heightAnchor constraintGreaterThanOrEqualToConstant:44].active = YES;
+    [button mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.height.mas_greaterThanOrEqualTo(44);
+    }];
     return button;
 }
 
@@ -64,25 +66,24 @@
     UIStackView *header = [[UIStackView alloc] initWithArrangedSubviews:@[self.statusLabel, firstRow, secondRow, self.resultLabel]];
     header.axis = UILayoutConstraintAxisVertical;
     header.spacing = 8;
-    header.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addSubview:header];
     self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
     self.tableView.dataSource = self;
     self.tableView.delegate = self;
     self.tableView.rowHeight = UITableViewAutomaticDimension;
     self.tableView.estimatedRowHeight = 72;
-    self.tableView.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addSubview:self.tableView];
-    UILayoutGuide *safe = self.view.safeAreaLayoutGuide;
-    [NSLayoutConstraint activateConstraints:@[
-        [header.topAnchor constraintEqualToAnchor:safe.topAnchor constant:12],
-        [header.leadingAnchor constraintEqualToAnchor:safe.leadingAnchor constant:20],
-        [header.trailingAnchor constraintEqualToAnchor:safe.trailingAnchor constant:-20],
-        [self.tableView.topAnchor constraintEqualToAnchor:header.bottomAnchor constant:8],
-        [self.tableView.leadingAnchor constraintEqualToAnchor:safe.leadingAnchor],
-        [self.tableView.trailingAnchor constraintEqualToAnchor:safe.trailingAnchor],
-        [self.tableView.bottomAnchor constraintEqualToAnchor:safe.bottomAnchor]
-    ]];
+    [header mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.view.mas_safeAreaLayoutGuideTop).offset(12);
+        make.left.equalTo(self.view.mas_safeAreaLayoutGuideLeft).offset(20);
+        make.right.equalTo(self.view.mas_safeAreaLayoutGuideRight).offset(-20);
+    }];
+    [self.tableView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(header.mas_bottom).offset(8);
+        make.left.equalTo(self.view.mas_safeAreaLayoutGuideLeft);
+        make.right.equalTo(self.view.mas_safeAreaLayoutGuideRight);
+        make.bottom.equalTo(self.view.mas_safeAreaLayoutGuideBottom);
+    }];
 }
 
 - (void)setBusy:(BOOL)busy {
@@ -229,7 +230,10 @@
                 NSString *directory = [self recordingDirectory];
                 success = [[NSFileManager defaultManager] createDirectoryAtPath:directory withIntermediateDirectories:YES attributes:nil error:&error];
                 // SDK 已将原始录音封装为 Ogg Opus，直接保存，无需 AI 或解码库。
-                NSString *name = [NSString stringWithFormat:@"%u_%@_%.0f.opus", fileId, item[@"duration"], NSDate.date.timeIntervalSince1970];
+                // 文件名使用录音时间戳(SDK已转Unix秒); 设备未提供时回退下载时刻。
+                long long recordTimestamp = [item[@"timestamp"] longLongValue];
+                if (recordTimestamp <= 0) recordTimestamp = (long long)NSDate.date.timeIntervalSince1970;
+                NSString *name = [NSString stringWithFormat:@"%u_%@_%lld.opus", fileId, item[@"duration"], recordTimestamp];
                 NSString *path = [directory stringByAppendingPathComponent:name];
                 if (success) success = [data writeToFile:path options:NSDataWritingAtomic error:&error];
                 if (success) NSLog(@"Recording saved: %@ (%lu bytes)", path, (unsigned long)[data length]);

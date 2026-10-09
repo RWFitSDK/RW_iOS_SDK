@@ -1,0 +1,221 @@
+// swift-interface-format-version: 1.0
+// swift-compiler-version: Apple Swift version 5.10 (swiftlang-5.10.0.13 clang-1500.3.9.4)
+// swift-module-flags: -target arm64-apple-ios11.0 -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -O -enable-bare-slash-regex -module-name AB_FOTA
+import CommonCrypto
+import CoreBluetooth
+import Foundation
+import Swift
+import UIKit
+import _Concurrency
+import _StringProcessing
+import _SwiftConcurrencyShims
+import os.log
+import os
+public protocol DataReader {
+  func open() throws
+  func getSize() throws -> Swift.Int
+  func getHash() throws -> Foundation.Data
+  func read(srcPos: Swift.Int, length: Swift.Int) throws -> Foundation.Data?
+  func close() throws
+}
+public enum OTAError : Swift.Error {
+  case refusedByDevice
+  case noDataAvailable
+  case deviceReport(code: Swift.UInt8)
+  case timeoutWaitingResponse
+  case twsDisconnected
+  case dataReaderError
+}
+extension AB_FOTA.OTAError : Foundation.LocalizedError {
+  public var errorDescription: Swift.String? {
+    get
+  }
+}
+public protocol ABOtaSendDelegate : AnyObject {
+  func sendData(_ data: Foundation.Data)
+}
+public enum OtaStatus {
+  case OtaStatusReady
+  case OtaStatusStart
+  case OtaStatusUpdating(Swift.Int)
+  case OtaStatusPause
+  case OtaStatusContinue
+  case OtaStatuSuccess
+  case OtaStatusWaitFinish
+  case OtaStatusFail(Swift.Int)
+}
+public protocol ABOtaEventListener : AnyObject {
+  func onStatusChanged(_ status: AB_FOTA.OtaStatus)
+  func onReceiveVersion(_ version: Swift.UInt16)
+  func onReceiveTWSInfo(isTWS: Swift.Bool, isTWSConnected: Swift.Bool)
+  func onReceiveChannel(_ isLeftChannel: Swift.Bool)
+}
+public class ABOta {
+  public static let ERROR_CODE_DEVICE_REPORT: Swift.Int
+  public static let ERROR_CODE_DEVICE_REFUSED: Swift.Int
+  public static let ERROR_CODE_NO_OTA_DATA: Swift.Int
+  public static let ERROR_CODE_TIMEOUT: Swift.Int
+  public static let ERROR_CODE_TWS_DISCONNECTED: Swift.Int
+  public static let ERROR_CODE_DATA_READER_ERROR: Swift.Int
+  public static let ERROR_CODE_SAME_FIRMWARE: Swift.Int
+  public static let ERROR_CODE_KEY_MISMATCH: Swift.Int
+  public static let ERROR_CODE_CRC_ERROR: Swift.Int
+  weak public var sendDelegate: (any AB_FOTA.ABOtaSendDelegate)?
+  weak public var eventListener: (any AB_FOTA.ABOtaEventListener)?
+  public init()
+  public func prepareToUpdate()
+  public func setOtaData(_ data: Foundation.Data)
+  public func setDataRead(_ dataReader: any AB_FOTA.DataReader)
+  public func setPacketSize(_ packetSize: Swift.UInt16)
+  public func isReady() -> Swift.Bool
+  public func startOTA()
+  public func isUpdating() -> Swift.Bool
+  @objc deinit
+}
+extension AB_FOTA.ABOta {
+  public func handleData(_ data: Foundation.Data)
+  public func nextRun()
+}
+extension AB_FOTA.ABOta : AB_FOTA.ABOtaManagerDelegate {
+  public func sendOtaData(_ data: Foundation.Data) throws
+  public func onReady()
+  public func onStart()
+  public func onProgress(_ progress: Swift.Float)
+  public func onStop()
+  public func onFinish()
+  public func onPause()
+  public func onContinue()
+  public func onError(_ error: AB_FOTA.OTAError)
+  public func onTWSDisconnected()
+  public func onReceiveVersion(_ version: Swift.UInt16)
+  public func onReceiveIsTWS(_ isTWS: Swift.Bool)
+  public func onReceiveTWSConnected(_ connected: Swift.Bool)
+  public func onReceiveChannel(_ isLeftChannel: Swift.Bool)
+}
+public protocol OtaManagerDelegate : AnyObject {
+  func onReady()
+  func onStart()
+  func onProgress(_ progress: Swift.Float)
+  func onStop()
+  func onFinish()
+  func onPause()
+  func onContinue()
+  func onError(_ error: AB_FOTA.OTAError)
+  func onTWSDisconnected()
+  func onReceiveVersion(_ version: Swift.UInt16)
+  func onReceiveIsTWS(_ isTWS: Swift.Bool)
+  func onReceiveTWSConnected(_ connected: Swift.Bool)
+  func onReceiveChannel(_ isLeftChannel: Swift.Bool)
+  func onBleConnect()
+  func onBleDiscoverServices()
+  func onBleDidDiscoverServices()
+  func onBleDisconverCharacteristics()
+  func onBleDidDiscoverCharacteristic(_ characteristic: CoreBluetooth.CBCharacteristic)
+  func onBleSetNotify(_ characteristic: CoreBluetooth.CBCharacteristic)
+  func onBleDidSetNotify(_ characteristic: CoreBluetooth.CBCharacteristic)
+  func onBleNotPoweredOn(_ central: CoreBluetooth.CBCentralManager)
+  func onBleDidConnectPeripheral()
+  func onBleDidDisconnectPeripheral()
+  func onBleDidFailToConnectPeripheral()
+}
+extension AB_FOTA.OtaManagerDelegate {
+  public func onBleConnect()
+  public func onBleDiscoverServices()
+  public func onBleDidDiscoverServices()
+  public func onBleDisconverCharacteristics()
+  public func onBleDidDiscoverCharacteristic(_ characteristic: CoreBluetooth.CBCharacteristic)
+  public func onBleSetNotify(_ characteristic: CoreBluetooth.CBCharacteristic)
+  public func onBleDidSetNotify(_ characteristic: CoreBluetooth.CBCharacteristic)
+  public func onBleNotPoweredOn(_ central: CoreBluetooth.CBCentralManager)
+  public func onBleDidConnectPeripheral()
+  public func onBleDidDisconnectPeripheral()
+  public func onBleDidFailToConnectPeripheral()
+}
+@objc @_inheritsConvenienceInitializers open class OtaManager : ObjectiveC.NSObject {
+  public static let DEFAULT_TIMEOUT: Swift.Double
+  public static let UNDEFINED_FIRMWARE_VERSION: Swift.UInt16
+  weak open var delegate: (any AB_FOTA.OtaManagerDelegate)?
+  public var otaFirmwareVersion: Swift.UInt16
+  public var deviceFirmwareVersion: Swift.UInt16?
+  public var allowedUpdate: Swift.Bool
+  public var isCompressedData: Swift.Bool {
+    get
+  }
+  @objc override dynamic public init()
+  open func initialize()
+  open func deinitialize()
+  open func getPacketSize() -> Swift.UInt16
+  open func getBlockSize() -> Swift.UInt32
+  open func startOTA()
+  open func isDeviceReady() -> Swift.Bool
+  open func isReadyToUpdate() -> Swift.Bool
+  open func setOtaData(_ otaData: Foundation.Data)
+  open func setDataReader(_ dataReader: any AB_FOTA.DataReader)
+  public func prepareToUpdate()
+  open func isUpdating() -> Swift.Bool
+  open func isTwsDevice() -> Swift.Bool
+  open func isTWSConnected() -> Swift.Bool
+  open func send(_ data: Foundation.Data) throws
+  open func notifyOnStop()
+  open func notifyOnError(_ error: AB_FOTA.OTAError)
+  open func canSendNow() -> Swift.Bool
+  public func checkIfReadyToUpdate()
+  public func notifyOnProgress(progress: Swift.UInt32)
+  public func getOtaInfoVersion()
+  public func getOtaInfoUpdate(version: Swift.UInt16)
+  public func sendOtaIdentification()
+  public func getAllInfo()
+  public func sendOtaStart()
+  public func sendOtaData()
+  public func runDataSend()
+  public func processData(_ data: Foundation.Data) -> Swift.Bool
+  @objc deinit
+}
+public protocol LoggerDelegate {
+  func log(message: Swift.String, ofCategory category: Swift.String, withType type: os.OSLogType)
+}
+public protocol ABOtaManagerDelegate : AB_FOTA.OtaManagerDelegate {
+  func sendOtaData(_ data: Foundation.Data) throws
+}
+@objc @_inheritsConvenienceInitializers open class ABOtaManager : AB_FOTA.OtaManager {
+  @available(*, unavailable, message: "Use customDelegate instead")
+  override public var delegate: (any AB_FOTA.OtaManagerDelegate)? {
+    get
+    set
+  }
+  @available(*, unavailable, message: "Use init(_:) instead")
+  @objc override dynamic public init()
+  public init(delegate: any AB_FOTA.ABOtaManagerDelegate)
+  override public func getPacketSize() -> Swift.UInt16
+  open func setPacketSize(_ size: Swift.UInt16)
+  override open func send(_ data: Foundation.Data) throws
+  public func nextRun()
+  @objc deinit
+}
+@_hasMissingDesignatedInitializers final public class OtaConstants {
+  public static let DEFAULT_MTU_SIZE: Swift.UInt16
+  public static let DEFAULT_PACKET_SIZE: Swift.UInt16
+  public static let DEFAULT_BLOCK_SIZE: Swift.UInt32
+  public static let UNDEFINED_BLOCK_SIZE: Swift.UInt32
+  @objc deinit
+}
+@_hasMissingDesignatedInitializers public class Logger {
+  public static var logger: (any AB_FOTA.LoggerDelegate)?
+  public static var logLevel: os.OSLogType
+  public static func log(message: Swift.String, ofCategory category: Swift.String, withType type: os.OSLogType)
+  public static func d(_ category: Swift.String, _ message: Swift.String)
+  public static func d(_ categoryClass: Any, _ message: Swift.String)
+  public static func i(_ categoryClass: Any, _ message: Swift.String)
+  public static func i(_ category: Swift.String, _ message: Swift.String)
+  public static func n(_ category: Swift.String, _ message: Swift.String)
+  public static func n(_ categoryClass: Any, _ message: Swift.String)
+  public static func e(_ category: Swift.String, _ message: Swift.String)
+  public static func e(_ categoryClass: Any, _ message: Swift.String)
+  public static func e(_ category: Swift.String, _ error: any Swift.Error)
+  public static func e(_ categoryClass: Any, _ error: any Swift.Error)
+  public static func f(_ category: Swift.String, _ message: Swift.String)
+  public static func f(_ categoryClass: Any, _ message: Swift.String)
+  public static func f(_ category: Swift.String, _ error: any Swift.Error)
+  public static func f(_ categoryClass: Any, _ error: any Swift.Error)
+  @objc deinit
+}

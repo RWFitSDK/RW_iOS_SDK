@@ -1,6 +1,51 @@
 {
-  "originHash" : "b26c070fd1f0b029780331f3cefa3909a6d58ea6b3ae242bffe49d6011fe06fe",
+  "originHash" : "30a5563aa7dc9f6b4ccb0f015ab4f8393ddbfed06756814994d4f593dbe09d38",
   "pins" : [
+    {
+      "identity" : "ios-ble-library",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/NordicSemiconductor/IOS-BLE-Library",
+      "state" : {
+        "revision" : "4f3e4987f41e0558c6fdc1e8407eb92c59ae0eff",
+        "version" : "0.4.5"
+      }
+    },
+    {
+      "identity" : "ios-common-libraries",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/nordicsemi/IOS-Common-Libraries",
+      "state" : {
+        "revision" : "8e6e4c117fc0bd4b8e856501002740ebe0ff4088",
+        "version" : "0.2.5"
+      }
+    },
+    {
+      "identity" : "ios-corebluetooth-mock",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/nordicsemi/IOS-CoreBluetooth-Mock.git",
+      "state" : {
+        "revision" : "5748c9e8b1750e0d7bc09243c099ff618f211cdf",
+        "version" : "1.0.6"
+      }
+    },
+    {
+      "identity" : "ios-nrf-connect-device-manager",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/nordicsemi/IOS-nRF-Connect-Device-Manager.git",
+      "state" : {
+        "revision" : "1e5fd4b11243e947c8121c2ea9aa8da70b605d42",
+        "version" : "1.14.7"
+      }
+    },
+    {
+      "identity" : "swiftcbor",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/valpackett/SwiftCBOR.git",
+      "state" : {
+        "revision" : "fd929a6d8f7651ce0f63fc99397fd5762358cc29",
+        "version" : "0.6.0"
+      }
+    },
     {
       "identity" : "zipfoundation",
       "kind" : "remoteSourceControl",

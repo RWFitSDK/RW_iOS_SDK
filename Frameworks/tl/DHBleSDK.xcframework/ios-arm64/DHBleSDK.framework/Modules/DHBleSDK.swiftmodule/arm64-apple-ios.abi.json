@@ -1,0 +1,25 @@
+{
+  "ABIRoot": {
+    "kind": "Root",
+    "name": "DHBleSDK",
+    "printedName": "DHBleSDK",
+    "children": [
+      {
+        "kind": "Import",
+        "name": "Foundation",
+        "printedName": "Foundation",
+        "declKind": "Import",
+        "moduleName": "DHBleSDK"
+      },
+      {
+        "kind": "Import",
+        "name": "AB_FOTA",
+        "printedName": "AB_FOTA",
+        "declKind": "Import",
+        "moduleName": "DHBleSDK"
+      }
+    ],
+    "json_format_version": 8
+  },
+  "ConstValues": []
+}

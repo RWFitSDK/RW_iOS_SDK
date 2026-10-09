@@ -304,7 +304,7 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
     self.functionBaseList = @[@"SDK Version", @"Get Bluetooth MAC address(获取蓝牙Mac地址)", @"Set user information(设置用户信息)", @"Get firmware information(获取固件信息)", @"Get Battery(获取电量)", @"Get Video Switch(获取视频控制开关)", @"Set Video Switch(设置视频控制开关)", @"Get LED brightness level(获取LED亮屏强度)", @"Set LED brightness level(设置LED亮屏强度)", @"Get Wearing position(获取佩戴位置)", @"Set Wearing position(设置佩戴位置)",@"Activate and deactivate the camera(启动与关闭拍照)", @"Find Device(查找设备)", @"Shut down and restore to factory settings(关机,恢复出厂设置)", @"Alarm Clock - Get Alarm Clock(闹钟-获取闹钟)", @"Alarm clock - Set alarm(闹钟-设置闹钟)", @"Alarm Clock - Delete all alarms(闹钟-删除所有闹钟)", @"Get the number of vibrations-震动次数获取",@"Set the number of vibrations-震动次数设置", @"Get screen sleep mode-睡眠模式获取", @"Set screen sleep mode-睡眠模式设置", @"Get Message push notification switch-消息推送开关获取", @"Set Message push notification switch-消息推送开关设置", @"Check if receiving likes/comments is enabled-获取赞念是否打开", @"Set whether the likes feature is enabled.-设置赞念是否打开", @"Get heart rate alarm configuration-获取心率报警配置", @"Set heart rate alarm configuration-设置心率报警配置", @"Get blood oxygen alarm configuration-获取血氧报警配置", @"Set blood oxygen alarm configuration-设置血氧报警配置", @"Set Time Format-设置12/24小时时间显示格式", @"Get Alarm Vibration Duration-获取闹钟震动时长", @"Set Alarm Vibration Duration-设置闹钟震动时长", @"Get Vibration Interval-获取震动间隔时长", @"Set Vibration Interval-设置震动间隔时长", @"Instant Screen Control-即时屏幕控制"];
 
     self.functionBaseList = [self.functionBaseList arrayByAddingObject:@"Measurement Unit-公制/英制单位"];
-    self.functionBaseList = [self.functionBaseList arrayByAddingObjectsFromArray:@[@"Device Challenge-设备身份认证", @"Sedentary Reminder-久坐提醒", @"Drink Reminder-喝水提醒"]];
+    self.functionBaseList = [self.functionBaseList arrayByAddingObjectsFromArray:@[@"Device Challenge-设备身份认证", @"Sedentary Reminder-久坐提醒", @"Drink Reminder-喝水提醒", @"Custom Vibration Control-自定义震动控制"]];
 
     self.functionHealthList = @[@"Real-time, single-instance health data monitoring-实时单次启动健康数据检测(心率,血氧,HRV, 压力, 血糖)", @"Get HeartRate Monitor(获取心率监听)", @"Set HeartRate Monitor(设置心率监听)",@"Get Blood oxygen Monitor(获取血氧监听)", @"Set Blood oxygen Monitor(设置血氧监听)",@"Get HRV Monitor(获取HRV监听)", @"Set HRV Monitor(设置HRV监听)",@"Get PPG Monitor(获取PPG监听)", @"Set PPG Monitor(设置PPG监听)",@"Get Stress Monitor(获取压力监听)", @"Set Stress Monitor(设置压力监听)",@"Get Blood Sugar Monitor(获取血糖监听)", @"Set Blood Sugar Monitor(设置血糖监听)", @"Sync all your health data(同步所有健康数据)", @"Get Blood Pressure Monitor(获取血压监听)", @"Set Blood Pressure Monitor(设置血压监听)", @"Get Temperature Monitor(获取定时体温监测)", @"Set Temperature Monitor(设置定时体温监测)", @"Get Muslim Time Display Mode(获取Muslim时间显示模式)", @"Set Muslim Time Display Mode(设置Muslim时间显示模式)", @"Get Muslim Count Reset Mode(获取Muslim计数清零方式)", @"Set Muslim Count Reset Mode(设置Muslim计数清零方式)", @"PPG Raw Data(PPG原始数据：启动、停止采集或获取历史)", @"HR Calibration(心率校正)", @"Get Fall Detect(获取跌落提醒开关)", @"Set Fall Detect(设置跌落提醒)", @"Get Count Reminder(获取计数提醒间隔)", @"Set Count Reminder(设置计数提醒间隔)"];
 
@@ -919,6 +919,7 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
         if (menu.isSupportDeviceChallenge) [base addObject:@36];
         if (menu.isSupportSedentary) [base addObject:@37];
         if (menu.isDrink) [base addObject:@38];
+        if (menu.isSupportVibrationControl) [base addObject:@39];
 
         // 实时单次检测统一放在首页的健康详情页，设备设置页不重复显示。
         addPair(health, menu.isDataTypeHeart, 1, 2);
@@ -1693,6 +1694,29 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
     //        [DHBleCommand controlOpen:1 dataType:BLE_KEY_BLOOD_SUGAR block:^(int code, id  _Nonnull data) {
     //
     //        }];
+        }
+        else if (indexPath.row == 39){ //自定义震动控制(协议2.3.3)
+            DeviceFuncV2Model *menu = [DHBluetoothManager shareInstance].deviceFuncV2Model;
+            if (menu && menu.isSupportVibrationControl) {
+                NSArray *options = @[RWChoiceText(@"3 times at strength 2", @"单轮3次·强度2"),
+                                     RWChoiceText(@"Continuous at strength 1", @"持续震动·强度1"),
+                                     RWChoiceText(@"Rhythm loop: 3 vibrations/group, 5/s, pause 200ms", @"节奏循环·每组3次·5次/秒·停顿200ms"),
+                                     RWChoiceText(@"Stop vibration", @"停止震动")];
+                [self showPickerWithTitle:RWLocalizedFunctionTitle(self.functionBaseList[39]) options:options selectedIndex:0 selection:^(NSInteger selectedIndex) {
+                    UInt8 mode = 0, strength = 0, group = 0, frequency = 0, pause = 0;
+                    if (selectedIndex == 0) { mode = 3; strength = 2; }
+                    else if (selectedIndex == 1) { mode = 0xFF; strength = 1; }
+                    else if (selectedIndex == 2) { mode = 0xFF; strength = 2; group = 3; frequency = 5; pause = 2; }
+                    [DHBleCommand controlVibration:mode strength:strength groupCount:group frequency:frequency pause:pause block:^(int code, id  _Nonnull data) {
+                        NSLog(@"controlVibration mode=%d strength=%d code=%d data=%@", mode, strength, code, data);
+                        if (code == 0) [self updateDetailText:options[selectedIndex] section:0 sourceRow:39];
+                        else if ([data isKindOfClass:[NSString class]]) SHOWHUD(data);
+                    }];
+                }];
+            }
+            else{
+                SHOWHUD(NSLocalizedString(@"rw_not_supported", nil));
+            }
         }
         else if (indexPath.row == 1){ //获取心率监听
             [DHBleCommand getHeartRateMode:^(int code, id  _Nonnull data) {

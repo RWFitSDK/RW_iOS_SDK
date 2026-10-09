@@ -145,7 +145,15 @@
         BaseCellModel *cellModel = [[BaseCellModel alloc] init];
         cellModel.leftTitle = model.name;
         cellModel.subTitle = [NSString stringWithFormat:@"%ld",(long)model.rssi];
-        cellModel.contentTitle = [NSString stringWithFormat:@"%@ %@", model.rssi == 0 ? @"(System Paired)" : model.macAddr, model.deviceModel ?: @""];
+        // 广播充电状态: 0未充电 1充电中 2充满; -1未提供时不显示。
+        NSString *batteryStatusText = @"";
+        if (model.batteryStatus >= 0 && model.batteryStatus <= 2) {
+            BOOL isChinese = [[[NSLocale preferredLanguages] firstObject] hasPrefix:@"zh"];
+            NSArray<NSString *> *statuses = isChinese ? @[@"未充电", @"充电中", @"充满"]
+                                                      : @[@"Not charging", @"Charging", @"Fully charged"];
+            batteryStatusText = [NSString stringWithFormat:@"[%@]", statuses[model.batteryStatus]];
+        }
+        cellModel.contentTitle = [[NSString stringWithFormat:@"%@ %@ %@", model.rssi == 0 ? @"(System Paired)" : model.macAddr, model.deviceModel ?: @"", batteryStatusText] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
         [self.dataArray addObject:cellModel];
     }
     [self.myTableView reloadData];

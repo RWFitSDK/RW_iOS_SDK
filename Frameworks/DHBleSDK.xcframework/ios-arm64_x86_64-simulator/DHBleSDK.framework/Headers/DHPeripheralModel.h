@@ -30,6 +30,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic,assign) NSInteger chipPlatform;
 /// 客户代码；仅新格式有效，旧格式为-1
 @property (nonatomic,assign) NSInteger customerCode;
+/// 广播充电状态：0未充电 1充电中 2充满，-1未提供或不支持(旧固件该字节为0x80)
+@property (nonatomic,assign) NSInteger batteryStatus;
 
 @end
 

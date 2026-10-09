@@ -33,7 +33,29 @@ To develop with the RW BLE iOS SDK, Xcode must be installed.
 
 **Step 2: Manually add dependencies**
 
+Choose exactly one SDK variant based on the OTA features you need. All variants use the filename `DHBleSDK.xcframework`; obtain the file for your selected variant and do not link multiple variants together:
+
+| Variant | Scenario | Additional dependencies |
+| ------- | -------- | ----------------------- |
+| basic | No TL / Nordic OTA | No additional OTA dependencies |
+| tl | Requires TL platform OTA | `AB_FOTA.xcframework` |
+| nordic | Requires Nordic platform OTA | `iOSMcuManagerLibrary` |
+| tlNordic | Requires both TL and Nordic platform OTA | Both of the above |
+
 Manually add `DHBleSDK.xcframework` to your project. Xcode automatically selects the appropriate physical-device or simulator variant. The SDK is static, so set it to `Do Not Embed` under the target's `Frameworks, Libraries, and Embedded Content` section.
+
+**tl / tlNordic:** Add the supplied `AB_FOTA.xcframework` to your app target and select `Embed & Sign`.
+
+**nordic / tlNordic:** In Xcode, choose `File → Add Package Dependencies…` and add:
+
+```text
+https://github.com/nordicsemi/IOS-nRF-Connect-Device-Manager
+```
+
+Select `Exact Version`: `1.14.7`, then add the `iOSMcuManagerLibrary` product to your app target. Swift Package Manager resolves transitive dependencies such as `SwiftCBOR` and `ZIPFoundation` automatically. Do not add duplicate binary copies of these libraries.
+
+> [!TIP]
+> The basic / tl SDK itself does not require ZIPFoundation. If you retain the Demo's log compression and sharing feature, add ZIPFoundation for that feature. Nordic variants can reuse the same dependency.
 
 ![addlibpng](./Image/6314538e-82b5-4ccc-9103-724ab4b67647.png)
 
@@ -83,6 +105,8 @@ Manually add `DHBleSDK.xcframework` to your project. Xcode automatically selects
 // 3. DHBleConnectDelegate callbacks report discovered devices
 - (void)centralManagerDidDiscoverPeripheral:(NSArray <DHPeripheralModel *>*)peripherals
 ```
+
+`DHPeripheralModel.batteryStatus` returns the charging status: `0` not charging, `1` charging, `2` fully charged, `-1` unavailable or unsupported. This is not a battery percentage; read the battery level after connecting (3.2.1.4).
 
 ##### 3.1.2 Stop Scanning
 
@@ -222,6 +246,7 @@ DeviceFuncV2Model class attribute definitions:
 | isSupportMotoVibrationLevel | Does it support motor vibration alerts?                   |
 | isSupportAlarmVibrationDuration | Does it support alarm vibration duration setting?     |
 | isSupportVibrationInterval  | Does it support vibration interval setting?             |
+| isSupportVibrationControl  | Does it support custom vibration control?              |
 | isDataTypeActivity          | Does it support step counting?                            |
 | isDataTypeHeart             | Does it support heart rate monitoring?                    |
 | isDataTypeBloodPressure     | Does it support blood pressure measurement?               |
@@ -1579,6 +1604,37 @@ Example:
 }];
 ```
 
+##### 3.2.1.31 Custom Vibration Control
+
+> Configuration-table property: `isSupportVibrationControl`. Use this feature only when the device reports support.
+
+Methods:
+
+`+ (void)controlVibration:(UInt8)mode strength:(UInt8)strength groupCount:(UInt8)groupCount frequency:(UInt8)frequency pause:(UInt8)pause block:(void(^)(int code, id data))block`
+
+Parameters:
+
+| Parameter  | Type  | Description                                                          |
+| ---------- | ----- | -------------------------------------------------------------------- |
+| mode       | UInt8 | Number of vibrations `1-15`; `0xFF` continuous vibration or rhythm loop |
+| strength   | UInt8 | Strength `0-3`; pass `0` to stop immediately (loop parameters are ignored) |
+| groupCount | UInt8 | Vibrations per group `1-15`; pass `0` when not using a loop          |
+| frequency  | UInt8 | In-group frequency `1-10` (vibrations/second); pass `0` when not using a loop |
+| pause      | UInt8 | Pause between groups `1-255`, in units of 100 ms; pass `0` when not using a loop |
+
+Example:
+
+```objective-c
+// Single round: vibrate 3 times at strength 2
+[DHBleCommand controlVibration:3 strength:2 groupCount:0 frequency:0 pause:0 block:^(int code, id data) {
+    NSLog(@"controlVibration code=%d", code);
+}];
+```
+
+> [!NOTE]
+>
+> The rhythm loop is only available when `mode=0xFF`; `groupCount`, `frequency`, and `pause` must all be valid. Invalid parameters call back with a non-zero `code` and an error description. Use strength `0` to stop continuous or loop vibration. The device also stops automatically when Bluetooth disconnects.
+
 #### 3.2.2 Health data synchronization (real-time single measurement and all-day monitoring)
 
 > There are two ways to monitor health data: real-time single measurements and continuous 24-hour monitoring. Health data includes heart rate, blood oxygen, stress levels, HRV, and sleep, **but sleep is not monitored in real time**.
@@ -2194,6 +2250,11 @@ Method Description:
 
 `+(void)ringOtaWithFileData:(NSData *)fileData block:(void(^)(int code, CGFloat progress, id data))block`
 
+> [!TIP]
+> **Firmware file:** For Nordic devices, read the complete ZIP firmware package into `NSData` and pass it directly, without extracting it. For other platforms, pass the corresponding firmware file data.
+>
+> **SDK selection:** Nordic OTA requires the `nordic` or `tlNordic` variant and its dependencies. See “Step 2: Manually add dependencies” for dependency configuration.
+
 Parameter Description:
 
 | Parameter | Type   | Description        |
@@ -2477,14 +2538,14 @@ Recording status pushes use `BluetoothNotificationProtocolPush`, with `dataType 
 
 `+ (void)getRecordFileList:(void(^)(int code, id data))block`
 
-The SDK collects all pages and returns the complete `NSArray<NSDictionary *>` once finished, or an empty array when no files exist. Each item contains NSNumber values:
+Returns the complete `NSArray<NSDictionary *>` once finished, or an empty array when no files exist. Each item contains NSNumber values:
 
 | Field | Description |
 | ---- | ---- |
 | fileId | File ID used for download or deletion |
 | fileSize | Original device file size in bytes |
 | duration | Recording duration in seconds |
-| timestamp | Recording time in Unix seconds, converted by the SDK |
+| timestamp | Recording time as a Unix timestamp, in seconds (s) |
 
 ```objective-c
 [DHBleCommand getRecordFileList:^(int code, id data) {
@@ -2506,7 +2567,7 @@ The SDK collects all pages and returns the complete `NSArray<NSDictionary *>` on
 | block | Completion callback; when code is 0, data is the complete Ogg Opus NSData |
 | progressBlock | Progress callback; progress ranges from 0 to 1. data contains fileId, fileSize, and received; sizes are in bytes |
 
-The SDK handles packet transfer and Ogg Opus conversion. Progress reaching 1 does not replace the completion callback. The SDK does not save a local file or return a path; the App can save the completed data as an `.opus` file. Its converted size may differ from the original `fileSize`.
+Progress reaching 1 does not replace the completion callback; treat the success of `block` as completion. The SDK does not save a file; the App saves the completed data as an `.opus` file itself. The saved file size may differ from the original device `fileSize`.
 
 ```objective-c
 // fileId comes from getRecordFileList.
@@ -2768,6 +2829,12 @@ Example:
 
 
 ## SDK Revision History
+
+**V2.0.0_261008** (2026.10.08)
+
+- Added charging status to scan results: `DHPeripheralModel.batteryStatus` (3.1.1)
+- Added custom vibration control interface `controlVibration` (3.2.1.31); added `isSupportVibrationControl` to the function configuration table
+- Added Nordic platform OTA support: pass ZIP firmware package data to `ringOtaWithFileData` (3.2.3.2)
 
 **V2.0.0_260922** (2026.09.22)
 

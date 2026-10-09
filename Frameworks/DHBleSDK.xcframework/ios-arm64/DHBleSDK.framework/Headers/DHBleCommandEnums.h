@@ -285,6 +285,7 @@ typedef enum : UInt16 {
      BLE_KEY_APP_CONTROL_COUNT = 0x0610,//APP控制戒指在线进入念珠模式, 2字节目标值+2字节初始值(小端)
      BLE_KEY_COUPLE_INTERACTION = 0x0611, //情侣功能互动
      BLE_KEY_APP_FOREGROUND_BACKGROUND = 0x0612, //app进前后台 1 前台 2后台; 实时更新步数等需要.
+     BLE_KEY_APP_VIBRATION_CONTROL = 0x0613, //自定义震动控制(协议2.3.3), 5字节: 次数/强度/循环组数/组内频率/组间停顿
 
      // TEST
      BLE_KEY_FACTORYTEST = 0x0A0A, // 工厂测试与校正

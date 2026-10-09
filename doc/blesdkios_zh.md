@@ -33,7 +33,29 @@
 
 **第2步: 手动部署添加依赖库**
 
+根据所需 OTA 功能选择一个 SDK 版本，不要同时引入多个版本。各版本的文件名均为 `DHBleSDK.xcframework`，请按所选版本获取对应文件：
+
+| 版本 | 适用场景 | 额外依赖 |
+| ---- | -------- | -------- |
+| basic | 不使用 TL / Nordic OTA | 无新增 OTA 依赖 |
+| tl | 需要 TL 平台 OTA 升级 | `AB_FOTA.xcframework` |
+| nordic | 需要 Nordic 平台 OTA 升级 | `iOSMcuManagerLibrary` |
+| tlNordic | 同时需要 TL 与 Nordic 平台 OTA 升级 | 以上两项 |
+
 手动添加`DHBleSDK.xcframework`到工程；Xcode会根据运行目标自动选择真机或模拟器版本。该SDK为静态库，请在Target的`Frameworks, Libraries, and Embedded Content`中设置为`Do Not Embed`。
+
+**tl / tlNordic：** 将随 SDK 提供的 `AB_FOTA.xcframework` 添加到应用 Target，并设置为 `Embed & Sign`。
+
+**nordic / tlNordic：** 在 Xcode 的 `File → Add Package Dependencies…` 中添加：
+
+```text
+https://github.com/nordicsemi/IOS-nRF-Connect-Device-Manager
+```
+
+选择 `Exact Version`：`1.14.7`，将产品 `iOSMcuManagerLibrary` 添加到应用 Target。`SwiftCBOR`、`ZIPFoundation` 等间接依赖由 Swift Package Manager 自动解析，无需另行添加相同库的二进制文件。
+
+> [!TIP]
+> basic / tl 不因 SDK 本身而需要 ZIPFoundation。若保留 Demo 的日志压缩分享功能，则需额外引入 ZIPFoundation；使用 Nordic 版本时可复用同一依赖。
 
 ![addlibpng](./Image/6314538e-82b5-4ccc-9103-724ab4b67647.png)
 
@@ -86,6 +108,8 @@
 //3. DHBleConnectDelegate接口会回调搜索到的蓝牙设备
 - (void)centralManagerDidDiscoverPeripheral:(NSArray <DHPeripheralModel *>*)peripherals
 ```
+
+`DHPeripheralModel.batteryStatus` 返回充电状态：`0` 未充电，`1` 充电中，`2` 充满，`-1` 未提供或不支持。此字段不是电量百分比，电量百分比需连接后获取（3.2.1.4）。
 
 ##### 3.1.2 停止搜索
 
@@ -225,6 +249,7 @@ DeviceFuncV2Model类属性定义:
 | isSupportMotoVibrationLevel | 是否支持马达震动提醒        |
 | isSupportAlarmVibrationDuration | 是否支持闹钟震动时长设置 |
 | isSupportVibrationInterval  | 是否支持震动间隔时长设置 |
+| isSupportVibrationControl  | 是否支持自定义震动控制 |
 | isDataTypeActivity          | 是否支持计步                |
 | isDataTypeHeart             | 是否支持心率                |
 | isDataTypeBloodPressure     | 是否支持血压                |
@@ -1582,6 +1607,37 @@ bean.remindDuration = 60;
 }];
 ```
 
+##### 3.2.1.31 自定义震动控制
+
+> 功能配置表属性：`isSupportVibrationControl`。仅支持该能力的设备可使用。
+
+方法说明：
+
+`+ (void)controlVibration:(UInt8)mode strength:(UInt8)strength groupCount:(UInt8)groupCount frequency:(UInt8)frequency pause:(UInt8)pause block:(void(^)(int code, id data))block`
+
+参数说明：
+
+| 参数       | 类型  | 说明                                                         |
+| ---------- | ----- | ------------------------------------------------------------ |
+| mode       | UInt8 | 震动次数 `1-15`；`0xFF` 持续震动或节奏循环                   |
+| strength   | UInt8 | 强度 `0-3`；传 `0` 立即停止震动，后面的循环参数忽略          |
+| groupCount | UInt8 | 每组震动次数 `1-15`；不用循环传 `0`                          |
+| frequency  | UInt8 | 节奏循环组内频率 `1-10`(次/秒)；不用循环传 `0`               |
+| pause      | UInt8 | 节奏循环组间停顿 `1-255`，单位100ms；不用循环传 `0`          |
+
+调用示例：
+
+```objective-c
+// 单轮: 震动3次, 强度2
+[DHBleCommand controlVibration:3 strength:2 groupCount:0 frequency:0 pause:0 block:^(int code, id data) {
+    NSLog(@"controlVibration code=%d", code);
+}];
+```
+
+> [!NOTE]
+>
+> 节奏循环仅在 `mode=0xFF` 时可用，`groupCount`、`frequency`、`pause` 需同时有效；参数不合法时回调 `code` 非 0 并返回错误说明。持续或循环震动可通过强度 `0` 停止，蓝牙断开后设备自动停止。
+
 #### 3.2.2 健康数据同步(实时单次与全天检测)
 
 > 健康数据检测有两种方式: 实时单次检测与全天检测。健康数据包括心率,血氧,压力,HRV,睡眠等, **睡眠无实时检测**。 
@@ -2201,6 +2257,11 @@ GET https://ruiwo168.com/api/device/getOtaListByModel?model=<deviceModel>
 
 `+(void)ringOtaWithFileData:(NSData *)fileData block:(void(^)(int code, CGFloat progress, id data))block`
 
+> [!TIP]
+> **固件文件：** Nordic 平台请将完整 ZIP 固件包读取为 `NSData` 后传入，无需自行解压；其它平台请传入对应固件文件的数据。
+>
+> **SDK 选择：** Nordic OTA 需使用 `nordic` 或 `tlNordic` 版本，并添加对应依赖。各版本的依赖配置参见“第2步：手动部署添加依赖库”。
+
 参数说明:
 
 | 参数     | 类型   | 说明         |
@@ -2484,14 +2545,14 @@ BleActivityMode 对应名字见示例Demo 字符串里定义:
 
 `+ (void)getRecordFileList:(void(^)(int code, id data))block`
 
-SDK 自动接收所有分页，完成后一次性返回 `NSArray<NSDictionary *>`；没有文件时返回空数组。每项字段如下，值均为 NSNumber：
+完成后一次性返回 `NSArray<NSDictionary *>`；没有文件时返回空数组。每项字段如下，值均为 NSNumber：
 
 | 字段 | 说明 |
 | ---- | ---- |
 | fileId | 文件 ID，用于下载或删除文件 |
 | fileSize | 设备原始文件大小，单位字节 |
 | duration | 录音时长，单位秒 |
-| timestamp | 设备录音时间，Unix 秒时间戳，SDK 已完成转换 |
+| timestamp | 设备录音时间，Unix 时间戳，单位秒(s) |
 
 ```objective-c
 [DHBleCommand getRecordFileList:^(int code, id data) {
@@ -2513,7 +2574,7 @@ SDK 自动接收所有分页，完成后一次性返回 `NSArray<NSDictionary *>
 | block | 完成回调；code 为 0 时 data 为完整的 Ogg Opus NSData |
 | progressBlock | 进度回调；progress 为 0～1，data 为包含 fileId、fileSize、received 的字典，大小单位为字节 |
 
-SDK 自动处理分包并转换为 Ogg Opus。进度达到 1 不代替完成回调，应以 `block` 成功为准。SDK 不保存本地文件，也不返回本地路径；App 可将完成数据保存为 `.opus` 文件，转换后的大小可能与设备原始 `fileSize` 不同。
+进度达到 1 不代替完成回调，应以 `block` 成功为准。SDK 不保存文件，需由 App 自行保存为 `.opus` 文件；保存后的文件大小可能与设备原始 `fileSize` 不同。
 
 ```objective-c
 // fileId 来自 getRecordFileList。
@@ -2775,6 +2836,12 @@ tModeSetModel.interval = 60;
 
 
 ## SDK修订记录
+
+**V2.0.0_261008** (2026.10.08)
+
+- 添加扫描结果充电状态 `DHPeripheralModel.batteryStatus`(3.1.1)
+- 添加自定义震动控制接口 `controlVibration`(3.2.1.31)，功能配置表添加`isSupportVibrationControl`
+- 新增 Nordic 平台 OTA 升级支持，通过 `ringOtaWithFileData` 传入 ZIP 固件包数据(3.2.3.2)
 
 **V2.0.0_260922** (2026.09.22)
 

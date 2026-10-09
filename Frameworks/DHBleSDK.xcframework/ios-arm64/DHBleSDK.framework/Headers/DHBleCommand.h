@@ -415,6 +415,16 @@ NS_ASSUME_NONNULL_BEGIN
 /// @param block 回调
 + (void)setVibrationInterval:(UInt16)intervalMs block:(void(^)(int code, id data))block;
 
+/// 自定义震动控制(协议2.3.3)。需功能表 isSupportVibrationControl。
+/// mode: 震动次数 1-15; 0xFF 持续震动或节奏循环。strength: 强度 0-3, 传 0 立即停止(忽略循环参数)。
+/// 节奏循环: mode=0xFF 时可传 groupCount(每组震动1-15次)+frequency(1-10次/秒)+pause(1-255, 单位100ms); 不用循环时三者传 0。
++ (void)controlVibration:(UInt8)mode
+               strength:(UInt8)strength
+            groupCount:(UInt8)groupCount
+             frequency:(UInt8)frequency
+                  pause:(UInt8)pause
+                   block:(void(^)(int code, id data))block;
+
 #pragma mark- Muslim时间显示模式
 
 /// 获取Muslim时间显示模式
@@ -456,10 +466,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - OTA文件传输类
 
-/// Ring  BIN升级
-+ (void)startPXIUIFileSyncing:(NSData *)fileData bleKey:(BleKey)bleKey block:(void(^)(int code, CGFloat progress, id data))block;
+/// Ring  BIN升级(已废弃, 请改用 ringOtaWithFileData)
++ (void)startPXIUIFileSyncing:(NSData *)fileData bleKey:(BleKey)bleKey block:(void(^)(int code, CGFloat progress, id data))block DEPRECATED_MSG_ATTRIBUTE("Use ringOtaWithFileData instead.");
 
-/// Ring OTA升级 (自动区分PXI/Telink)
+/// 设备 OTA 升级，按设备平台自动选择
 + (void)ringOtaWithFileData:(NSData *)fileData block:(void(^)(int code, CGFloat progress, id data))block;
 
 

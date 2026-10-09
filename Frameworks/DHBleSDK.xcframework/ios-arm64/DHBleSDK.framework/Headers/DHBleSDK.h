@@ -12,12 +12,8 @@
 #import <DHBleSDK/DHBleCentralManager.h>
 #import <DHBleSDK/DHBleCommand.h>
 
-#pragma mark - Transport（可选蓝牙事件监听，透传通道为内部能力不导出）
-#import <DHBleSDK/DHBluetoothEventObserver.h>
+#pragma mark - Transport（通用字节透传通道）
 #import <DHBleSDK/DHPassthroughChannel.h>
-
-#pragma mark - Tools（录音音频转换）
-#import <DHBleSDK/DHAudioConverter.h>
 
 //! Project version number for DHBleSDK.
 FOUNDATION_EXPORT double DHBleSDKVersionNumber;

@@ -50,21 +50,23 @@ static UIColor *RWHealthColor(NSString *hex)
     self.detailLabel.textColor = RWHealthColor(@"#8A94A6");
     self.detailLabel.numberOfLines = 2;
     for (UIView *view in @[self.titleLabel, self.valueLabel, self.detailLabel]) {
-        view.translatesAutoresizingMaskIntoConstraints = NO;
         [self.contentView addSubview:view];
     }
-    [NSLayoutConstraint activateConstraints:@[
-        [self.titleLabel.topAnchor constraintEqualToAnchor:self.contentView.topAnchor constant:14],
-        [self.titleLabel.leadingAnchor constraintEqualToAnchor:self.contentView.leadingAnchor constant:14],
-        [self.titleLabel.trailingAnchor constraintLessThanOrEqualToAnchor:self.contentView.trailingAnchor constant:-14],
-        [self.valueLabel.topAnchor constraintEqualToAnchor:self.titleLabel.bottomAnchor constant:13],
-        [self.valueLabel.leadingAnchor constraintEqualToAnchor:self.titleLabel.leadingAnchor],
-        [self.valueLabel.trailingAnchor constraintLessThanOrEqualToAnchor:self.contentView.trailingAnchor constant:-14],
-        [self.detailLabel.topAnchor constraintEqualToAnchor:self.valueLabel.bottomAnchor constant:6],
-        [self.detailLabel.leadingAnchor constraintEqualToAnchor:self.titleLabel.leadingAnchor],
-        [self.detailLabel.trailingAnchor constraintEqualToAnchor:self.contentView.trailingAnchor constant:-14],
-        [self.detailLabel.bottomAnchor constraintLessThanOrEqualToAnchor:self.contentView.bottomAnchor constant:-10]
-    ]];
+    [self.titleLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.leading.equalTo(self.contentView).offset(14);
+        make.trailing.lessThanOrEqualTo(self.contentView).offset(-14);
+    }];
+    [self.valueLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.titleLabel.mas_bottom).offset(13);
+        make.leading.equalTo(self.titleLabel);
+        make.trailing.lessThanOrEqualTo(self.contentView).offset(-14);
+    }];
+    [self.detailLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.valueLabel.mas_bottom).offset(6);
+        make.leading.equalTo(self.titleLabel);
+        make.trailing.equalTo(self.contentView).offset(-14);
+        make.bottom.lessThanOrEqualTo(self.contentView).offset(-10);
+    }];
     return self;
 }
 
@@ -116,17 +118,14 @@ static UIColor *RWHealthColor(NSString *hex)
 - (void)setupViews
 {
     self.deviceCard = [[UIView alloc] init];
-    self.deviceCard.translatesAutoresizingMaskIntoConstraints = NO;
     self.deviceCard.backgroundColor = UIColor.whiteColor;
     self.deviceCard.layer.cornerRadius = 14.0;
     [self.view addSubview:self.deviceCard];
 
     UIView *ringIcon = [[UIView alloc] init];
-    ringIcon.translatesAutoresizingMaskIntoConstraints = NO;
     ringIcon.backgroundColor = RWHealthColor(@"#EAF0FF");
     ringIcon.layer.cornerRadius = 24.0;
     UILabel *ringText = [[UILabel alloc] init];
-    ringText.translatesAutoresizingMaskIntoConstraints = NO;
     ringText.text = @"◯";
     ringText.textColor = RWHealthColor(@"#3568D4");
     ringText.font = [UIFont boldSystemFontOfSize:24.0];
@@ -134,15 +133,12 @@ static UIColor *RWHealthColor(NSString *hex)
     [ringIcon addSubview:ringText];
 
     self.deviceNameLabel = [[UILabel alloc] init];
-    self.deviceNameLabel.translatesAutoresizingMaskIntoConstraints = NO;
     self.deviceNameLabel.font = [UIFont boldSystemFontOfSize:18.0];
     self.deviceNameLabel.textColor = RWHealthColor(@"#172033");
     self.deviceStateLabel = [[UILabel alloc] init];
-    self.deviceStateLabel.translatesAutoresizingMaskIntoConstraints = NO;
     self.deviceStateLabel.font = [UIFont systemFontOfSize:13.0];
     self.deviceStateLabel.textColor = RWHealthColor(@"#667085");
     self.deviceActionButton = [UIButton buttonWithType:UIButtonTypeSystem];
-    self.deviceActionButton.translatesAutoresizingMaskIntoConstraints = NO;
     self.deviceActionButton.titleLabel.font = [UIFont boldSystemFontOfSize:14.0];
     self.deviceActionButton.backgroundColor = RWHealthColor(@"#EDF2FF");
     self.deviceActionButton.layer.cornerRadius = 9.0;
@@ -150,14 +146,12 @@ static UIColor *RWHealthColor(NSString *hex)
     for (UIView *view in @[ringIcon, self.deviceNameLabel, self.deviceStateLabel, self.deviceActionButton]) [self.deviceCard addSubview:view];
 
     UILabel *sectionTitle = [[UILabel alloc] init];
-    sectionTitle.translatesAutoresizingMaskIntoConstraints = NO;
     sectionTitle.text = NSLocalizedString(@"rw_health_data", nil);
     sectionTitle.font = [UIFont boldSystemFontOfSize:19.0];
     sectionTitle.textColor = RWHealthColor(@"#172033");
     [self.view addSubview:sectionTitle];
 
     UILabel *hint = [[UILabel alloc] init];
-    hint.translatesAutoresizingMaskIntoConstraints = NO;
     hint.text = NSLocalizedString(@"rw_pull_to_sync", nil);
     hint.font = [UIFont systemFontOfSize:13.0];
     hint.textColor = RWHealthColor(@"#8A94A6");
@@ -168,7 +162,6 @@ static UIColor *RWHealthColor(NSString *hex)
     layout.minimumLineSpacing = 10;
     layout.sectionInset = UIEdgeInsetsMake(2, 2, 18, 2);
     self.collectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:layout];
-    self.collectionView.translatesAutoresizingMaskIntoConstraints = NO;
     self.collectionView.backgroundColor = UIColor.clearColor;
     self.collectionView.dataSource = self;
     self.collectionView.delegate = self;
@@ -179,37 +172,49 @@ static UIColor *RWHealthColor(NSString *hex)
     [self.collectionView addSubview:self.refreshControl];
     [self.view addSubview:self.collectionView];
 
-    [NSLayoutConstraint activateConstraints:@[
-        [self.deviceCard.topAnchor constraintEqualToAnchor:self.view.topAnchor constant:14],
-        [self.deviceCard.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:16],
-        [self.deviceCard.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-16],
-        [self.deviceCard.heightAnchor constraintEqualToConstant:88],
-        [ringIcon.leadingAnchor constraintEqualToAnchor:self.deviceCard.leadingAnchor constant:14],
-        [ringIcon.centerYAnchor constraintEqualToAnchor:self.deviceCard.centerYAnchor],
-        [ringIcon.widthAnchor constraintEqualToConstant:48],
-        [ringIcon.heightAnchor constraintEqualToConstant:48],
-        [ringText.leadingAnchor constraintEqualToAnchor:ringIcon.leadingAnchor],
-        [ringText.trailingAnchor constraintEqualToAnchor:ringIcon.trailingAnchor],
-        [ringText.topAnchor constraintEqualToAnchor:ringIcon.topAnchor],
-        [ringText.bottomAnchor constraintEqualToAnchor:ringIcon.bottomAnchor],
-        [self.deviceNameLabel.leadingAnchor constraintEqualToAnchor:ringIcon.trailingAnchor constant:12],
-        [self.deviceNameLabel.topAnchor constraintEqualToAnchor:self.deviceCard.topAnchor constant:20],
-        [self.deviceNameLabel.trailingAnchor constraintLessThanOrEqualToAnchor:self.deviceActionButton.leadingAnchor constant:-8],
-        [self.deviceStateLabel.leadingAnchor constraintEqualToAnchor:self.deviceNameLabel.leadingAnchor],
-        [self.deviceStateLabel.topAnchor constraintEqualToAnchor:self.deviceNameLabel.bottomAnchor constant:6],
-        [self.deviceActionButton.trailingAnchor constraintEqualToAnchor:self.deviceCard.trailingAnchor constant:-14],
-        [self.deviceActionButton.centerYAnchor constraintEqualToAnchor:self.deviceCard.centerYAnchor],
-        [self.deviceActionButton.widthAnchor constraintGreaterThanOrEqualToConstant:82],
-        [self.deviceActionButton.heightAnchor constraintEqualToConstant:40],
-        [sectionTitle.topAnchor constraintEqualToAnchor:self.deviceCard.bottomAnchor constant:20],
-        [sectionTitle.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:18],
-        [hint.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-18],
-        [hint.centerYAnchor constraintEqualToAnchor:sectionTitle.centerYAnchor],
-        [self.collectionView.topAnchor constraintEqualToAnchor:sectionTitle.bottomAnchor constant:10],
-        [self.collectionView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:14],
-        [self.collectionView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-14],
-        [self.collectionView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor]
-    ]];
+    [self.deviceCard mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.view).offset(14);
+        make.leading.equalTo(self.view).offset(16);
+        make.trailing.equalTo(self.view).offset(-16);
+        make.height.mas_equalTo(88);
+    }];
+    [ringIcon mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.leading.equalTo(self.deviceCard).offset(14);
+        make.centerY.equalTo(self.deviceCard);
+        make.width.height.mas_equalTo(48);
+    }];
+    [ringText mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.equalTo(ringIcon);
+    }];
+    [self.deviceNameLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.leading.equalTo(ringIcon.mas_trailing).offset(12);
+        make.top.equalTo(self.deviceCard).offset(20);
+        make.trailing.lessThanOrEqualTo(self.deviceActionButton.mas_leading).offset(-8);
+    }];
+    [self.deviceStateLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.leading.equalTo(self.deviceNameLabel);
+        make.top.equalTo(self.deviceNameLabel.mas_bottom).offset(6);
+    }];
+    [self.deviceActionButton mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.trailing.equalTo(self.deviceCard).offset(-14);
+        make.centerY.equalTo(self.deviceCard);
+        make.width.mas_greaterThanOrEqualTo(82);
+        make.height.mas_equalTo(40);
+    }];
+    [sectionTitle mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.deviceCard.mas_bottom).offset(20);
+        make.leading.equalTo(self.view).offset(18);
+    }];
+    [hint mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.trailing.equalTo(self.view).offset(-18);
+        make.centerY.equalTo(sectionTitle);
+    }];
+    [self.collectionView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(sectionTitle.mas_bottom).offset(10);
+        make.leading.equalTo(self.view).offset(14);
+        make.trailing.equalTo(self.view).offset(-14);
+        make.bottom.equalTo(self.view);
+    }];
 }
 
 - (void)refreshState

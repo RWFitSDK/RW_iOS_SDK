@@ -50,6 +50,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL isSupportRecording; //是否支持录音功能;
 @property (nonatomic, assign) BOOL isSupportDevicePasswordAuth; //是否支持设备密码认证;
 @property (nonatomic, assign) BOOL isSupportDeviceChallenge; //是否支持设备身份认证;
+@property (nonatomic, assign) BOOL isSupportAI; //是否支持AI功能;
 @property (nonatomic, assign) BOOL isSupportSedentary; //是否支持久坐提醒设置;
 @property (nonatomic, assign) BOOL isDrink; //是否支持喝水提醒设置;
 
@@ -60,6 +61,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL isSupportMotoVibrationLevel; //是否支持马达震动提醒
 @property (nonatomic, assign) BOOL isSupportAlarmVibrationDuration; //是否支持闹钟震动时长设置
 @property (nonatomic, assign) BOOL isSupportVibrationInterval; //是否支持震动间隔时长设置
+@property (nonatomic, assign) BOOL isSupportVibrationControl; //是否支持自定义震动控制(SUPPORT_VIBRATION bit5)
 @property (nonatomic, assign) BOOL isSupportCountReminder; //是否支持计数提醒间隔设置
 
 

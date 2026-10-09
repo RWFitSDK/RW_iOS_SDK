@@ -27,7 +27,15 @@
     self.title = @"Firmware Upgrade - 固件升级";
     self.view.backgroundColor = UIColor.systemBackgroundColor;
     self.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeNever;
-    self.firmwareNames = @[@"YCLY02_2.3.1_2.fot", @"YCLY02_2.3.2_2.fot"];
+    // 固件包从 bundle 动态列举(.fot/.zip); 公开 Demo 不带固件资源, 列表为空时提示, 不含任何硬编码包名。
+    NSMutableArray<NSString *> *bundledFirmware = [NSMutableArray array];
+    for (NSString *path in [[NSBundle mainBundle] pathsForResourcesOfType:@"fot" inDirectory:nil]) {
+        [bundledFirmware addObject:path.lastPathComponent];
+    }
+    for (NSString *path in [[NSBundle mainBundle] pathsForResourcesOfType:@"zip" inDirectory:nil]) {
+        [bundledFirmware addObject:path.lastPathComponent];
+    }
+    self.firmwareNames = [bundledFirmware sortedArrayUsingSelector:@selector(compare:)];
     [self setupUI];
     [self queryFirmwareInfo];
 }
@@ -99,6 +107,10 @@
 
 - (void)chooseFirmware {
     if (self.upgrading) return;
+    if (self.firmwareNames.count == 0) {
+        self.statusLabel.text = @"No firmware in bundle - Bundle 内无固件";
+        return;
+    }
     UIAlertController *sheet = [UIAlertController alertControllerWithTitle:@"Select Firmware - 选择固件"
                                                                    message:nil
                                                             preferredStyle:UIAlertControllerStyleActionSheet];
