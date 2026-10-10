@@ -1,4 +1,0 @@
-framework module AB_FOTA {
-  header "AB_FOTA-Swift.h"
-  requires objc
-}

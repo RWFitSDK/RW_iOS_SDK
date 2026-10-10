@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		1EFD5E4B89206B9CA649FE50 /* iOSMcuManagerLibrary in Frameworks */ = {isa = PBXBuildFile; productRef = A5391A86A7338E3F02C6EB0D /* iOSMcuManagerLibrary */; };
 		2ECAE87C98F14DD26008DB75 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = F58D4F8FB9661BAC7BA1BC70 /* ZIPFoundation */; };
-		45FAF9B7169C19219C700D89 /* AB_FOTA.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 88DEEF0A46404936D30D524B /* AB_FOTA.xcframework */; };
 		58D363902B093AAA52588EAC /* RWLogArchive.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F246BD2CF516A2758B6AB82 /* RWLogArchive.swift */; };
 		813B42F4F345577AAB4A4C88 /* UIColor+DHColor.m in Sources */ = {isa = PBXBuildFile; fileRef = 93FD5A20D391512F44BEADEF /* UIColor+DHColor.m */; };
 		A92026090000000000000013 /* RecordingViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A92026090000000000000012 /* RecordingViewController.m */; };
@@ -37,7 +36,6 @@
 		ABBE0C3F28DC6D8300534A34 /* ScanViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = ABBE0C3D28DC6D8300534A34 /* ScanViewController.m */; };
 		D10000000000000000000005 /* RWHealthHomeController.m in Sources */ = {isa = PBXBuildFile; fileRef = D10000000000000000000002 /* RWHealthHomeController.m */; };
 		D10000000000000000000006 /* RWHealthDetailController.m in Sources */ = {isa = PBXBuildFile; fileRef = D10000000000000000000004 /* RWHealthDetailController.m */; };
-		EAF38FCEBE127045E6CBF16B /* AB_FOTA.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 88DEEF0A46404936D30D524B /* AB_FOTA.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		F881CE7440426E341307DAC6 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 9FE490169BF1703A7F3066DE /* libz.tbd */; };
 		FD59624C9E64C5F6C0A7E06C /* DHProgressHUD.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F212A69B35E8B414D44C5ED /* DHProgressHUD.m */; };
 /* End PBXBuildFile section */
@@ -66,7 +64,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				EAF38FCEBE127045E6CBF16B /* AB_FOTA.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -80,7 +77,6 @@
 		6DBEB99D8529E9F369F02E95 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		7F212A69B35E8B414D44C5ED /* DHProgressHUD.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DHProgressHUD.m; sourceTree = "<group>"; };
 		8892605F06FC501A184CF26E /* Pods_DHBleSDKDemo.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_DHBleSDKDemo.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		88DEEF0A46404936D30D524B /* AB_FOTA.xcframework */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = wrapper.xcframework; name = AB_FOTA.xcframework; path = Frameworks/AB_FOTA.xcframework; sourceTree = "<group>"; };
 		93FD5A20D391512F44BEADEF /* UIColor+DHColor.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "UIColor+DHColor.m"; sourceTree = "<group>"; };
 		9F246BD2CF516A2758B6AB82 /* RWLogArchive.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RWLogArchive.swift; sourceTree = "<group>"; };
 		9FE490169BF1703A7F3066DE /* libz.tbd */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
@@ -142,7 +138,6 @@
 				F881CE7440426E341307DAC6 /* libz.tbd in Frameworks */,
 				2ECAE87C98F14DD26008DB75 /* ZIPFoundation in Frameworks */,
 				1EFD5E4B89206B9CA649FE50 /* iOSMcuManagerLibrary in Frameworks */,
-				45FAF9B7169C19219C700D89 /* AB_FOTA.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -265,7 +260,6 @@
 			children = (
 				AB483C48286418D7000234B0 /* DHBleSDKDemo */,
 				AB483C64286418D7000234B0 /* DHBleSDKDemoTests */,
-				88DEEF0A46404936D30D524B /* AB_FOTA.xcframework */,
 				AB483C6E286418D7000234B0 /* DHBleSDKDemoUITests */,
 				AB483C47286418D7000234B0 /* Products */,
 				2F2DF29382CCA7C540C2EACA /* Pods */,

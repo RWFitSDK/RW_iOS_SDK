@@ -1,6 +1,0 @@
-framework module DHBleSDK {
-  umbrella header "DHBleSDK.h"
-  export *
-
-  module * { export * }
-}

@@ -37,16 +37,13 @@
 
 | 版本 | 适用场景 | 额外依赖 |
 | ---- | -------- | -------- |
-| basic | 不使用 TL / Nordic OTA | 无新增 OTA 依赖 |
-| tl | 需要 TL 平台 OTA 升级 | `AB_FOTA.xcframework` |
+| basic | 不使用 Nordic OTA | 无新增 OTA 依赖 |
 | nordic | 需要 Nordic 平台 OTA 升级 | `iOSMcuManagerLibrary` |
-| tlNordic | 同时需要 TL 与 Nordic 平台 OTA 升级 | 以上两项 |
 
 手动添加`DHBleSDK.xcframework`到工程；Xcode会根据运行目标自动选择真机或模拟器版本。该SDK为静态库，请在Target的`Frameworks, Libraries, and Embedded Content`中设置为`Do Not Embed`。
 
-**tl / tlNordic：** 将随 SDK 提供的 `AB_FOTA.xcframework` 添加到应用 Target，并设置为 `Embed & Sign`。
 
-**nordic / tlNordic：** 在 Xcode 的 `File → Add Package Dependencies…` 中添加：
+**nordic：** 在 Xcode 的 `File → Add Package Dependencies…` 中添加：
 
 ```text
 https://github.com/nordicsemi/IOS-nRF-Connect-Device-Manager
@@ -55,7 +52,7 @@ https://github.com/nordicsemi/IOS-nRF-Connect-Device-Manager
 选择 `Exact Version`：`1.14.7`，将产品 `iOSMcuManagerLibrary` 添加到应用 Target。`SwiftCBOR`、`ZIPFoundation` 等间接依赖由 Swift Package Manager 自动解析，无需另行添加相同库的二进制文件。
 
 > [!TIP]
-> basic / tl 不因 SDK 本身而需要 ZIPFoundation。若保留 Demo 的日志压缩分享功能，则需额外引入 ZIPFoundation；使用 Nordic 版本时可复用同一依赖。
+> basic 不因 SDK 本身而需要 ZIPFoundation。若保留 Demo 的日志压缩分享功能，则需额外引入 ZIPFoundation；使用 Nordic 版本时可复用同一依赖。
 
 ![addlibpng](./Image/6314538e-82b5-4ccc-9103-724ab4b67647.png)
 
@@ -2260,7 +2257,7 @@ GET https://ruiwo168.com/api/device/getOtaListByModel?model=<deviceModel>
 > [!TIP]
 > **固件文件：** Nordic 平台请将完整 ZIP 固件包读取为 `NSData` 后传入，无需自行解压；其它平台请传入对应固件文件的数据。
 >
-> **SDK 选择：** Nordic OTA 需使用 `nordic` 或 `tlNordic` 版本，并添加对应依赖。各版本的依赖配置参见“第2步：手动部署添加依赖库”。
+> **SDK 选择：** Nordic OTA 需使用 `nordic` 版本，并添加对应依赖。各版本的依赖配置参见“第2步：手动部署添加依赖库”。
 
 参数说明:
 

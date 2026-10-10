@@ -151,8 +151,12 @@
     [DHBleCommand ringOtaWithFileData:fileData block:^(int code, CGFloat progress, id _Nonnull data) {
         dispatch_async(dispatch_get_main_queue(), ^{
             NSLog(@"OTA code %d progress %.2f", code, progress);
-            if (code == 0 && progress >= 1.0) {
+            if (!self.upgrading) return;
+            // 100% 仅表示传输进度；Finished 才是 SDK 的最终完成通知。
+            BOOL finished = [data isKindOfClass:NSString.class] && [data isEqualToString:@"Finished"];
+            if (code == 0 && finished) {
                 self.upgrading = NO;
+                self.progressView.progress = 1.0;
                 self.statusLabel.text = @"Upgrade success - 升级成功, 设备重启后可重新进入页面查看新版本";
                 [self popAfterUpgradeFinished];
             }
@@ -163,7 +167,9 @@
             }
             else {
                 self.progressView.progress = progress;
-                self.statusLabel.text = [NSString stringWithFormat:@"Upgrading - 升级中 %d%%", (int)(progress * 100)];
+                self.statusLabel.text = progress >= 1.0
+                    ? @"Transfer complete, waiting for device confirmation - 传输完成, 等待设备确认"
+                    : [NSString stringWithFormat:@"Upgrading - 升级中 %d%%", (int)(progress * 100)];
             }
         });
     }];

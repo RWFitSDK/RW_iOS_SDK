@@ -37,16 +37,13 @@ Choose exactly one SDK variant based on the OTA features you need. All variants 
 
 | Variant | Scenario | Additional dependencies |
 | ------- | -------- | ----------------------- |
-| basic | No TL / Nordic OTA | No additional OTA dependencies |
-| tl | Requires TL platform OTA | `AB_FOTA.xcframework` |
+| basic | No Nordic OTA | No additional OTA dependencies |
 | nordic | Requires Nordic platform OTA | `iOSMcuManagerLibrary` |
-| tlNordic | Requires both TL and Nordic platform OTA | Both of the above |
 
 Manually add `DHBleSDK.xcframework` to your project. Xcode automatically selects the appropriate physical-device or simulator variant. The SDK is static, so set it to `Do Not Embed` under the target's `Frameworks, Libraries, and Embedded Content` section.
 
-**tl / tlNordic:** Add the supplied `AB_FOTA.xcframework` to your app target and select `Embed & Sign`.
 
-**nordic / tlNordic:** In Xcode, choose `File → Add Package Dependencies…` and add:
+**nordic:** In Xcode, choose `File → Add Package Dependencies…` and add:
 
 ```text
 https://github.com/nordicsemi/IOS-nRF-Connect-Device-Manager
@@ -55,7 +52,7 @@ https://github.com/nordicsemi/IOS-nRF-Connect-Device-Manager
 Select `Exact Version`: `1.14.7`, then add the `iOSMcuManagerLibrary` product to your app target. Swift Package Manager resolves transitive dependencies such as `SwiftCBOR` and `ZIPFoundation` automatically. Do not add duplicate binary copies of these libraries.
 
 > [!TIP]
-> The basic / tl SDK itself does not require ZIPFoundation. If you retain the Demo's log compression and sharing feature, add ZIPFoundation for that feature. Nordic variants can reuse the same dependency.
+> The basic SDK itself does not require ZIPFoundation. If you retain the Demo's log compression and sharing feature, add ZIPFoundation for that feature. Nordic variants can reuse the same dependency.
 
 ![addlibpng](./Image/6314538e-82b5-4ccc-9103-724ab4b67647.png)
 
@@ -2253,7 +2250,7 @@ Method Description:
 > [!TIP]
 > **Firmware file:** For Nordic devices, read the complete ZIP firmware package into `NSData` and pass it directly, without extracting it. For other platforms, pass the corresponding firmware file data.
 >
-> **SDK selection:** Nordic OTA requires the `nordic` or `tlNordic` variant and its dependencies. See “Step 2: Manually add dependencies” for dependency configuration.
+> **SDK selection:** Nordic OTA requires the `nordic` variant and its dependencies. See “Step 2: Manually add dependencies” for dependency configuration.
 
 Parameter Description:
 
