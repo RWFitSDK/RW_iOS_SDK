@@ -229,6 +229,8 @@ Example of usage:
 
 DeviceFuncV2Model class attribute definitions:
 
+Use `[model isMessageTypeSupported:index]` to check a message type; see 3.2.1.14 for the index table.
+
 | attribute                   | illustrate                                                |
 | --------------------------- | --------------------------------------------------------- |
 | isPushMsgEnableSwitch       | Enable or disable message control switch                  |
@@ -865,92 +867,71 @@ sleepModel.sleepEndMin = 00;
 
 ##### 3.2.1.14 Setting and retrieving notification push settings
 
-> `DeviceFuncV2Model.isPushMsgEnableSwitch` indicates whether the device
-> supports message-push switch settings. `pushMsgSwitchValue` and
-> `pushMsgSwitchValue2` are capability masks for bit0-bit31 and bit32-bit63;
-> they are not the device's current switch states.
->
-> When opening the message-push settings page, call `ringGetAncs:` to fetch
-> the current switches from the device. On success, `data` is a
-> `DHAncsSetModel`. Modify that model and call `ringSetAncs:block:` to write
-> the switches back to the device.
+> Configuration property: `DeviceFuncV2Model.isPushMsgEnableSwitch`.
 
-| Purpose | Property/API | Result |
-| ------- | ------------ | ------ |
-| Check feature support | `DeviceFuncV2Model.isPushMsgEnableSwitch` | Whether message-push switches are supported |
-| Check supported message types | `pushMsgSwitchValue` / `pushMsgSwitchValue2` | Supported message types, bit0-bit63 |
-| Fetch current switches | `ringGetAncs:` | `DHAncsSetModel` |
-| Set current switches | `ringSetAncs:block:` | Setting result |
+**Check feature support:**
 
-Method Description:
+`- (BOOL)isMessageTypeSupported:(NSInteger)index;`
 
-`+(void)ringSetAncs:(DHAncsSetModel *)model block:(void(^)(int code, id data))block`
+Call this method on the `DeviceFuncV2Model` returned by `centralManagerDidFunctionMenu:`. YES means supported; NO means unsupported. The result is not the current switch state.
 
-`+(void)ringGetAncs:(void(^)(int code, id data))block`
-
-Parameter Description:
-
-| parameter      | type  | illustrate | illustrate                                      |
-| -------------- | ----- | ---------- | ----------------------------------------------- |
-| DHAncsSetModel | class |            | See the definition of the DHAncsSetModel class. |
-
-Example of usage:
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| index | NSInteger | Message-type index from the table below, not a UI row; valid range: 0-63. Returns NO for an invalid index or when notification-switch settings are unsupported |
 
 ```objective-c
-// Set
-DHAncsSetModel *tAncsModel = [[DHAncsSetModel alloc] init];
-tAncsModel.isSMS = YES;
-[DHBleCommand ringSetAncs:tAncsModel block:^(int code, id  _Nonnull data) {
-
-}];
-
-// Get
-[DHBleCommand ringGetAncs:^(int code, id  _Nonnull data) {
-  if (code == 0){
-    DHAncsSetModel *ancsModel = data;
-    NSLog(@"SMS=%d Wechat=%d", ancsModel.isSMS, ancsModel.isWechat);
-  }
-}];
-
-// Determine which app message types the device supports, in the order below.
-UInt8 tBitRow = i;
-if (i == 24){ // others
-  tBitRow = 0;
+- (void)centralManagerDidFunctionMenu:(DeviceFuncV2Model *)model
+{
+    BOOL supportsTelegram = [model isMessageTypeSupported:17];
+    BOOL supportsYandexMarket = [model isMessageTypeSupported:32];
+    NSLog(@"Telegram=%d YandexMarket=%d", supportsTelegram, supportsYandexMarket);
 }
-if (i > 0 && (tMsgSwitchValue & (1 << tBitRow)) < 1){ // Force unsupported message types to false regardless of the values read from the device.
-  continue;
-}
+```
 
-self.msgOpenFlagArr = [NSMutableArray arrayWithArray:@[
-  @(self.model.isCall),
-  @(self.model.isSMS),
-  @(self.model.isEmail),
-  @(self.model.isSkype),
-  @(self.model.isFacebook),
-  @(self.model.isWhatsapp),
-  @(self.model.isLine),
-  @(self.model.isInstagram),
-  @(self.model.isKakaotalk),
-  @(self.model.isGmail),
-  @(self.model.isTwitter),
-  @(self.model.isLinkedin),
-  @(self.model.isJLSinaWeiBo),
+**Message-type index table:**
 
-  @(self.model.isQQ),
-  @(self.model.isWechat),
-  @(self.model.isJLBand),
-  @(self.model.isJLTelegram),
-  @(self.model.isJLBetween),
-  @(self.model.isJLNavercafe),
-  @(self.model.isYoutube),
-  @(self.model.isJLNetflix), //(1<<21)
-  @(self.model.isMax), // (1<<22)
-  @(self.model.isVkim), // (1<<23)
-  //        @(self.model.isMessenger),
+The table lists iOS message types only and retains their original indexes. Use the query result to determine actual support.
 
-  @(self.model.isOther)
-]];
+| Index | Message type / App | Index | Message type / App |
+| ---- | -------------- | ---- | -------------- |
+| 0 | Other | 17 | Telegram |
+| 1 | Call | 18 | Between |
+| 2 | SMS | 19 | Naver Cafe |
+| 3 | Email | 20 | YouTube |
+| 4 | Skype | 21 | Netflix |
+| 5 | Facebook | 22 | MAX |
+| 6 | WhatsApp | 23 | VK Messenger (VK Мессенджер) |
+| 7 | LINE | 24 | Mail.ru |
+| 8 | Instagram | 25 | Yandex Mail |
+| 9 | KakaoTalk | 26 | Yandex Go |
+| 10 | Gmail | 27 | VKontakte (ВКонтакте) |
+| 11 | Twitter / X | 28 | Wildberries |
+| 12 | LinkedIn | 29 | OZON |
+| 13 | Sina Weibo | 30 | МАКС (MAKC) |
+| 14 | QQ | 32 | Yandex Market (Яндекс Маркет) |
+| 15 | WeChat | 33 | Госуслуги |
+| 16 | Band | 34 | Yandex Food (Яндекс Еда) |
 
+**Set and get notification switches:**
+
+`+ (void)ringSetAncs:(DHAncsSetModel *)model block:(void(^)(int code, id data))block;`
+
+`+ (void)ringGetAncs:(void(^)(int code, id data))block;`
+
+Call `ringGetAncs:` to fetch the current switches; on success, `data` is a `DHAncsSetModel`. Modify its properties and save using `ringSetAncs:block:`. A `code` of 0 indicates success.
+
+**Example:**
+
+```objective-c
+// Fetch the current switches, then enable SMS notifications
+[DHBleCommand ringGetAncs:^(int code, id data) {
+    if (code != 0 || ![data isKindOfClass:DHAncsSetModel.class]) return;
+    DHAncsSetModel *model = data;
+    model.isSMS = YES;
+    [DHBleCommand ringSetAncs:model block:^(int code, id data) {
+        NSLog(@"set notification switches result=%d", code);
+    }];
+}];
 ```
 
 ##### 3.2.1.15 Get and set whether the "likes" feature is enabled.
@@ -1169,16 +1150,16 @@ DHDevicePushType:
 | ---- | --------- | ----------- |
 | DHDevicePushTypePower | DHBatteryInfoModel | Battery and charging-status push, see 3.2.1.4.1 |
 | DHDevicePushTypeRecordStatus | NSDictionary | Recording-status push: status (1=recording), isRecording, startTime (Unix seconds), duration (seconds), totalCapacity, remainingCapacity |
-| DHDevicePushTypeTouchEvent | NSDictionary | Touch event: keyType (1 touch / 2 fall), touchType (1 single … 5 shake); see the field table below |
+| DHDevicePushTypeTouchEvent | NSDictionary | Touch, fall, SOS and repeated-tap events; see the field table below |
 
 Fields of the touch event `dataValue`:
 
 | Field | Description | Value |
 | ---- | ---- | ---- |
-| keyType | Key type | 1: Touch key; 2: Fall (requires the fall-detect reminder enabled, see 3.2.1.24) |
-| touchType | Touch type | 1: Single tap; 2: Double tap; 3: Triple tap; 4: Long press; 5: Flick. Defaults to 1 for fall events |
+| keyType | Key type | 1: Touch key; 2: Fall (requires the fall-detect reminder enabled, see 3.2.1.24); 3: SOS; 4: Repeated taps |
+| touchType | Touch type / tap count | For touch keys: 1: Single tap; 2: Double tap; 3: Triple tap; 4: Long press; 5: Flick; 6: Release after a long press. Defaults to 1 for fall; unused for SOS; contains the tap count (1-9) for repeated taps |
 
-> Touch operations are reported regardless of the screen state, and the APP defines the response behavior. This feature requires the device firmware to be customized and enabled.
+> This feature requires the device firmware to be customized and enabled.
 
 Example:
 
@@ -1197,8 +1178,16 @@ id observer = [[NSNotificationCenter defaultCenter]
         }
         case DHDevicePushTypeTouchEvent: {
             NSDictionary *event = userInfo[@"dataValue"];
-            NSLog(@"touch push keyType=%zd touchType=%zd",
-                  [event[@"keyType"] integerValue], [event[@"touchType"] integerValue]);
+            NSInteger keyType = [event[@"keyType"] integerValue];
+            if (keyType == 3) {
+                NSLog(@"SOS");
+            } else if (keyType == 4) {
+                NSLog(@"Repeated tap count=%zd", [event[@"touchType"] integerValue]);
+            } else if (keyType == 1 && [event[@"touchType"] integerValue] == 6) {
+                NSLog(@"Release");
+            } else {
+                NSLog(@"touch push keyType=%zd touchType=%zd", keyType, [event[@"touchType"] integerValue]);
+            }
             break;
         }
         default:
@@ -2826,6 +2815,12 @@ Example:
 
 
 ## SDK Revision History
+
+**V2.0.0_261012** (2026.10.12)
+
+- Added SOS and repeated-tap count notifications to device push monitoring (3.2.1.21).
+- Added Release events after a long press to device push monitoring: `keyType=1`, `touchType=6` (3.2.1.21).
+- Improved notification-switch settings and retrieval; added `DeviceFuncV2Model.isMessageTypeSupported:` and the message-type index table (3.2.1.14).
 
 **V2.0.0_261008** (2026.10.08)
 

@@ -699,8 +699,16 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
     if (dataType == DHDevicePushTypeTouchEvent) { // 触摸事件统一通过 flag 0x21 主动推送
         NSDictionary *event = userInfo[@"dataValue"];
         if (![event isKindOfClass:NSDictionary.class]) return;
-        NSLog(@"ProtocolPush TouchEvent keyType=%zd touchType=%zd",
-              [event[@"keyType"] integerValue], [event[@"touchType"] integerValue]);
+        NSInteger keyType = [event[@"keyType"] integerValue];
+        if (keyType == 3) {
+            NSLog(@"ProtocolPush TouchEvent SOS keyType=3");
+        } else if (keyType == 4) {
+            NSLog(@"ProtocolPush TouchEvent repeated taps keyType=4 count=%zd", [event[@"touchType"] integerValue]);
+        } else if (keyType == 1 && [event[@"touchType"] integerValue] == 6) {
+            NSLog(@"ProtocolPush TouchEvent Release keyType=1 touchType=6");
+        } else {
+            NSLog(@"ProtocolPush TouchEvent keyType=%zd touchType=%zd", keyType, [event[@"touchType"] integerValue]);
+        }
         return;
     }
     if (dataType != DHDevicePushTypePower) return;

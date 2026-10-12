@@ -232,6 +232,8 @@ DHPeripheralModel *deviceModel = self.deviceArray[indexPath.row];
 
 DeviceFuncV2Model类属性定义:
 
+消息类型支持情况可通过 `[model isMessageTypeSupported:index]` 查询，序号表见3.2.1.14。
+
 | 属性                        | 说明                        |
 | --------------------------- | --------------------------- |
 | isPushMsgEnableSwitch       | 是否启用消息控制开关        |
@@ -858,90 +860,71 @@ sleepModel.sleepEndMin = 00;
 
 ##### 3.2.1.14 消息推送开关设置与获取
 
-> 配置表属性 `isPushMsgEnableSwitch` 表示设备是否支持消息推送开关设置；
-> `pushMsgSwitchValue` 和 `pushMsgSwitchValue2` 是消息类型支持能力，分别对应
-> bit0-bit31 和 bit32-bit63，不表示设备当前的开关状态。
->
-> 进入消息推送设置页面时，应调用 `ringGetAncs:` 从设备拉取当前开关。
-> 查询成功后，`data` 为 `DHAncsSetModel`；修改模型后再调用 `ringSetAncs:block:`
-> 写回设备。
+> 配置表属性：`DeviceFuncV2Model.isPushMsgEnableSwitch`。
 
-| 用途 | 属性/接口 | 返回内容 |
-| ---- | --------- | -------- |
-| 判断功能是否支持 | `DeviceFuncV2Model.isPushMsgEnableSwitch` | 是否支持消息推送开关 |
-| 判断消息类型是否支持 | `pushMsgSwitchValue` / `pushMsgSwitchValue2` | 支持的消息类型 bit0-bit63 |
-| 拉取当前开关 | `ringGetAncs:` | `DHAncsSetModel` |
-| 设置当前开关 | `ringSetAncs:block:` | 设置结果 |
+**功能支持判断：**
 
-方法说明: 
+`- (BOOL)isMessageTypeSupported:(NSInteger)index;`
 
-`+(void)ringSetAncs:(DHAncsSetModel *)model block:(void(^)(int code, id data))block`
+使用 `centralManagerDidFunctionMenu:` 返回的 `DeviceFuncV2Model` 调用，YES表示支持，NO表示不支持；不表示当前开关状态。
 
-`+(void)ringGetAncs:(void(^)(int code, id data))block`
-
-参数说明:
-
-| 参数           | 类型 | 说明 | 值                     |
-| -------------- | ---- | ---- | ---------------------- |
-| DHAncsSetModel | 类   |      | 见DHAncsSetModel类定义 |
-
-调用示例:
+| 参数 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| index | NSInteger | 下表中的消息类型序号，不是页面行号；有效范围0-63。序号越界或设备不支持消息开关设置时返回NO |
 
 ```objective-c
-//设置 
-DHAncsSetModel *tAncsModel = [[DHAncsSetModel alloc] init];
-tAncsModel.isSMS = YES;
-[DHBleCommand ringSetAncs:tAncsModel block:^(int code, id  _Nonnull data) {
-
-}];
-
-//获取
-[DHBleCommand ringGetAncs:^(int code, id  _Nonnull data) {
-  if (code == 0){
-    DHAncsSetModel *ancsModel = data;
-    NSLog(@"SMS=%d Wechat=%d", ancsModel.isSMS, ancsModel.isWechat);
-  }
-}];
-
-//按下面的顺序确定当前设备支持哪些应用消息.
-UInt8 tBitRow = i;
-if (i == 24){ //其它
-  tBitRow = 0;
+- (void)centralManagerDidFunctionMenu:(DeviceFuncV2Model *)model
+{
+    BOOL supportsTelegram = [model isMessageTypeSupported:17];
+    BOOL supportsYandexMarket = [model isMessageTypeSupported:32];
+    NSLog(@"Telegram=%d YandexMarket=%d", supportsTelegram, supportsYandexMarket);
 }
-if (i > 0 && (tMsgSwitchValue & (1 << tBitRow)) < 1){ //不支持的消息全设置为false,不管从设备读到的值.
-  continue;
-}
+```
 
-self.msgOpenFlagArr = [NSMutableArray arrayWithArray:@[
-  @(self.model.isCall),
-  @(self.model.isSMS),
-  @(self.model.isEmail),
-  @(self.model.isSkype),
-  @(self.model.isFacebook),
-  @(self.model.isWhatsapp),
-  @(self.model.isLine),
-  @(self.model.isInstagram),
-  @(self.model.isKakaotalk),
-  @(self.model.isGmail),
-  @(self.model.isTwitter),
-  @(self.model.isLinkedin),
-  @(self.model.isJLSinaWeiBo),
+**消息类型序号表：**
 
-  @(self.model.isQQ),
-  @(self.model.isWechat),
-  @(self.model.isJLBand),
-  @(self.model.isJLTelegram),
-  @(self.model.isJLBetween),
-  @(self.model.isJLNavercafe),
-  @(self.model.isYoutube),
-  @(self.model.isJLNetflix), //(1<<21)
-  @(self.model.isMax), // (1<<22)
-  @(self.model.isVkim), // (1<<23)
-  //        @(self.model.isMessenger),
+下表仅列出 iOS 消息类型，序号保持原定义。实际支持情况以查询结果为准。
 
-  @(self.model.isOther)
-]];
+| 序号 | 消息类型 / App | 序号 | 消息类型 / App |
+| ---- | -------------- | ---- | -------------- |
+| 0 | Other / 其他 | 17 | Telegram |
+| 1 | Call / 来电 | 18 | Between |
+| 2 | SMS / 短信 | 19 | Naver Cafe |
+| 3 | Email / 邮件 | 20 | YouTube |
+| 4 | Skype | 21 | Netflix |
+| 5 | Facebook | 22 | MAX |
+| 6 | WhatsApp | 23 | VK Messenger（VK Мессенджер） |
+| 7 | LINE | 24 | Mail.ru |
+| 8 | Instagram | 25 | Yandex Mail |
+| 9 | KakaoTalk | 26 | Yandex Go |
+| 10 | Gmail | 27 | VKontakte（ВКонтакте） |
+| 11 | Twitter / X | 28 | Wildberries |
+| 12 | LinkedIn | 29 | OZON |
+| 13 | 新浪微博 | 30 | МАКС（MAKC） |
+| 14 | QQ | 32 | Yandex Market（Яндекс Маркет） |
+| 15 | 微信 | 33 | Госуслуги |
+| 16 | Band | 34 | Yandex Food（Яндекс Еда） |
 
+**开关设置与获取：**
+
+`+ (void)ringSetAncs:(DHAncsSetModel *)model block:(void(^)(int code, id data))block;`
+
+`+ (void)ringGetAncs:(void(^)(int code, id data))block;`
+
+调用 `ringGetAncs:` 获取当前开关，成功时 `data` 为 `DHAncsSetModel`。修改对应属性后通过 `ringSetAncs:block:` 保存，`code == 0` 表示成功。
+
+**调用示例：**
+
+```objective-c
+// 获取当前开关后修改短信开关
+[DHBleCommand ringGetAncs:^(int code, id data) {
+    if (code != 0 || ![data isKindOfClass:DHAncsSetModel.class]) return;
+    DHAncsSetModel *model = data;
+    model.isSMS = YES;
+    [DHBleCommand ringSetAncs:model block:^(int code, id data) {
+        NSLog(@"set notification switches result=%d", code);
+    }];
+}];
 ```
 
 ##### 3.2.1.15 获取与设置赞念是否打开
@@ -1167,16 +1150,16 @@ DHDevicePushType 说明：
 | ---- | ---- | ---- |
 | DHDevicePushTypePower | DHBatteryInfoModel | 电量与充电状态推送，见 3.2.1.4.1 |
 | DHDevicePushTypeRecordStatus | NSDictionary | 录音状态推送：status(1=录音中)、isRecording、startTime(Unix秒)、duration(秒)、totalCapacity、remainingCapacity |
-| DHDevicePushTypeTouchEvent | NSDictionary | 触摸事件：keyType(1触摸/2跌落)、touchType(1单击~5甩动) |
+| DHDevicePushTypeTouchEvent | NSDictionary | 触摸、跌落、SOS及连续点击事件，字段说明见下表 |
 
 触摸事件的 `dataValue` 字段说明：
 
 | 字段 | 说明 | 值 |
 | ---- | ---- | ---- |
-| keyType | 按键类型 | 1：触摸按键；2：跌落（需开启跌落提醒，见 3.2.1.24） |
-| touchType | 触摸类型 | 1：单击；2：双击；3：三击；4：长按；5：甩动。跌落事件时默认为 1 |
+| keyType | 按键类型 | 1：触摸按键；2：跌落（需开启跌落提醒，见 3.2.1.24）；3：SOS；4：连续点击 |
+| touchType | 触摸类型/点击次数 | 触摸按键时：1：单击；2：双击；3：三击；4：长按；5：甩动；6：Release(长按后松手)。跌落时默认为1；SOS时不使用；连续点击时表示次数(1-9) |
 
-> 触摸操作无论熄屏与否都会上报，由 APP 定义响应行为。此功能需设备固件定制支持并启用。
+> 此功能需设备固件定制支持并启用。
 
 调用示例：
 
@@ -1195,8 +1178,16 @@ id observer = [[NSNotificationCenter defaultCenter]
         }
         case DHDevicePushTypeTouchEvent: {
             NSDictionary *event = userInfo[@"dataValue"];
-            NSLog(@"触摸推送 keyType=%zd touchType=%zd",
-                  [event[@"keyType"] integerValue], [event[@"touchType"] integerValue]);
+            NSInteger keyType = [event[@"keyType"] integerValue];
+            if (keyType == 3) {
+                NSLog(@"SOS");
+            } else if (keyType == 4) {
+                NSLog(@"连续点击次数=%zd", [event[@"touchType"] integerValue]);
+            } else if (keyType == 1 && [event[@"touchType"] integerValue] == 6) {
+                NSLog(@"Release");
+            } else {
+                NSLog(@"触摸推送 keyType=%zd touchType=%zd", keyType, [event[@"touchType"] integerValue]);
+            }
             break;
         }
         default:
@@ -2833,6 +2824,12 @@ tModeSetModel.interval = 60;
 
 
 ## SDK修订记录
+
+**V2.0.0_261012** (2026.10.12)
+
+- 设备主动推送监听新增 SOS 与连续点击次数通知(3.2.1.21)
+- 设备主动推送监听新增 Release(长按后松手)事件，`keyType=1`、`touchType=6`(3.2.1.21)
+- 完善消息通知开关设置与获取，添加消息类型支持查询方法 `DeviceFuncV2Model.isMessageTypeSupported:` 及消息类型序号表(3.2.1.14)
 
 **V2.0.0_261008** (2026.10.08)
 

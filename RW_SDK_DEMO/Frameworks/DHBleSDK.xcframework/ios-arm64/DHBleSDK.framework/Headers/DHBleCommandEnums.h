@@ -320,7 +320,7 @@ typedef enum : UInt16 {
 typedef enum : UInt16 {
     DHDevicePushTypePower = BLE_KEY_POWER,
     DHDevicePushTypeRecordStatus = BLE_KEY_RECORD_STATUS,
-    /// 触摸事件通知(协议2.2.7): keyType(1触摸/2跌落) + touchType(1单击/2双击/3三击/4长按/5甩动), Protocol flag 0x21
+    /// 触摸事件: keyType为1触摸/2跌落/3 SOS/4连续点击；keyType=1且touchType=6为Release(长按后松手)。连续点击时touchType为次数(1-9)，SOS时不使用。
     DHDevicePushTypeTouchEvent = BLE_KEY_HID_COMMAND
 } DHDevicePushType;
 

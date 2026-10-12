@@ -36,6 +36,12 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) UInt32 pushMsgSwitchValue;
 /// 消息类型支持能力高32位，对应消息bit32-bit63
 @property (nonatomic, assign) UInt32 pushMsgSwitchValue2;
+/// 查询是否支持指定消息类型的开关设置。序号范围0-63，见消息类型表；不是页面行号。
+/// Returns whether the switch for a message type is supported (index 0-63, not a UI row).
+/// 不支持消息开关设置或序号越界时返回NO；返回值不表示当前开关状态。
+/// Returns NO when message switches are unsupported or the index is invalid; this is not the current switch state.
+- (BOOL)isMessageTypeSupported:(NSInteger)index;
+
 @property (nonatomic, assign) BOOL isOpenWomenCare; //是否默认打开女性生理周期(之前默认是性别女才打开显示)
 @property (nonatomic, assign) BOOL isAlarm; //是否显示设置闹钟
 @property (nonatomic, assign) BOOL isBackLight; //是否支持屏幕睡眠时间设置/是否显示亮屏时长设置

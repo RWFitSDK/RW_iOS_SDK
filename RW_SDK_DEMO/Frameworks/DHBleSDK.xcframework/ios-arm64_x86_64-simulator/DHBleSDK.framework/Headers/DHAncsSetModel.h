@@ -21,8 +21,6 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL isWechat;
 /// Whatsapp
 @property (nonatomic, assign) BOOL isWhatsapp;
-/// Messenger
-@property (nonatomic, assign) BOOL isMessenger;
 /// Twitter
 @property (nonatomic, assign) BOOL isTwitter;
 /// Linkedin
@@ -34,31 +32,15 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL isFacebook;
 /// Line
 @property (nonatomic, assign) BOOL isLine;
-/// 企业微信
-@property (nonatomic, assign) BOOL isWechatWork;
-/// Dingding
-@property (nonatomic, assign) BOOL isDingding;
 /// Email
 @property (nonatomic, assign) BOOL isEmail;
-/// Calendar
-@property (nonatomic, assign) BOOL isCalendar;
-/// Viber
-@property (nonatomic, assign) BOOL isViber;
 
 /// Skype
 @property (nonatomic, assign) BOOL isSkype;
 /// Kakaotalk
 @property (nonatomic, assign) BOOL isKakaotalk;
-/// Tumblr
-@property (nonatomic, assign) BOOL isTumblr;
-/// Snapchat
-@property (nonatomic, assign) BOOL isSnapchat;
 /// Youtube
 @property (nonatomic, assign) BOOL isYoutube;
-/// Pinterset
-@property (nonatomic, assign) BOOL isPinterset;
-/// Tiktok
-@property (nonatomic, assign) BOOL isTiktok;
 /// Gmail
 @property (nonatomic, assign) BOOL isGmail;
 
@@ -86,6 +68,27 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL isMax;
 /// VK Мессенджер
 @property (nonatomic, assign) BOOL isVkim;
+
+/// Mail.ru
+@property (nonatomic, assign) BOOL isRuMail;
+/// Yandex Mail
+@property (nonatomic, assign) BOOL isYandexMail;
+/// Yandex Go
+@property (nonatomic, assign) BOOL isYandexTaxi;
+/// ВКонтакте
+@property (nonatomic, assign) BOOL isVkontakte;
+/// Wildberries
+@property (nonatomic, assign) BOOL isWildberries;
+/// OZON
+@property (nonatomic, assign) BOOL isOzon;
+/// МАКС
+@property (nonatomic, assign) BOOL isMakc;
+/// Яндекс Маркет
+@property (nonatomic, assign) BOOL isYandexMarket;
+/// Госуслуги
+@property (nonatomic, assign) BOOL isGosuslugi;
+/// Яндекс Еда
+@property (nonatomic, assign) BOOL isYandexFood;
 
 /// 其他
 @property (nonatomic, assign) BOOL isOther;
