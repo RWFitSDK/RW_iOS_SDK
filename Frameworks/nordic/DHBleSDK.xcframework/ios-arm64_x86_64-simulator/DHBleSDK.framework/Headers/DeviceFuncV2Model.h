@@ -47,6 +47,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL isBackLight; //是否支持屏幕睡眠时间设置/是否显示亮屏时长设置
 @property (nonatomic, assign) BOOL isBackLightSleepMode; //是否支持屏幕睡眠时间设置/是否显示亮屏时长设置
 @property (nonatomic, assign) BOOL isSupportScreenControl; //是否支持即时屏幕亮灭控制
+@property (nonatomic, assign) BOOL isSupportCustomNumberDisplay; //是否支持自定义数字显示
 @property (nonatomic, assign) BOOL isDefaultENSYSTEM; //默认显示英制;
 @property (nonatomic, assign) BOOL isDefaultNoViewWorkout; //默认不显示多运动;
 @property (nonatomic, assign) BOOL isSupportWorkout3; //戒指多运动;
@@ -62,6 +63,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, assign) BOOL isSupportAppStatus; //戒指App前后台指令是否支持;
 @property (nonatomic, assign) BOOL isSupportMuslimCountSwitch; //戒指Muslim计数开关;
+@property (nonatomic, assign) BOOL isSupportCountControl; //是否支持计数识别开关与状态查询(SUPPORT_COUNT_SWITCH bit1, 协议offset28)
 @property (nonatomic, assign) UInt8 isSupportHrSp02Alert; //是否支持HR报警提示功能（保留历史属性名）
 @property (nonatomic, assign) UInt8 isSupportSp02Alert; //是否支持SP02报警提示功能
 @property (nonatomic, assign) BOOL isSupportMotoVibrationLevel; //是否支持马达震动提醒

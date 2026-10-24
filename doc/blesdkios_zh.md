@@ -106,7 +106,19 @@ https://github.com/nordicsemi/IOS-nRF-Connect-Device-Manager
 - (void)centralManagerDidDiscoverPeripheral:(NSArray <DHPeripheralModel *>*)peripherals
 ```
 
-`DHPeripheralModel.batteryStatus` 返回充电状态：`0` 未充电，`1` 充电中，`2` 充满，`-1` 未提供或不支持。此字段不是电量百分比，电量百分比需连接后获取（3.2.1.4）。
+扫描结果 `DHPeripheralModel` 主要属性说明：
+
+| DHPeripheralModel属性 | 类型 | 说明 |
+| --------------------- | ---- | ---- |
+| name | NSString | 设备蓝牙名称 |
+| macAddr | NSString | 设备MAC地址；系统已配对设备可能为空 |
+| uuid | NSString | iOS设备标识符 |
+| rssi | NSInteger | 扫描时信号强度的绝对值，数值越小信号越强 |
+| deviceModel | NSString | 设备型号标识，不是设备唯一序列号；未提供时为空 |
+| batteryStatus | NSInteger | 充电状态：`0`未充电、`1`充电中、`2`充满；`-1`未提供或不支持，需设备固件支持 |
+| deviceForm | NSInteger | 产品形态：`0`无屏戒指、`1`有屏戒指、`2`无屏手链、`3`有屏手链、`4`无屏手环、`5`有屏手环、`6`手表；`-1`未提供或不支持，需设备固件支持 |
+
+> `batteryStatus` 不是电量百分比。电量百分比需连接后获取，见 [3.2.1.4 获取电量](#3214-获取电量)。
 
 ##### 3.1.2 停止搜索
 
@@ -272,6 +284,8 @@ DeviceFuncV2Model类属性定义:
 | isSupportRecording          | 是否支持录音功能           |
 | isSupportDevicePasswordAuth | 是否支持设备密码认证       |
 | isSupportScreenControl      | 是否支持即时屏幕亮灭控制   |
+| isSupportCustomNumberDisplay | 是否支持自定义数字显示    |
+| isSupportCountControl       | 是否支持计数识别开关与状态查询 |
 | isSupportUnitSetting        | 是否支持公制/英制单位设置  |
 | isSupportDeviceChallenge    | 是否支持设备身份认证       |
 | isSupportSedentary          | 是否支持久坐提醒设置       |
@@ -439,7 +453,7 @@ userInfoModel.age = 20;
 
 ##### 3.2.1.3 获取设备信息
 
-> 获取设备型号、固件版本号和UI版本号.
+> 获取设备型号、固件版本号、UI版本号和产品形态.
 
 方法说明:
 
@@ -452,6 +466,7 @@ userInfoModel.age = 20;
 | deviceModel | NSString | 设备型号, 每个型号产品的唯一标识 |
 | firmwareVersion | NSString | 固件版本号 |
 | uiVersion | NSString | UI版本号 |
+| deviceForm | NSInteger | 产品形态：0无屏戒指、1有屏戒指、2无屏手链、3有屏手链、4无屏手环、5有屏手环、6手表；-1未提供或不支持 |
 
 > **注意:** 升级固件前必须校验设备的 `deviceModel` 与升级固件对应的设备型号是否一致, 只有型号一致时才能进行升级, 型号不一致时禁止升级.
 
@@ -619,11 +634,17 @@ uint8_t tModeSetModel = 0; //0左手 1右手
 
 ##### 3.2.1.8 启动与关闭拍照
 
-> APP进入自定义相机页面时开启拍照控制, 开启后设备可通过手势通知APP执行拍照; APP退出相机页面时关闭拍照控制.
+> APP需自行实现相机页面(可使用第三方相机库), 不能直接拉起手机系统相机实现戒指拍照控制. SDK负责相机模式控制与拍照事件通知, 拍照及保存到手机图库由APP完成.
 >
 > 配置表属性: `isTakePhoto`.
 >
 > 通过 `BluetoothNotificationCameraTakePicture` 接收设备发出的拍照通知.
+
+使用流程:
+
+1. 进入APP相机页面时, 注册 `BluetoothNotificationCameraTakePicture` 通知监听, 调用 `[DHBleCommand controlCamera:1 block:...]` 通知戒指进入相机控制模式.
+2. 用户在戒指上触发拍照手势后, APP收到 `BluetoothNotificationCameraTakePicture` 通知; 调用相机库拍照, 并将照片保存到手机图库.
+3. 退出相机页面时, 调用 `[DHBleCommand controlCamera:0 block:...]` 通知戒指退出相机控制模式, 并移除通知监听.
 
 方法说明:
 
@@ -660,7 +681,7 @@ uint8_t tModeSetModel = 0; //0左手 1右手
 }
 
 - (void)cameraTakePictureNotification:(NSNotification *)notification {
-    // 设备发出拍照通知, APP在此执行自定义相机拍照
+    // 调用APP相机库拍照, 并将照片保存到手机图库
 }
 ```
 
@@ -1149,8 +1170,11 @@ DHDevicePushType 说明：
 | 类型 | dataValue | 说明 |
 | ---- | ---- | ---- |
 | DHDevicePushTypePower | DHBatteryInfoModel | 电量与充电状态推送，见 3.2.1.4.1 |
-| DHDevicePushTypeRecordStatus | NSDictionary | 录音状态推送：status(1=录音中)、isRecording、startTime(Unix秒)、duration(秒)、totalCapacity、remainingCapacity |
+| DHDevicePushTypeRecordStatus | NSDictionary | 录音状态推送：status(1=录音中)、isRecording、startTime(Unix秒)、duration(秒)、totalCapacity、remainingCapacity、realtime |
 | DHDevicePushTypeTouchEvent | NSDictionary | 触摸、跌落、SOS及连续点击事件，字段说明见下表 |
+| DHDevicePushTypeRecordRealtimeData | NSDictionary | 实时录音音频：sequence(0-255循环序号)、audioData(原始 Opus 压缩音频, NSData)，见 3.2.5.7 |
+| DHDevicePushTypeCountControl | NSNumber | 计数识别状态：YES开启(Arm)、NO关闭(Disarm)，见 3.2.1.33 |
+| DHDevicePushTypeMuslimCount | NSDictionary | 赞念实时计数推送：timestamp(Unix秒)、value(累计计数)，每项计数一条通知 |
 
 触摸事件的 `dataValue` 字段说明：
 
@@ -1626,6 +1650,70 @@ bean.remindDuration = 60;
 >
 > 节奏循环仅在 `mode=0xFF` 时可用，`groupCount`、`frequency`、`pause` 需同时有效；参数不合法时回调 `code` 非 0 并返回错误说明。持续或循环震动可通过强度 `0` 停止，蓝牙断开后设备自动停止。
 
+##### 3.2.1.32 自定义数字显示
+
+> 将APP指定的数字显示到设备，显示3秒后退出。再次调用时更新数字并重新计时3秒，数字的含义及解读由APP自行处理。
+>
+> 功能配置表属性：`isSupportCustomNumberDisplay`。仅支持该能力的设备可使用。
+
+方法说明：
+
+`+ (void)showCustomNumber:(NSInteger)number block:(void(^)(int code, id data))block`
+
+参数说明：
+
+| 参数 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| number | NSInteger | 显示数字，范围0～9999，最多4位；小于0按0处理，大于9999按9999处理 |
+| block | block | 操作结果回调，`code=0` 表示成功，非0表示失败 |
+
+调用示例：
+
+```objective-c
+[DHBleCommand showCustomNumber:627 block:^(int code, id data) {
+    NSLog(@"showCustomNumber code=%d", code);
+}];
+```
+
+##### 3.2.1.33 计数识别开关与状态查询
+
+> 开启或关闭计数识别，切换不清零累计计数。
+>
+> 功能配置表属性：`isSupportCountControl`。仅支持该能力的设备可使用。
+
+方法说明：
+
+`+ (void)setCountControl:(BOOL)armed block:(void(^)(int code, id data))block`
+
+`+ (void)getCountControl:(void(^)(int code, id data))block`
+
+| 参数 | 说明 |
+| ---- | ---- |
+| armed | YES：开启(Arm)；NO：关闭(Disarm) |
+| setCountControl block | `code=0` 设置成功，非0失败 |
+| getCountControl block | `data` 为 NSNumber(BOOL)，YES=Arm NO=Disarm |
+
+等待上一次操作回调后再进行下一次设置或查询。
+
+设置示例：
+
+```objective-c
+[DHBleCommand setCountControl:YES block:^(int code, id data) {
+    NSLog(@"setCountControl code=%d", code);
+}];
+```
+
+查询示例（与设置操作分开调用）：
+
+```objective-c
+[DHBleCommand getCountControl:^(int code, id data) {
+    if (code != 0 || ![data isKindOfClass:NSNumber.class]) return;
+    NSLog(@"counting armed=%@", data);
+}];
+```
+
+状态变化通过 `BluetoothNotificationProtocolPush` 推送，`dataType` 为 `DHDevicePushTypeCountControl`，`dataValue` 为 NSNumber(BOOL)；实时计数通过 `DHDevicePushTypeMuslimCount` 返回。监听方式见 3.2.1.21。
+
 #### 3.2.2 健康数据同步(实时单次与全天检测)
 
 > 健康数据检测有两种方式: 实时单次检测与全天检测。健康数据包括心率,血氧,压力,HRV,睡眠等, **睡眠无实时检测**。 
@@ -1718,13 +1806,13 @@ bean.remindDuration = 60;
 
 ##### 3.2.2.2 全天检测-设置健康数据全天监听间隔
 
-> 设置健康数据(心率,血氧,HRV,压力,血糖)全天监听间隔，单位分钟.
+> [!NOTE]
 >
-> **注意事项:暂间隔只有心率可设置30分钟与60分钟, 其它(血氧,HRV,压力,血糖)只能设置开与关; 开始与结束时间固定全天,不可修改.**
+> 设置健康数据全天监测间隔，单位分钟，监测时段固定为全天（00:00～23:59）。各小节中的间隔为推荐值，其他间隔需设备支持；间隔越短，功耗越高、续航越短。
 
 ###### 3.2.2.2.1 心率检测设置与获取
 
-> 间隔只有心率可设置30分钟与60分钟; 
+> 推荐监测间隔：30或60分钟。
 
 方法说明: 
 
@@ -1736,7 +1824,7 @@ bean.remindDuration = 60;
 
 | 参数  | 类型                    | 说明 | 值                                                           |
 | ----- | ----------------------- | ---- | ------------------------------------------------------------ |
-| model | DHHeartRateModeSetModel | 类   | isOpen: true开/false关<br>interval: 间隔时间30或60分钟<br>startHour: 0 固定0不能修改<br>startMin: 0 固定0不能修改<br>endHour: 23 固定23不能修改<br>endMin: 59 固定59不能修改; |
+| model | DHHeartRateModeSetModel | 类   | isOpen: true开/false关<br>interval: 监测间隔，单位分钟，推荐30或60分钟<br>startHour: 0 固定0不能修改<br>startMin: 0 固定0不能修改<br>endHour: 23 固定23不能修改<br>endMin: 59 固定59不能修改; |
 
 调用示例:
 
@@ -1748,7 +1836,7 @@ tModeSetModel.startHour = 00; //开始时间固定
 tModeSetModel.startMinute = 00;
 tModeSetModel.endHour = 23; //结束时间固定
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 30; //可设置30分钟或60分钟
+tModeSetModel.interval = 30; // 推荐监测间隔：30分钟
 [DHBleCommand setHeartRateMode:tModeSetModel block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"setHeartRateMode OK");
@@ -1766,7 +1854,7 @@ tModeSetModel.interval = 30; //可设置30分钟或60分钟
 
 ###### 3.2.2.2.2 血氧检测设置与获取
 
-> 间隔血氧只可设置60分钟;
+> 推荐监测间隔：60分钟。
 
 方法说明: 
 
@@ -1778,7 +1866,7 @@ tModeSetModel.interval = 30; //可设置30分钟或60分钟
 
 | 参数  | 类型             | 说明 | 值                                                           |
 | ----- | ---------------- | ---- | ------------------------------------------------------------ |
-| model | DHBoModeSetModel | 类   | isOpen: true开/false关<br>interval: 间隔时间固定60分钟<br>startHour: 0 固定0不能修改<br>startMin: 0 固定0不能修改<br>endHour: 23 固定23不能修改<br>endMin: 59 固定59不能修改; |
+| model | DHBoModeSetModel | 类   | isOpen: true开/false关<br>interval: 监测间隔，单位分钟，推荐60分钟<br>startHour: 0 固定0不能修改<br>startMin: 0 固定0不能修改<br>endHour: 23 固定23不能修改<br>endMin: 59 固定59不能修改; |
 
 调用示例:
 
@@ -1790,7 +1878,7 @@ tModeSetModel.startHour = 00; //开始时间固定
 tModeSetModel.startMinute = 00;
 tModeSetModel.endHour = 23; //结束时间固定
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 60; //固定不可设置
+tModeSetModel.interval = 60; // 推荐监测间隔：60分钟
 [DHBleCommand setBoMode:tModeSetModel block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"setBoMode OK");
@@ -1809,7 +1897,7 @@ tModeSetModel.interval = 60; //固定不可设置
 
 ###### 3.2.2.2.3 心率变异性(HRV)检测设置与获取
 
-> 间隔HRV只可设置60分钟;
+> 推荐监测间隔：60分钟。
 
 方法说明: 
 
@@ -1821,7 +1909,7 @@ tModeSetModel.interval = 60; //固定不可设置
 
 | 参数  | 类型              | 说明 | 值                                                           |
 | ----- | ----------------- | ---- | ------------------------------------------------------------ |
-| model | DHHrvModeSetModel | 类   | isOpen: true开/false关<br>interval: 间隔时间固定60分钟<br>startHour: 0 固定0不能修改<br>startMin: 0 固定0不能修改<br>endHour: 23 固定23不能修改<br>endMin: 59 固定59不能修改; |
+| model | DHHrvModeSetModel | 类   | isOpen: true开/false关<br>interval: 监测间隔，单位分钟，推荐60分钟<br>startHour: 0 固定0不能修改<br>startMin: 0 固定0不能修改<br>endHour: 23 固定23不能修改<br>endMin: 59 固定59不能修改; |
 
 调用示例:
 
@@ -1833,7 +1921,7 @@ tModeSetModel.startHour = 00;//开始时间固定
 tModeSetModel.startMinute = 00;
 tModeSetModel.endHour = 23; //结束时间固定
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 60; //固定不可设置
+tModeSetModel.interval = 60; // 推荐监测间隔：60分钟
 [DHBleCommand setHrvMode:tModeSetModel block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"setHrvMode OK");
@@ -1852,7 +1940,7 @@ tModeSetModel.interval = 60; //固定不可设置
 
 ###### 3.2.2.2.4 压力检测设置与获取
 
-> 间隔压力只可设置60分钟;
+> 推荐监测间隔：60分钟。
 
 方法说明: 
 
@@ -1864,7 +1952,7 @@ tModeSetModel.interval = 60; //固定不可设置
 
 | 参数  | 类型                 | 说明 | 值                                                           |
 | ----- | -------------------- | ---- | ------------------------------------------------------------ |
-| model | DHStressModeSetModel | 类   | isOpen: true开/false关<br>interval: 间隔时间固定60分钟<br>startHour: 0 固定0不能修改<br>startMin: 0 固定0不能修改<br>endHour: 23 固定23不能修改<br>endMin: 59 固定59不能修改; |
+| model | DHStressModeSetModel | 类   | isOpen: true开/false关<br>interval: 监测间隔，单位分钟，推荐60分钟<br>startHour: 0 固定0不能修改<br>startMin: 0 固定0不能修改<br>endHour: 23 固定23不能修改<br>endMin: 59 固定59不能修改; |
 
 调用示例:
 
@@ -1876,7 +1964,7 @@ tModeSetModel.startHour = 00;//开始时间固定
 tModeSetModel.startMinute = 00;
 tModeSetModel.endHour = 23; //结束时间固定
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 60; //固定不可设置
+tModeSetModel.interval = 60; // 推荐监测间隔：60分钟
 [DHBleCommand setStressMode:tModeSetModel block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"setStressMode OK");
@@ -1897,7 +1985,7 @@ tModeSetModel.interval = 60; //固定不可设置
 
 ###### 3.2.2.2.5 血糖检测设置与获取
 
-> 间隔血糖只可设置60分钟;
+> 推荐监测间隔：60分钟。
 >
 > 配置表属性: `isDataTypeBloodSugar`
 
@@ -1911,7 +1999,7 @@ tModeSetModel.interval = 60; //固定不可设置
 
 | 参数  | 类型                     | 说明 | 值                                                           |
 | ----- | ------------------------ | ---- | ------------------------------------------------------------ |
-| model | DHBloodSugarModeSetModel | 类   | isOpen: true开/false关<br>interval: 间隔时间固定60分钟<br>startHour: 0 固定0不能修改<br>startMin: 0 固定0不能修改<br>endHour: 23 固定23不能修改<br>endMin: 59 固定59不能修改; |
+| model | DHBloodSugarModeSetModel | 类   | isOpen: true开/false关<br>interval: 监测间隔，单位分钟，推荐60分钟<br>startHour: 0 固定0不能修改<br>startMin: 0 固定0不能修改<br>endHour: 23 固定23不能修改<br>endMin: 59 固定59不能修改; |
 
 调用示例:
 
@@ -1923,7 +2011,7 @@ tModeSetModel.startHour = 00;//开始时间固定
 tModeSetModel.startMinute = 00;
 tModeSetModel.endHour = 23; //结束时间固定
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 60; //固定不可设置
+tModeSetModel.interval = 60; // 推荐监测间隔：60分钟
 [DHBleCommand setBloodSugarMode:tModeSetModel block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"setBloodSugarMode OK");
@@ -1944,7 +2032,7 @@ tModeSetModel.interval = 60; //固定不可设置
 
 ###### 3.2.2.2.6 血压检测设置与获取
 
-> 间隔血压只可设置60分钟;
+> 推荐监测间隔：60分钟。
 >
 > 配置表属性: `isDataTypeBloodPressure`
 
@@ -1958,7 +2046,7 @@ tModeSetModel.interval = 60; //固定不可设置
 
 | 参数  | 类型             | 说明 | 值                                                           |
 | ----- | ---------------- | ---- | ------------------------------------------------------------ |
-| model | DHBpModeSetModel | 类   | isOpen: true开/false关<br>interval: 间隔时间固定60分钟<br>startHour: 0 固定0不能修改<br>startMin: 0 固定0不能修改<br>endHour: 23 固定23不能修改<br>endMin: 59 固定59不能修改; |
+| model | DHBpModeSetModel | 类   | isOpen: true开/false关<br>interval: 监测间隔，单位分钟，推荐60分钟<br>startHour: 0 固定0不能修改<br>startMin: 0 固定0不能修改<br>endHour: 23 固定23不能修改<br>endMin: 59 固定59不能修改; |
 
 调用示例:
 
@@ -1970,7 +2058,7 @@ tModeSetModel.startHour = 00;//开始时间固定
 tModeSetModel.startMinute = 00;
 tModeSetModel.endHour = 23; //结束时间固定
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 60; //固定不可设置
+tModeSetModel.interval = 60; // 推荐监测间隔：60分钟
 [DHBleCommand setBpMode:tModeSetModel block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"setBpMode OK");
@@ -1990,7 +2078,7 @@ tModeSetModel.interval = 60; //固定不可设置
 
 ###### 3.2.2.2.7 体温检测设置与获取
 
-> 间隔体温可设置30分钟与60分钟; 
+> 推荐监测间隔：30或60分钟。
 >
 > 配置表属性: `isSupportTemperatureMonitoring`
 
@@ -2004,7 +2092,7 @@ tModeSetModel.interval = 60; //固定不可设置
 
 | 参数  | 类型                     | 说明 | 值                                                           |
 | ----- | ------------------------ | ---- | ------------------------------------------------------------ |
-| model | DHHeartRateModeSetModel  | 类   | isOpen: true开/false关<br>interval: 间隔时间30或60分钟<br>startHour: 0 固定<br>startMinute: 0 固定<br>endHour: 23 固定<br>endMinute: 59 固定 |
+| model | DHHeartRateModeSetModel  | 类   | isOpen: true开/false关<br>interval: 监测间隔，单位分钟，推荐30或60分钟<br>startHour: 0 固定<br>startMinute: 0 固定<br>endHour: 23 固定<br>endMinute: 59 固定 |
 
 调用示例:
 
@@ -2016,7 +2104,7 @@ tModeSetModel.startHour = 00;
 tModeSetModel.startMinute = 00;
 tModeSetModel.endHour = 23;
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 60;
+tModeSetModel.interval = 60; // 推荐监测间隔：60分钟
 [DHBleCommand setTimedBodyTemperature:tModeSetModel block:^(int code, id  _Nonnull data) {
     if (code == 0){ NSLog(@"setTimedBodyTemperature OK"); }
 }];
@@ -2517,6 +2605,7 @@ BleActivityMode 对应名字见示例Demo 字符串里定义:
 | duration | 已录音时长，单位秒；非录音状态为 0 |
 | totalCapacity | 录音区总容量，单位字节 |
 | remainingCapacity | 录音区剩余容量，单位字节 |
+| realtime | 是否为实时录音；旧固件未提供时为 NO |
 
 ```objective-c
 [DHBleCommand getRecordStatus:^(int code, id data) {
@@ -2604,6 +2693,43 @@ BleActivityMode 对应名字见示例Demo 字符串里定义:
 }];
 ```
 
+##### 3.2.5.7 实时录音
+
+> 功能配置表属性：`isSupportRecording`，需设备固件支持实时录音。
+
+`+ (void)recordRealtimeControl:(BOOL)start block:(void(^)(int code, id data))block`
+
+| 参数/回调 | 说明 |
+| --------- | ---- |
+| start | `YES`：启动实时录音；`NO`：停止 |
+| block | `code=0` 表示指令成功，`data` 为操作后的录音状态(NSNumber：1录音中、0空闲)；音频不经此回调返回 |
+
+实时音频通过 `BluetoothNotificationProtocolPush` 接收，`dataType` 为 `DHDevicePushTypeRecordRealtimeData`，`dataValue` 为 NSDictionary：
+
+| 字段 | 说明 |
+| ---- | ---- |
+| sequence | 数据包序号0～255，255后回到0，可用于检查丢包和顺序 |
+| audioData | 当前包的音频数据（原始 Opus 压缩数据，NSData） |
+
+```objective-c
+id observer = [[NSNotificationCenter defaultCenter]
+    addObserverForName:BluetoothNotificationProtocolPush object:nil queue:nil
+    usingBlock:^(NSNotification *notification) {
+        if ([notification.userInfo[@"dataType"] unsignedIntegerValue] != DHDevicePushTypeRecordRealtimeData) return;
+        NSDictionary *packet = notification.userInfo[@"dataValue"];
+        // 按到达顺序处理 packet[@"audioData"]；更新UI请切换到主线程。
+        NSLog(@"audio sequence=%@ size=%zd", packet[@"sequence"], ((NSData *)packet[@"audioData"]).length);
+    }];
+
+[DHBleCommand recordRealtimeControl:YES block:^(int code, id data) {
+    NSLog(@"recordRealtimeControl code=%d state=%@", code, data);
+}];
+// 停止时调用：[DHBleCommand recordRealtimeControl:NO block:...];
+// 页面退出或不再使用时：[[NSNotificationCenter defaultCenter] removeObserver:observer];
+```
+
+先注册监听再启动。录音状态仍通过 `DHDevicePushTypeRecordStatus` 推送或 `getRecordStatus` 查询，`realtime` 表示当前是否为实时方式。
+
 #### 5.2.5 传感器原始数据
 
 本节包含两种不同的数据方式:
@@ -2646,6 +2772,8 @@ PPG/ACC/PPG Red/IR历史采集的 `sensorType` 合法组合:
 >
 > 配置表属性: `isSupportPPGMonitoring`
 
+> 推荐监测间隔：30或60分钟。
+
 方法说明:
 
 `+(void)setPPGMode:(DHHrvModeSetModel *)model block:(void(^)(int code, id data))block`
@@ -2656,7 +2784,7 @@ PPG/ACC/PPG Red/IR历史采集的 `sensorType` 合法组合:
 
 | 参数  | 类型              | 说明 | 值                                                           |
 | ----- | ----------------- | ---- | ------------------------------------------------------------ |
-| model | DHHrvModeSetModel | 类   | isOpen: true开/false关<br>interval: 间隔时间默认30分钟<br>startHour: 0 固定<br>startMinute: 0 固定<br>endHour: 23 固定<br>endMinute: 59 固定 |
+| model | DHHrvModeSetModel | 类   | isOpen: true开/false关<br>interval: 监测间隔，单位分钟，推荐30或60分钟<br>startHour: 0 固定<br>startMinute: 0 固定<br>endHour: 23 固定<br>endMinute: 59 固定 |
 
 调用示例:
 
@@ -2668,7 +2796,7 @@ tModeSetModel.startHour = 00;
 tModeSetModel.startMinute = 00;
 tModeSetModel.endHour = 23;
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 60;
+tModeSetModel.interval = 60; // 推荐监测间隔：60分钟
 [DHBleCommand setPPGMode:tModeSetModel block:^(int code, id  _Nonnull data) {
     if (code == 0){ NSLog(@"setPPGMode OK"); }
 }];
@@ -2824,6 +2952,12 @@ tModeSetModel.interval = 60;
 
 
 ## SDK修订记录
+
+**V2.0.0_261022** (2026.10.22)
+
+- 新增实时录音控制接口 `recordRealtimeControl` 及实时音频监听(3.2.5.7)
+- 新增计数识别开关、状态查询及主动推送(3.2.1.33)，功能配置表新增 `isSupportCountControl`
+- 扫描结果与设备版本信息新增产品形态 `deviceForm`(3.1.1、3.2.1.3)
 
 **V2.0.0_261012** (2026.10.12)
 

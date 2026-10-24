@@ -103,7 +103,19 @@ Select `Exact Version`: `1.14.7`, then add the `iOSMcuManagerLibrary` product to
 - (void)centralManagerDidDiscoverPeripheral:(NSArray <DHPeripheralModel *>*)peripherals
 ```
 
-`DHPeripheralModel.batteryStatus` returns the charging status: `0` not charging, `1` charging, `2` fully charged, `-1` unavailable or unsupported. This is not a battery percentage; read the battery level after connecting (3.2.1.4).
+Main properties of the `DHPeripheralModel` scan result:
+
+| DHPeripheralModel property | Type | Description |
+| -------------------------- | ---- | ----------- |
+| name | NSString | Device Bluetooth name |
+| macAddr | NSString | Device MAC address; may be empty for a device already paired in system settings |
+| uuid | NSString | iOS device identifier |
+| rssi | NSInteger | Absolute value of the scan RSSI; a smaller value indicates a stronger signal |
+| deviceModel | NSString | Device model identifier, not a unique device serial number; empty if unavailable |
+| batteryStatus | NSInteger | Charging status: `0` not charging, `1` charging, `2` full; `-1` unavailable or unsupported. Requires device firmware support |
+| deviceForm | NSInteger | Product form: `0` ring without a screen, `1` ring with a screen, `2` bracelet without a screen, `3` bracelet with a screen, `4` wristband without a screen, `5` wristband with a screen, `6` watch; `-1` unavailable or unsupported. Requires device firmware support |
+
+> `batteryStatus` is not a battery percentage. Read the battery level after connecting; see [3.2.1.4 Get Battery Level](#3214-get-battery-level).
 
 ##### 3.1.2 Stop Scanning
 
@@ -268,6 +280,8 @@ Use `[model isMessageTypeSupported:index]` to check a message type; see 3.2.1.14
 | isSupportRecording          | Does it support recording function?                      |
 | isSupportDevicePasswordAuth | Does it support device password authentication?          |
 | isSupportScreenControl      | Does it support instant screen on/off control?            |
+| isSupportCustomNumberDisplay | Does it support custom number display?                   |
+| isSupportCountControl       | Does it support counting-recognition control and state queries? |
 | isSupportUnitSetting        | Does it support metric/imperial unit settings?             |
 | isSupportDeviceChallenge    | Does it support device identity authentication?            |
 | isSupportSedentary          | Does it support sedentary reminder settings?               |
@@ -437,7 +451,7 @@ userInfoModel.age = 20;
 
 ##### 3.2.1.3 Get Device Information
 
-> Retrieves the device model, firmware version, and UI version.
+> Retrieves the device model, firmware version, UI version, and product form.
 
 Method:
 
@@ -450,6 +464,7 @@ Return value:
 | deviceModel | NSString | Device model, the unique identifier for each product model |
 | firmwareVersion | NSString | Firmware version |
 | uiVersion | NSString | UI version |
+| deviceForm | NSInteger | Product form: 0 ring without a screen, 1 ring with a screen, 2 bracelet without a screen, 3 bracelet with a screen, 4 wristband without a screen, 5 wristband with a screen, 6 watch; -1 unavailable or unsupported |
 
 > **Important:** Before an OTA update, verify that the device `deviceModel` matches the target device model of the firmware file. Start the update only when they match. Do not update a device with firmware for a different model.
 
@@ -627,11 +642,17 @@ UInt8 wearHand = 0; // 0: Left; 1: Right
 
 ##### 3.2.1.8 Starting and stopping photo taking
 
-> Enable camera control when the APP enters its custom camera page. The device can then notify the APP to take a photo by gesture. Disable camera control when the APP leaves the camera page.
+> The APP must implement its own camera page, for example with a third-party camera library. Launching the phone's system camera does not provide ring-controlled capture. The SDK controls the camera mode and delivers capture events; the APP takes photos and saves them to the phone's gallery.
 >
 > Configuration table property: `isTakePhoto`.
 >
 > Receive device photo events through `BluetoothNotificationCameraTakePicture`.
+
+Usage flow:
+
+1. When entering the APP's camera page, register an observer for `BluetoothNotificationCameraTakePicture` and call `[DHBleCommand controlCamera:1 block:...]` to put the ring into camera control mode.
+2. When the user triggers a capture gesture on the ring, the APP receives `BluetoothNotificationCameraTakePicture`. Use the camera library to take a photo and save it to the phone's gallery.
+3. When leaving the camera page, call `[DHBleCommand controlCamera:0 block:...]` to exit camera control mode and remove the observer.
 
 Method:
 
@@ -668,7 +689,7 @@ Example:
 }
 
 - (void)cameraTakePictureNotification:(NSNotification *)notification {
-    // Take a photo with the APP's custom camera here
+    // Use the APP's camera library to take a photo and save it to the phone's gallery.
 }
 ```
 
@@ -1149,8 +1170,11 @@ DHDevicePushType:
 | Type | dataValue | Description |
 | ---- | --------- | ----------- |
 | DHDevicePushTypePower | DHBatteryInfoModel | Battery and charging-status push, see 3.2.1.4.1 |
-| DHDevicePushTypeRecordStatus | NSDictionary | Recording-status push: status (1=recording), isRecording, startTime (Unix seconds), duration (seconds), totalCapacity, remainingCapacity |
+| DHDevicePushTypeRecordStatus | NSDictionary | Recording-status push: status (1=recording), isRecording, startTime (Unix seconds), duration (seconds), totalCapacity, remainingCapacity, realtime |
 | DHDevicePushTypeTouchEvent | NSDictionary | Touch, fall, SOS and repeated-tap events; see the field table below |
+| DHDevicePushTypeRecordRealtimeData | NSDictionary | Real-time recording audio: sequence (0-255 wrapping) and audioData (raw Opus-compressed audio as NSData); see 3.2.5.7 |
+| DHDevicePushTypeCountControl | NSNumber | Counting-recognition state: YES enabled (Arm), NO disabled (Disarm); see 3.2.1.33 |
+| DHDevicePushTypeMuslimCount | NSDictionary | Real-time counting push: timestamp (Unix seconds) and value (accumulated count); one notification per count item |
 
 Fields of the touch event `dataValue`:
 
@@ -1198,8 +1222,6 @@ id observer = [[NSNotificationCenter defaultCenter]
 // Remove the observer when no longer needed; pass the same instance used to add it
 [[NSNotificationCenter defaultCenter] removeObserver:observer];
 ```
-
-
 
 ##### 3.2.1.22 Vibration Interval Setting and Getting
 
@@ -1621,6 +1643,68 @@ Example:
 >
 > The rhythm loop is only available when `mode=0xFF`; `groupCount`, `frequency`, and `pause` must all be valid. Invalid parameters call back with a non-zero `code` and an error description. Use strength `0` to stop continuous or loop vibration. The device also stops automatically when Bluetooth disconnects.
 
+##### 3.2.1.32 Custom Number Display
+
+> Displays an app-specified number on the device for 3 seconds. Calling the method again updates the number and restarts the 3-second display period. The app defines the meaning and interpretation of the number.
+>
+> Configuration-table property: `isSupportCustomNumberDisplay`. Use this feature only when the device reports support.
+
+Method:
+
+`+ (void)showCustomNumber:(NSInteger)number block:(void(^)(int code, id data))block`
+
+Parameters:
+
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| number | NSInteger | Number to display, 0–9999, up to 4 digits. Values below 0 are treated as 0; values above 9999 are treated as 9999. |
+| block | block | Operation result callback. `code=0` indicates success; a non-zero code indicates failure. |
+
+Example:
+
+```objective-c
+[DHBleCommand showCustomNumber:627 block:^(int code, id data) {
+    NSLog(@"showCustomNumber code=%d", code);
+}];
+```
+
+##### 3.2.1.33 Counting Recognition Control and State Queries
+
+> Enable or disable counting recognition; toggling does not clear the accumulated count.
+>
+> Configuration-table property: `isSupportCountControl`. Use this feature only when the device reports support.
+
+`+ (void)setCountControl:(BOOL)armed block:(void(^)(int code, id data))block`
+
+`+ (void)getCountControl:(void(^)(int code, id data))block`
+
+| Parameter | Description |
+| --------- | ----------- |
+| armed | YES: enable (Arm); NO: disable (Disarm) |
+| setCountControl block | `code=0` on success, non-zero on failure |
+| getCountControl block | `data` is an NSNumber(BOOL): YES=Arm, NO=Disarm |
+
+Wait for the previous operation's callback before issuing another set or query.
+
+Setting example:
+
+```objective-c
+[DHBleCommand setCountControl:YES block:^(int code, id data) {
+    NSLog(@"setCountControl code=%d", code);
+}];
+```
+
+Query example (call separately from the setting operation):
+
+```objective-c
+[DHBleCommand getCountControl:^(int code, id data) {
+    if (code != 0 || ![data isKindOfClass:NSNumber.class]) return;
+    NSLog(@"counting armed=%@", data);
+}];
+```
+
+State changes arrive through `BluetoothNotificationProtocolPush` with `dataType` = `DHDevicePushTypeCountControl` and an NSNumber(BOOL) `dataValue`; real-time counts arrive as `DHDevicePushTypeMuslimCount`. See 3.2.1.21 for listener registration.
+
 #### 3.2.2 Health data synchronization (real-time single measurement and all-day monitoring)
 
 > There are two ways to monitor health data: real-time single measurements and continuous 24-hour monitoring. Health data includes heart rate, blood oxygen, stress levels, HRV, and sleep, **but sleep is not monitored in real time**.
@@ -1710,13 +1794,13 @@ Example of usage:
 
 ##### 3.2.2.2 Continuous monitoring - Set the interval for continuous monitoring of health data.
 
-> Set the monitoring interval for health data (heart rate, blood oxygen, HRV, stress, blood glucose) throughout the day, in minutes.
+> [!NOTE]
 >
-> **Notes: Currently, only the heart rate interval can be set to 30 minutes or 60 minutes; other parameters (blood oxygen, HRV, stress, blood glucose) can only be set to on or off. The start and end times are fixed to cover the entire day and cannot be modified.**
+> Set the all-day health monitoring interval in minutes, with the monitoring period fixed to 00:00–23:59. The intervals listed in the following subsections are recommended values; other intervals require device support. Shorter intervals increase power consumption and shorten battery life between charges.
 
 ###### 3.2.2.2.1 Heart rate detection settings and retrieval
 
-> The only interval options available for heart rate monitoring are 30 minutes and 60 minutes;
+> Recommended monitoring intervals: 30 or 60 minutes.
 
 Method Description:
 
@@ -1728,7 +1812,7 @@ Parameter Description:
 
 | Parameter | Type                    |       |                                                              |
 | --------- | ----------------------- | ----- | ------------------------------------------------------------ |
-| model     | DHHeartRateModeSetModel | class | isOpen: true (on)/false (off)<br/>interval: interval time 30 or 60 minutes<br/>startHour: 0 (fixed, cannot be modified)<br/>startMin: 0 (fixed, cannot be modified)<br/>endHour: 23 (fixed, cannot be modified)<br/>endMin: 59 (fixed, cannot be modified); |
+| model     | DHHeartRateModeSetModel | class | isOpen: true (on)/false (off)<br/>interval: monitoring interval in minutes; recommended: 30 or 60<br/>startHour: 0 (fixed, cannot be modified)<br/>startMin: 0 (fixed, cannot be modified)<br/>endHour: 23 (fixed, cannot be modified)<br/>endMin: 59 (fixed, cannot be modified); |
 
 Example of usage:
 
@@ -1740,7 +1824,7 @@ tModeSetModel.startHour = 00; // start time is fixed
 tModeSetModel.startMinute = 00;
 tModeSetModel.endHour = 23; // end time is fixed
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 30; // settable to 30 or 60 minutes
+tModeSetModel.interval = 30; // Recommended monitoring interval: 30 minutes
 [DHBleCommand setHeartRateMode:tModeSetModel block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"setHeartRateMode OK");
@@ -1758,7 +1842,7 @@ tModeSetModel.interval = 30; // settable to 30 or 60 minutes
 
 ###### 3.2.2.2.2 Blood oxygen monitoring settings and data retrieval
 
-> The interval for blood oxygen measurements can only be set to 60 minutes;
+> Recommended monitoring interval: 60 minutes.
 
 Method Description:
 
@@ -1770,7 +1854,7 @@ Parameter Description:
 
 | Parameter | Type             |       |                                                              |
 | --------- | ---------------- | ----- | ------------------------------------------------------------ |
-| model     | DHBoModeSetModel | Class | isOpen: true (on)/false (off)<br/>interval: Fixed interval of 60 minutes<br/>startHour: 0 (fixed, cannot be modified)<br/>startMin: 0 (fixed, cannot be modified)<br/>endHour: 23 (fixed, cannot be modified)<br/>endMin: 59 (fixed, cannot be modified); |
+| model     | DHBoModeSetModel | Class | isOpen: true (on)/false (off)<br/>interval: monitoring interval in minutes; recommended: 60<br/>startHour: 0 (fixed, cannot be modified)<br/>startMin: 0 (fixed, cannot be modified)<br/>endHour: 23 (fixed, cannot be modified)<br/>endMin: 59 (fixed, cannot be modified); |
 
 Example of usage:
 
@@ -1782,7 +1866,7 @@ tModeSetModel.startHour = 00; // start time is fixed
 tModeSetModel.startMinute = 00;
 tModeSetModel.endHour = 23; // end time is fixed
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 60; // fixed, not settable
+tModeSetModel.interval = 60; // Recommended monitoring interval: 60 minutes
 [DHBleCommand setBoMode:tModeSetModel block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"setBoMode OK");
@@ -1801,7 +1885,7 @@ tModeSetModel.interval = 60; // fixed, not settable
 
 ###### 3.2.2.2.3 Heart Rate Variability (HRV) Measurement Settings and Data Acquisition
 
-> The HRV interval can only be set to 60 minutes;
+> Recommended monitoring interval: 60 minutes.
 
 Method Description:
 
@@ -1813,7 +1897,7 @@ Parameter Description:
 
 | Parameter | Type              |       |                                                              |
 | --------- | ----------------- | ----- | ------------------------------------------------------------ |
-| model     | DHHrvModeSetModel | Class | isOpen: true (on)/false (off)<br/>interval: Fixed interval of 60 minutes<br/>startHour: 0 (fixed, cannot be modified)<br/>startMin: 0 (fixed, cannot be modified)<br/>endHour: 23 (fixed, cannot be modified)<br/>endMin: 59 (fixed, cannot be modified); |
+| model     | DHHrvModeSetModel | Class | isOpen: true (on)/false (off)<br/>interval: monitoring interval in minutes; recommended: 60<br/>startHour: 0 (fixed, cannot be modified)<br/>startMin: 0 (fixed, cannot be modified)<br/>endHour: 23 (fixed, cannot be modified)<br/>endMin: 59 (fixed, cannot be modified); |
 
 Example of usage:
 
@@ -1825,7 +1909,7 @@ tModeSetModel.startHour = 00;// start time is fixed
 tModeSetModel.startMinute = 00;
 tModeSetModel.endHour = 23; // end time is fixed
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 60; // fixed, not settable
+tModeSetModel.interval = 60; // Recommended monitoring interval: 60 minutes
 [DHBleCommand setHrvMode:tModeSetModel block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"setHrvMode OK");
@@ -1844,7 +1928,7 @@ tModeSetModel.interval = 60; // fixed, not settable
 
 ###### 3.2.2.2.4 Stress detection settings and retrieval
 
-> The interval stress can only be set to 60 minutes;
+> Recommended monitoring interval: 60 minutes.
 
 Method Description:
 
@@ -1856,7 +1940,7 @@ Parameter Description:
 
 | Parameter | Type                 |       |                                                              |
 | --------- | -------------------- | ----- | ------------------------------------------------------------ |
-| model     | DHStressModeSetModel | Class | isOpen: true (on)/false (off)<br/>interval: Fixed interval of 60 minutes<br/>startHour: 0 (fixed, cannot be modified)<br/>startMin: 0 (fixed, cannot be modified)<br/>endHour: 23 (fixed, cannot be modified)<br/>endMin: 59 (fixed, cannot be modified); |
+| model     | DHStressModeSetModel | Class | isOpen: true (on)/false (off)<br/>interval: monitoring interval in minutes; recommended: 60<br/>startHour: 0 (fixed, cannot be modified)<br/>startMin: 0 (fixed, cannot be modified)<br/>endHour: 23 (fixed, cannot be modified)<br/>endMin: 59 (fixed, cannot be modified); |
 
 Example of usage:
 
@@ -1868,7 +1952,7 @@ tModeSetModel.startHour = 00;// start time is fixed
 tModeSetModel.startMinute = 00;
 tModeSetModel.endHour = 23; // end time is fixed
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 60; // fixed, not settable
+tModeSetModel.interval = 60; // Recommended monitoring interval: 60 minutes
 [DHBleCommand setStressMode:tModeSetModel block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"setStressMode OK");
@@ -1889,7 +1973,7 @@ tModeSetModel.interval = 60; // fixed, not settable
 
 ###### 3.2.2.2.5 Blood glucose monitoring settings and data retrieval
 
-> The interval between blood glucose measurements can only be set to 60 minutes;
+> Recommended monitoring interval: 60 minutes.
 
 Method Description:
 
@@ -1901,7 +1985,7 @@ Parameter Description:
 
 | Parameter | Type                     |       |                                                              |
 | --------- | ------------------------ | ----- | ------------------------------------------------------------ |
-| model     | DHBloodSugarModeSetModel | Class | isOpen: true (on)/false (off)<br/>interval: Fixed interval of 60 minutes<br/>startHour: 0 (fixed, cannot be modified)<br/>startMin: 0 (fixed, cannot be modified)<br/>endHour: 23 (fixed, cannot be modified)<br/>endMin: 59 (fixed, cannot be modified); |
+| model     | DHBloodSugarModeSetModel | Class | isOpen: true (on)/false (off)<br/>interval: monitoring interval in minutes; recommended: 60<br/>startHour: 0 (fixed, cannot be modified)<br/>startMin: 0 (fixed, cannot be modified)<br/>endHour: 23 (fixed, cannot be modified)<br/>endMin: 59 (fixed, cannot be modified); |
 
 Example of usage:
 
@@ -1913,7 +1997,7 @@ tModeSetModel.startHour = 00;// start time is fixed
 tModeSetModel.startMinute = 00;
 tModeSetModel.endHour = 23; // end time is fixed
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 60; // fixed, not settable
+tModeSetModel.interval = 60; // Recommended monitoring interval: 60 minutes
 [DHBleCommand setBloodSugarMode:tModeSetModel block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"setBloodSugarMode OK");
@@ -1934,7 +2018,7 @@ tModeSetModel.interval = 60; // fixed, not settable
 
 ###### 3.2.2.2.6 Blood pressure monitoring settings and data retrieval
 
-> The interval for blood pressure measurements can only be set to 60 minutes;
+> Recommended monitoring interval: 60 minutes.
 >
 > Configuration table property: `isDataTypeBloodPressure`
 
@@ -1948,7 +2032,7 @@ Parameter Description:
 
 | Parameter | Type             |       |                                                              |
 | --------- | ---------------- | ----- | ------------------------------------------------------------ |
-| model     | DHBpModeSetModel | Class | isOpen: true (on)/false (off)<br/>interval: Fixed interval of 60 minutes<br/>startHour: 0 (fixed, cannot be modified)<br/>startMin: 0 (fixed, cannot be modified)<br/>endHour: 23 (fixed, cannot be modified)<br/>endMin: 59 (fixed, cannot be modified); |
+| model     | DHBpModeSetModel | Class | isOpen: true (on)/false (off)<br/>interval: monitoring interval in minutes; recommended: 60<br/>startHour: 0 (fixed, cannot be modified)<br/>startMin: 0 (fixed, cannot be modified)<br/>endHour: 23 (fixed, cannot be modified)<br/>endMin: 59 (fixed, cannot be modified); |
 
 Example of usage:
 
@@ -1960,7 +2044,7 @@ tModeSetModel.startHour = 00;// start time is fixed
 tModeSetModel.startMinute = 00;
 tModeSetModel.endHour = 23; // end time is fixed
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 60; // fixed, not settable
+tModeSetModel.interval = 60; // Recommended monitoring interval: 60 minutes
 [DHBleCommand setBpMode:tModeSetModel block:^(int code, id  _Nonnull data) {
   if (code == 0){
     NSLog(@"setBpMode OK");
@@ -1981,7 +2065,7 @@ tModeSetModel.interval = 60; // fixed, not settable
 
 ###### 3.2.2.2.7 Body Temperature Monitoring Settings and Retrieval
 
-> The interval can be set to 30 or 60 minutes;
+> Recommended monitoring intervals: 30 or 60 minutes.
 >
 > Configuration table property: `isSupportTemperatureMonitoring`
 
@@ -1995,7 +2079,7 @@ Parameter Description:
 
 | Parameter | Type                    | Description | Value                                                        |
 | --------- | ------------------------ | ----------- | ------------------------------------------------------------ |
-| model     | DHHeartRateModeSetModel  | class       | isOpen: true on / false off<br>interval: interval, 30 or 60 minutes<br>startHour: fixed 0<br>startMinute: fixed 0<br>endHour: fixed 23<br>endMinute: fixed 59 |
+| model     | DHHeartRateModeSetModel  | class       | isOpen: true on / false off<br>interval: monitoring interval in minutes; recommended: 30 or 60<br>startHour: fixed 0<br>startMinute: fixed 0<br>endHour: fixed 23<br>endMinute: fixed 59 |
 
 Example of usage:
 
@@ -2007,7 +2091,7 @@ tModeSetModel.startHour = 00;
 tModeSetModel.startMinute = 00;
 tModeSetModel.endHour = 23;
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 60;
+tModeSetModel.interval = 60; // Recommended monitoring interval: 60 minutes
 [DHBleCommand setTimedBodyTemperature:tModeSetModel block:^(int code, id  _Nonnull data) {
     if (code == 0){ NSLog(@"setTimedBodyTemperature OK"); }
 }];
@@ -2508,6 +2592,7 @@ Query the status after device initialization. On success, `data` is an NSDiction
 | duration | Elapsed recording time in seconds; 0 when idle |
 | totalCapacity | Total recording storage in bytes |
 | remainingCapacity | Available recording storage in bytes |
+| realtime | Whether the recording is real-time; NO when not provided by old firmware |
 
 ```objective-c
 [DHBleCommand getRecordStatus:^(int code, id data) {
@@ -2595,6 +2680,43 @@ Deletes all recordings on the device. This is irreversible; obtain user confirma
 }];
 ```
 
+##### 3.2.5.7 Real-time Recording
+
+> Configuration-table property: `isSupportRecording`; requires device firmware that supports real-time recording.
+
+`+ (void)recordRealtimeControl:(BOOL)start block:(void(^)(int code, id data))block`
+
+| Parameter / callback | Description |
+| -------------------- | ----------- |
+| start | `YES`: start real-time recording; `NO`: stop |
+| block | `code=0` indicates the command succeeded; `data` is the resulting recording state (NSNumber: 1 recording, 0 idle). Audio is not returned through this block. |
+
+Audio arrives through `BluetoothNotificationProtocolPush` with `dataType` = `DHDevicePushTypeRecordRealtimeData`; `dataValue` is an NSDictionary:
+
+| Field | Description |
+| ----- | ----------- |
+| sequence | Packet sequence 0-255, wrapping from 255 to 0; use it to check packet loss and ordering |
+| audioData | Raw Opus-compressed audio data for this packet (NSData) |
+
+```objective-c
+id observer = [[NSNotificationCenter defaultCenter]
+    addObserverForName:BluetoothNotificationProtocolPush object:nil queue:nil
+    usingBlock:^(NSNotification *notification) {
+        if ([notification.userInfo[@"dataType"] unsignedIntegerValue] != DHDevicePushTypeRecordRealtimeData) return;
+        NSDictionary *packet = notification.userInfo[@"dataValue"];
+        // Process packet[@"audioData"] in arrival order; dispatch to the main thread for UI updates.
+        NSLog(@"audio sequence=%@ size=%zd", packet[@"sequence"], ((NSData *)packet[@"audioData"]).length);
+    }];
+
+[DHBleCommand recordRealtimeControl:YES block:^(int code, id data) {
+    NSLog(@"recordRealtimeControl code=%d state=%@", code, data);
+}];
+// To stop: [DHBleCommand recordRealtimeControl:NO block:...];
+// When leaving the page or no longer needed: [[NSNotificationCenter defaultCenter] removeObserver:observer];
+```
+
+Register the observer before starting. Recording status remains available through `DHDevicePushTypeRecordStatus` pushes or `getRecordStatus`; `realtime` indicates whether real-time mode is active.
+
 #### 5.2.5 Sensor Raw Data
 
 This section covers two different data retrieval methods:
@@ -2637,6 +2759,8 @@ Valid `sensorType` combinations for PPG/ACC/PPG Red/IR historical collection:
 >
 > Configuration table property: `isSupportPPGMonitoring`
 
+> Recommended monitoring intervals: 30 or 60 minutes.
+
 Method Description:
 
 `+(void)setPPGMode:(DHHrvModeSetModel *)model block:(void(^)(int code, id data))block`
@@ -2647,7 +2771,7 @@ Parameter Description:
 
 | Parameter | Type              | Description | Value                                                        |
 | --------- | ----------------- | ----------- | ------------------------------------------------------------ |
-| model     | DHHrvModeSetModel | Class       | isOpen: true on/false off<br>interval: default 30 minutes<br>startHour: 0 fixed<br>startMinute: 0 fixed<br>endHour: 23 fixed<br>endMinute: 59 fixed |
+| model     | DHHrvModeSetModel | Class       | isOpen: true on/false off<br>interval: monitoring interval in minutes; recommended: 30 or 60<br>startHour: 0 fixed<br>startMinute: 0 fixed<br>endHour: 23 fixed<br>endMinute: 59 fixed |
 
 Example of usage:
 
@@ -2659,7 +2783,7 @@ tModeSetModel.startHour = 00;
 tModeSetModel.startMinute = 00;
 tModeSetModel.endHour = 23;
 tModeSetModel.endMinute = 59;
-tModeSetModel.interval = 60;
+tModeSetModel.interval = 60; // Recommended monitoring interval: 60 minutes
 [DHBleCommand setPPGMode:tModeSetModel block:^(int code, id  _Nonnull data) {
     if (code == 0){ NSLog(@"setPPGMode OK"); }
 }];
@@ -2815,6 +2939,12 @@ Example:
 
 
 ## SDK Revision History
+
+**V2.0.0_261022** (2026.10.22)
+
+- Added `recordRealtimeControl` and real-time audio listening (3.2.5.7).
+- Added counting-recognition control, state queries and push notifications (3.2.1.33); added `isSupportCountControl` to the configuration table.
+- Added the `deviceForm` product form field to scan results and device version information (3.1.1, 3.2.1.3).
 
 **V2.0.0_261012** (2026.10.12)
 

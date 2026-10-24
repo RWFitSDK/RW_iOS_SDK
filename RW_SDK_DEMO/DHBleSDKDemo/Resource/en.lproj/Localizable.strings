@@ -222,3 +222,12 @@
 "rw_record_share" = "Share file";
 "rw_record_cancel" = "Cancel";
 "rw_record_confirm" = "Confirm";
+
+"rw_device_form_format" = "Product form: %@";
+"rw_device_form_screenless_ring" = "Ring without a screen";
+"rw_device_form_screen_ring" = "Ring with a screen";
+"rw_device_form_screenless_bracelet" = "Bracelet without a screen";
+"rw_device_form_screen_bracelet" = "Bracelet with a screen";
+"rw_device_form_screenless_wristband" = "Wristband without a screen";
+"rw_device_form_screen_wristband" = "Wristband with a screen";
+"rw_device_form_watch" = "Watch";

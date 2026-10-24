@@ -270,9 +270,24 @@ NS_ASSUME_NONNULL_BEGIN
 /// @param block 回调, code=0成功
 + (void)recordControl:(BOOL)start block:(void(^)(int code, id data))block;
 
+/// 实时录音控制(协议3.1 v1.29), 需 isSupportRecording
+/// @param start YES:开始实时录音 NO:停止
+/// @param block 回调仅返回本次控制结果, data为NSNumber(操作后录音状态: 1录音中 0空闲); 音频不经此回调,
+///              通过 BluetoothNotificationProtocolPush 的 DHDevicePushTypeRecordRealtimeData 接收(sequence+audioData)
++ (void)recordRealtimeControl:(BOOL)start block:(void(^)(int code, id data))block;
+
 /// 查询录音状态
-/// @param block 回调, data为NSDictionary, 包含status/isRecording/startTime/duration/totalCapacity/remainingCapacity, startTime为Unix时间戳, duration单位秒
+/// @param block 回调, data为NSDictionary, 包含status/isRecording/startTime/duration/totalCapacity/remainingCapacity/realtime, startTime为Unix时间戳, duration单位秒, realtime为是否实时录音(旧固件未提供时为NO)
 + (void)getRecordStatus:(void(^)(int code, id data))block;
+
+/// 计数识别开关(协议2.3.5), 切换不清零累计计数, 需 isSupportCountControl
+/// @param armed YES:开启(Arm) NO:关闭(Disarm)
+/// @param block 回调, code=0成功; 状态变化经 DHDevicePushTypeCountControl 推送(NSNumber BOOL)
++ (void)setCountControl:(BOOL)armed block:(void(^)(int code, id data))block;
+
+/// 查询计数识别状态(协议2.3.5)
+/// @param block 回调, data为NSNumber(BOOL), YES=Arm NO=Disarm; 与设置操作需等待上一次回调后再调用
++ (void)getCountControl:(void(^)(int code, id data))block;
 
 /// 查询录音文件列表
 /// @param block 同步完成回调, data为NSArray<NSDictionary>, 每项含fileId/fileSize/duration/timestamp
@@ -424,6 +439,15 @@ NS_ASSUME_NONNULL_BEGIN
              frequency:(UInt8)frequency
                   pause:(UInt8)pause
                    block:(void(^)(int code, id data))block;
+
+#pragma mark- 自定义数字显示
+
+/// 自定义数字显示, 需功能表 isSupportCustomNumberDisplay。
+/// Show a custom number. Requires isSupportCustomNumberDisplay.
+/// @param number 0-9999, 最多4位; 小于0按0, 大于9999按9999。Values are clamped to 0..9999.
+/// 设备显示3秒, 再次调用重新计时。The device displays the number for 3 seconds without saving it.
+/// @param block 操作结果回调 / One-shot operation result callback.
++ (void)showCustomNumber:(NSInteger)number block:(void(^)(int code, id data))block;
 
 #pragma mark- Muslim时间显示模式
 

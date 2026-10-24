@@ -223,3 +223,12 @@
 "rw_record_share" = "分享文件";
 "rw_record_cancel" = "取消";
 "rw_record_confirm" = "确认";
+
+"rw_device_form_format" = "产品形态：%@";
+"rw_device_form_screenless_ring" = "无屏戒指";
+"rw_device_form_screen_ring" = "有屏戒指";
+"rw_device_form_screenless_bracelet" = "无屏手链";
+"rw_device_form_screen_bracelet" = "有屏手链";
+"rw_device_form_screenless_wristband" = "无屏手环";
+"rw_device_form_screen_wristband" = "有屏手环";
+"rw_device_form_watch" = "手表";

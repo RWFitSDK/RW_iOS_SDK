@@ -305,6 +305,7 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
 
     self.functionBaseList = [self.functionBaseList arrayByAddingObject:@"Measurement Unit-公制/英制单位"];
     self.functionBaseList = [self.functionBaseList arrayByAddingObjectsFromArray:@[@"Device Challenge-设备身份认证", @"Sedentary Reminder-久坐提醒", @"Drink Reminder-喝水提醒", @"Custom Vibration Control-自定义震动控制"]];
+    self.functionBaseList = [self.functionBaseList arrayByAddingObject:@"Custom Number Display-自定义数字显示"];
 
     self.functionHealthList = @[@"Real-time, single-instance health data monitoring-实时单次启动健康数据检测(心率,血氧,HRV, 压力, 血糖)", @"Get HeartRate Monitor(获取心率监听)", @"Set HeartRate Monitor(设置心率监听)",@"Get Blood oxygen Monitor(获取血氧监听)", @"Set Blood oxygen Monitor(设置血氧监听)",@"Get HRV Monitor(获取HRV监听)", @"Set HRV Monitor(设置HRV监听)",@"Get PPG Monitor(获取PPG监听)", @"Set PPG Monitor(设置PPG监听)",@"Get Stress Monitor(获取压力监听)", @"Set Stress Monitor(设置压力监听)",@"Get Blood Sugar Monitor(获取血糖监听)", @"Set Blood Sugar Monitor(设置血糖监听)", @"Sync all your health data(同步所有健康数据)", @"Get Blood Pressure Monitor(获取血压监听)", @"Set Blood Pressure Monitor(设置血压监听)", @"Get Temperature Monitor(获取定时体温监测)", @"Set Temperature Monitor(设置定时体温监测)", @"Get Muslim Time Display Mode(获取Muslim时间显示模式)", @"Set Muslim Time Display Mode(设置Muslim时间显示模式)", @"Get Muslim Count Reset Mode(获取Muslim计数清零方式)", @"Set Muslim Count Reset Mode(设置Muslim计数清零方式)", @"PPG Raw Data(PPG原始数据：启动、停止采集或获取历史)", @"HR Calibration(心率校正)", @"Get Fall Detect(获取跌落提醒开关)", @"Set Fall Detect(设置跌落提醒)", @"Get Count Reminder(获取计数提醒间隔)", @"Set Count Reminder(设置计数提醒间隔)"];
 
@@ -830,6 +831,46 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
     }];
 }
 
+- (void)showCustomNumberInput
+{
+    DeviceFuncV2Model *menu = [DHBluetoothManager shareInstance].deviceFuncV2Model;
+    if (!menu.isSupportCustomNumberDisplay) {
+        SHOWHUD(NSLocalizedString(@"rw_not_supported", nil))
+        return;
+    }
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:RWLocalizedFunctionTitle(self.functionBaseList[40])
+                                                                  message:RWChoiceText(@"0–9999, displayed for 3 seconds", @"输入0～9999，设备显示3秒")
+                                                           preferredStyle:UIAlertControllerStyleAlert];
+    NSString *lastNumber = self.functionDetailValues[@"0-40"];
+    [alert addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+        textField.keyboardType = UIKeyboardTypeNumberPad;
+        textField.placeholder = @"0–9999";
+        textField.text = lastNumber.length ? lastNumber : @"627";
+    }];
+    [alert addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"rw_cancel", nil)
+                                            style:UIAlertActionStyleCancel handler:nil]];
+    __weak typeof(self) weakSelf = self;
+    __weak UIAlertController *weakAlert = alert;
+    [alert addAction:[UIAlertAction actionWithTitle:RWChoiceText(@"Show", @"显示")
+                                            style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        NSInteger number = MIN(MAX(weakAlert.textFields.firstObject.text.integerValue, 0), 9999);
+        [DHBleCommand showCustomNumber:number block:^(int code, id data) {
+            NSLog(@"showCustomNumber number=%ld code=%d data=%@", (long)number, code, data);
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (!weakSelf) return;
+                if (code == 0) {
+                    [weakSelf updateDetailText:[NSString stringWithFormat:@"%ld", (long)number] section:0 sourceRow:40];
+                    SHOWHUD(RWChoiceText(@"Sent successfully", @"发送成功"))
+                } else {
+                    NSString *message = [NSString stringWithFormat:RWChoiceText(@"Failed to send: %d", @"发送失败：%d"), code];
+                    SHOWHUD(message)
+                }
+            });
+        }];
+    }]];
+    [self presentViewController:alert animated:YES completion:nil];
+}
+
 - (void)muslimCountResetModeNotification:(NSNotification *)ntf
 {
     NSLog(@"Muslim Count Reset Mode set successfully");
@@ -928,6 +969,7 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
         if (menu.isSupportSedentary) [base addObject:@37];
         if (menu.isDrink) [base addObject:@38];
         if (menu.isSupportVibrationControl) [base addObject:@39];
+        if (menu.isSupportCustomNumberDisplay) [base addObject:@40];
 
         // 实时单次检测统一放在首页的健康详情页，设备设置页不重复显示。
         addPair(health, menu.isDataTypeHeart, 1, 2);
@@ -979,6 +1021,7 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
             case 33: return @"100–1000 ms";
             case 34: return RWChoiceText(@"On / Off / Query", @"亮屏 / 息屏 / 查询");
             case 35: return RWChoiceText(@"Metric / Imperial / Query", @"公制 / 英制 / 查询");
+            case 40: return @"0–9999";
             default: return run;
         }
     }
@@ -1672,6 +1715,9 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
             else {
                 SHOWHUD(NSLocalizedString(@"rw_not_supported", nil));
             }
+        }
+        else if (indexPath.row == 40){ //自定义数字显示
+            [self showCustomNumberInput];
         }
     }
     else if (indexPath.section == 1){

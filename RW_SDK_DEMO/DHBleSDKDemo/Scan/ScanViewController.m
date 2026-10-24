@@ -8,6 +8,52 @@
 #import "ScanViewController.h"
 #import "NewHomeController.h"
 
+@interface RWScanDeviceCellModel : BaseCellModel
+@property (nonatomic, copy) NSString *deviceFormText;
+@end
+
+@implementation RWScanDeviceCellModel
+@end
+
+@interface RWScanDeviceCell : BaseTableViewCell
+@property (nonatomic, strong) UILabel *deviceFormLabel;
+@end
+
+@implementation RWScanDeviceCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        self.deviceFormLabel = [[UILabel alloc] init];
+        self.deviceFormLabel.font = HomeFont_SubTitleFont;
+        self.deviceFormLabel.textColor = HomeColor_SubTitleColor;
+        self.deviceFormLabel.textAlignment = NSTextAlignmentRight;
+        self.deviceFormLabel.adjustsFontSizeToFitWidth = YES;
+        self.deviceFormLabel.minimumScaleFactor = 0.7;
+        self.deviceFormLabel.hidden = YES;
+        UIView *cardView = self.leftTitleLabel.superview;
+        [cardView addSubview:self.deviceFormLabel];
+        [self.deviceFormLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.left.equalTo(self.leftTitleLabel.mas_right).offset(5);
+            make.right.equalTo(cardView).offset(-15);
+            make.bottom.equalTo(cardView).offset(-8);
+        }];
+    }
+    return self;
+}
+
+- (void)setModel:(BaseCellModel *)model
+{
+    [super setModel:model];
+    NSString *text = [model isKindOfClass:[RWScanDeviceCellModel class]]
+        ? ((RWScanDeviceCellModel *)model).deviceFormText : nil;
+    self.deviceFormLabel.text = text;
+    self.deviceFormLabel.hidden = text.length == 0;
+}
+
+@end
+
 @interface ScanViewController ()<UITableViewDelegate,UITableViewDataSource,DHBleConnectDelegate>
 
 #pragma mark - UI
@@ -16,7 +62,7 @@
 
 #pragma mark - Data
 /// 列表数据源
-@property (nonatomic, strong) NSMutableArray *dataArray;
+@property (nonatomic, strong) NSMutableArray<RWScanDeviceCellModel *> *dataArray;
 /// 列表数据源
 @property (nonatomic, strong) NSMutableArray *deviceArray;
 
@@ -138,13 +184,18 @@
     [self.deviceArray removeAllObjects];
     [self.dataArray removeAllObjects];
     [self.deviceArray addObjectsFromArray:self.deviceTempArray];
+    NSArray<NSString *> *deviceFormKeys = @[@"rw_device_form_screenless_ring", @"rw_device_form_screen_ring",
+        @"rw_device_form_screenless_bracelet", @"rw_device_form_screen_bracelet",
+        @"rw_device_form_screenless_wristband", @"rw_device_form_screen_wristband", @"rw_device_form_watch"];
     for (DHPeripheralModel *model in self.deviceArray) {
 //        if (model.macAddr.length == 0) {
 //            continue;
 //        }
-        BaseCellModel *cellModel = [[BaseCellModel alloc] init];
+        RWScanDeviceCellModel *cellModel = [[RWScanDeviceCellModel alloc] init];
         cellModel.leftTitle = model.name;
         cellModel.subTitle = [NSString stringWithFormat:@"%ld",(long)model.rssi];
+        cellModel.deviceFormText = model.deviceForm >= 0 && model.deviceForm < (NSInteger)deviceFormKeys.count
+            ? NSLocalizedString(deviceFormKeys[model.deviceForm], nil) : @"";
         // 广播充电状态: 0未充电 1充电中 2充满; -1未提供时不显示。
         NSString *batteryStatusText = @"";
         if (model.batteryStatus >= 0 && model.batteryStatus <= 2) {
@@ -231,9 +282,8 @@
 
 -(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
     
-    BaseTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"BaseTableViewCell" forIndexPath:indexPath];
-    BaseCellModel *cellModel = self.dataArray[indexPath.row];
-    cell.model = cellModel;
+    RWScanDeviceCell *cell = [tableView dequeueReusableCellWithIdentifier:@"RWScanDeviceCell" forIndexPath:indexPath];
+    cell.model = self.dataArray[indexPath.row];
     return cell;
 }
 
@@ -266,13 +316,13 @@
         _myTableView.rowHeight = 90;
         _myTableView.delegate = self;
         _myTableView.dataSource = self;
-        [_myTableView registerClass:[BaseTableViewCell class] forCellReuseIdentifier:@"BaseTableViewCell"];
+        [_myTableView registerClass:[RWScanDeviceCell class] forCellReuseIdentifier:@"RWScanDeviceCell"];
         [self.view addSubview:_myTableView];
     }
     return _myTableView;
 }
 
-- (NSMutableArray *)dataArray {
+- (NSMutableArray<RWScanDeviceCellModel *> *)dataArray {
     if (!_dataArray) {
         _dataArray = [NSMutableArray array];
     }

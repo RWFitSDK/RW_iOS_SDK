@@ -192,3 +192,12 @@
 "rw_read_failed" = "Read failed: %d";
 "rw_upgrade_success" = "Upgrade successful";
 "rw_upgrade_failed" = "Upgrade failed";
+
+"rw_device_form_format" = "제품 형태: %@";
+"rw_device_form_screenless_ring" = "화면 없는 반지";
+"rw_device_form_screen_ring" = "화면 있는 반지";
+"rw_device_form_screenless_bracelet" = "화면 없는 팔찌";
+"rw_device_form_screen_bracelet" = "화면 있는 팔찌";
+"rw_device_form_screenless_wristband" = "화면 없는 손목 밴드";
+"rw_device_form_screen_wristband" = "화면 있는 손목 밴드";
+"rw_device_form_watch" = "시계";

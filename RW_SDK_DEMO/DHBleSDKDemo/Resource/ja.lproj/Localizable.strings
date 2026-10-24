@@ -192,3 +192,12 @@
 "rw_read_failed" = "Read failed: %d";
 "rw_upgrade_success" = "Upgrade successful";
 "rw_upgrade_failed" = "Upgrade failed";
+
+"rw_device_form_format" = "製品形態：%@";
+"rw_device_form_screenless_ring" = "画面なしリング";
+"rw_device_form_screen_ring" = "画面付きリング";
+"rw_device_form_screenless_bracelet" = "画面なしブレスレット";
+"rw_device_form_screen_bracelet" = "画面付きブレスレット";
+"rw_device_form_screenless_wristband" = "画面なしリストバンド";
+"rw_device_form_screen_wristband" = "画面付きリストバンド";
+"rw_device_form_watch" = "腕時計";
