@@ -286,6 +286,8 @@ Use `[model isMessageTypeSupported:index]` to check a message type; see 3.2.1.14
 | isSupportDeviceChallenge    | Does it support device identity authentication?            |
 | isSupportSedentary          | Does it support sedentary reminder settings?               |
 | isDrink                     | Does it support drink reminder settings?                   |
+| isSupportCustomerModel      | Supports customer model settings and retrieval (3.2.1.34) |
+| isSupportPpgSampleRate      | Supports PPG sample rate settings and retrieval (5.2.5.4) |
 
 ##### 3.1.8 Use an External CBCentralManager for Scanning and Let the SDK Connect
 
@@ -465,6 +467,7 @@ Return value:
 | firmwareVersion | NSString | Firmware version |
 | uiVersion | NSString | UI version |
 | deviceForm | NSInteger | Product form: 0 ring without a screen, 1 ring with a screen, 2 bracelet without a screen, 3 bracelet with a screen, 4 wristband without a screen, 5 wristband with a screen, 6 watch; -1 unavailable or unsupported |
+| customerModel | NSString | Customer model; defaults to the original device model when unavailable |
 
 > **Important:** Before an OTA update, verify that the device `deviceModel` matches the target device model of the firmware file. Start the update only when they match. Do not update a device with firmware for a different model.
 
@@ -1705,6 +1708,37 @@ Query example (call separately from the setting operation):
 
 State changes arrive through `BluetoothNotificationProtocolPush` with `dataType` = `DHDevicePushTypeCountControl` and an NSNumber(BOOL) `dataValue`; real-time counts arrive as `DHDevicePushTypeMuslimCount`. See 3.2.1.21 for listener registration.
 
+##### 3.2.1.34 Customer Model Settings and Retrieval
+
+> Set or query the customer model. It defaults to the original device model. Configuration-table property: `isSupportCustomerModel`.
+
+Methods:
+
+`+ (void)setCustomerModel:(NSString *)model block:(void(^)(int code, id data))block`
+
+`+ (void)getCustomerModel:(void(^)(int code, id data))block`
+
+| Parameter | Description |
+| --------- | ----------- |
+| model | Customer model, up to 8 characters; English letters and digits only |
+
+For settings, `code=0` indicates success. For successful queries, `data` is an NSString containing the customer model.
+
+```objective-c
+[DHBleCommand setCustomerModel:@"MODEL001" block:^(int code, id data) {
+    NSLog(@"setCustomerModel code=%d", code);
+}];
+
+// Query after the setting operation has completed.
+[DHBleCommand getCustomerModel:^(int code, id data) {
+    if (code == 0 && [data isKindOfClass:NSString.class]) {
+        NSLog(@"customerModel=%@", data);
+    }
+}];
+```
+
+The customer model is also available as `DHFirmwareVersionModel.customerModel` when retrieving device information. OTA firmware matching still uses the original `deviceModel`.
+
 #### 3.2.2 Health data synchronization (real-time single measurement and all-day monitoring)
 
 > There are two ways to monitor health data: real-time single measurements and continuous 24-hour monitoring. Health data includes heart rate, blood oxygen, stress levels, HRV, and sleep, **but sleep is not monitored in real time**.
@@ -2938,7 +2972,41 @@ Example:
 
 
 
+##### 5.2.5.4 PPG Sample Rate Settings and Retrieval
+
+> Set or query the PPG sample rate in Hz. Available rates depend on device firmware support. Configuration-table property: `isSupportPpgSampleRate`.
+
+Methods:
+
+`+ (void)setPpgSampleRate:(NSInteger)sampleRate block:(void(^)(int code, id data))block`
+
+`+ (void)getPpgSampleRate:(void(^)(int code, id data))block`
+
+| Parameter | Description |
+| --------- | ----------- |
+| sampleRate | PPG sample rate in Hz |
+
+For settings, `code=0` indicates success. For successful queries, `data` is an NSNumber containing the sample rate in Hz.
+
+```objective-c
+[DHBleCommand setPpgSampleRate:100 block:^(int code, id data) {
+    NSLog(@"setPpgSampleRate code=%d", code);
+}];
+
+// Query after the setting operation has completed.
+[DHBleCommand getPpgSampleRate:^(int code, id data) {
+    if (code == 0 && [data isKindOfClass:NSNumber.class]) {
+        NSLog(@"PPG sample rate=%@ Hz", data);
+    }
+}];
+```
+
 ## SDK Revision History
+
+**V2.0.0_261028** (2026.10.28)
+
+- Added `setPpgSampleRate:block:`/`getPpgSampleRate:` for PPG sample rate (5.2.5.4); added `isSupportPpgSampleRate` to the configuration table.
+- Added `setCustomerModel:block:`/`getCustomerModel:` for the customer model (3.2.1.34); added `isSupportCustomerModel` to the configuration table and `customerModel` to device version information.
 
 **V2.0.0_261022** (2026.10.22)
 

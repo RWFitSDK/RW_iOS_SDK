@@ -306,6 +306,7 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
     self.functionBaseList = [self.functionBaseList arrayByAddingObject:@"Measurement Unit-公制/英制单位"];
     self.functionBaseList = [self.functionBaseList arrayByAddingObjectsFromArray:@[@"Device Challenge-设备身份认证", @"Sedentary Reminder-久坐提醒", @"Drink Reminder-喝水提醒", @"Custom Vibration Control-自定义震动控制"]];
     self.functionBaseList = [self.functionBaseList arrayByAddingObject:@"Custom Number Display-自定义数字显示"];
+    self.functionBaseList = [self.functionBaseList arrayByAddingObjectsFromArray:@[@"PPG Sample Rate-PPG采样率", @"Customer Model-客户型号"]];
 
     self.functionHealthList = @[@"Real-time, single-instance health data monitoring-实时单次启动健康数据检测(心率,血氧,HRV, 压力, 血糖)", @"Get HeartRate Monitor(获取心率监听)", @"Set HeartRate Monitor(设置心率监听)",@"Get Blood oxygen Monitor(获取血氧监听)", @"Set Blood oxygen Monitor(设置血氧监听)",@"Get HRV Monitor(获取HRV监听)", @"Set HRV Monitor(设置HRV监听)",@"Get PPG Monitor(获取PPG监听)", @"Set PPG Monitor(设置PPG监听)",@"Get Stress Monitor(获取压力监听)", @"Set Stress Monitor(设置压力监听)",@"Get Blood Sugar Monitor(获取血糖监听)", @"Set Blood Sugar Monitor(设置血糖监听)", @"Sync all your health data(同步所有健康数据)", @"Get Blood Pressure Monitor(获取血压监听)", @"Set Blood Pressure Monitor(设置血压监听)", @"Get Temperature Monitor(获取定时体温监测)", @"Set Temperature Monitor(设置定时体温监测)", @"Get Muslim Time Display Mode(获取Muslim时间显示模式)", @"Set Muslim Time Display Mode(设置Muslim时间显示模式)", @"Get Muslim Count Reset Mode(获取Muslim计数清零方式)", @"Set Muslim Count Reset Mode(设置Muslim计数清零方式)", @"PPG Raw Data(PPG原始数据：启动、停止采集或获取历史)", @"HR Calibration(心率校正)", @"Get Fall Detect(获取跌落提醒开关)", @"Set Fall Detect(设置跌落提醒)", @"Get Count Reminder(获取计数提醒间隔)", @"Set Count Reminder(设置计数提醒间隔)"];
 
@@ -936,6 +937,82 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
 */
 
 #pragma mark- UITableViewDelegate
+- (void)readDeviceSettingForSourceRow:(NSInteger)sourceRow
+{
+    BOOL isSampleRate = sourceRow == 41;
+    __weak typeof(self) weakSelf = self;
+    void (^callback)(int, id) = ^(int code, id data) {
+        NSLog(@"%@ code=%d data=%@", isSampleRate ? @"getPpgSampleRate" : @"getCustomerModel", code, data);
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (!weakSelf) return;
+            BOOL valid = isSampleRate ? [data isKindOfClass:NSNumber.class] : [data isKindOfClass:NSString.class];
+            if (code != 0 || !valid) {
+                SHOWHUD(RWChoiceText(@"Query failed", @"查询失败"))
+                return;
+            }
+            NSString *text = isSampleRate ? [NSString stringWithFormat:@"%@ Hz", data] : data;
+            if (text.length == 0) text = RWChoiceText(@"Not set", @"未设置");
+            [weakSelf updateDetailText:text section:0 sourceRow:sourceRow];
+        });
+    };
+    if (isSampleRate) [DHBleCommand getPpgSampleRate:callback];
+    else [DHBleCommand getCustomerModel:callback];
+}
+
+- (void)showDeviceSettingActionsForSourceRow:(NSInteger)sourceRow
+{
+    BOOL isSampleRate = sourceRow == 41;
+    DeviceFuncV2Model *menu = [DHBluetoothManager shareInstance].deviceFuncV2Model;
+    if (!(isSampleRate ? menu.isSupportPpgSampleRate : menu.isSupportCustomerModel)) {
+        SHOWHUD(NSLocalizedString(@"rw_not_supported", nil))
+        return;
+    }
+    NSString *title = RWLocalizedFunctionTitle(self.functionBaseList[sourceRow]);
+    __weak typeof(self) weakSelf = self;
+    [self showPickerWithTitle:title options:@[RWChoiceText(@"Query", @"查询"), RWChoiceText(@"Set", @"设置")]
+               selectedIndex:0 selection:^(NSInteger selectedIndex) {
+        if (selectedIndex == 0) {
+            [weakSelf readDeviceSettingForSourceRow:sourceRow];
+            return;
+        }
+        if (!weakSelf) return;
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:title
+            message:isSampleRate ? RWChoiceText(@"Sample rate in Hz", @"采样率，单位Hz") :
+                RWChoiceText(@"Up to 8 characters; English letters and digits only", @"最多8个字符，仅支持英文字母和数字")
+            preferredStyle:UIAlertControllerStyleAlert];
+        [alert addTextFieldWithConfigurationHandler:^(UITextField *field) {
+            field.keyboardType = isSampleRate ? UIKeyboardTypeNumberPad : UIKeyboardTypeASCIICapable;
+            field.autocapitalizationType = UITextAutocapitalizationTypeNone;
+            field.autocorrectionType = UITextAutocorrectionTypeNo;
+            field.placeholder = isSampleRate ? @"100 / 200 Hz" : @"MODEL001";
+        }];
+        [alert addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"rw_cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
+        __weak UIAlertController *weakAlert = alert;
+        [alert addAction:[UIAlertAction actionWithTitle:RWChoiceText(@"Set", @"设置") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+            NSString *input = [weakAlert.textFields.firstObject.text stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet] ?: @"";
+            NSInteger sampleRate = 0;
+            if (isSampleRate) {
+                NSScanner *scanner = [NSScanner scannerWithString:input];
+                if (![scanner scanInteger:&sampleRate] || !scanner.isAtEnd) {
+                    SHOWHUD(RWChoiceText(@"Enter a valid integer", @"请输入有效整数"))
+                    return;
+                }
+            }
+            void (^callback)(int, id) = ^(int code, id data) {
+                NSLog(@"%@ input=%@ code=%d data=%@", isSampleRate ? @"setPpgSampleRate" : @"setCustomerModel", input, code, data);
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (!weakSelf) return;
+                    if (code == 0) [weakSelf readDeviceSettingForSourceRow:sourceRow];
+                    else { SHOWHUD(RWChoiceText(@"Setting failed", @"设置失败")) }
+                });
+            };
+            if (isSampleRate) [DHBleCommand setPpgSampleRate:sampleRate block:callback];
+            else [DHBleCommand setCustomerModel:input block:callback];
+        }]];
+        [weakSelf presentViewController:alert animated:YES completion:nil];
+    }];
+}
+
 - (void)rebuildVisibleFunctionIndexes
 {
     DeviceFuncV2Model *menu = [DHBluetoothManager shareInstance].deviceFuncV2Model;
@@ -970,6 +1047,8 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
         if (menu.isDrink) [base addObject:@38];
         if (menu.isSupportVibrationControl) [base addObject:@39];
         if (menu.isSupportCustomNumberDisplay) [base addObject:@40];
+        if (menu.isSupportPpgSampleRate) [base addObject:@41];
+        if (menu.isSupportCustomerModel) [base addObject:@42];
 
         // 实时单次检测统一放在首页的健康详情页，设备设置页不重复显示。
         addPair(health, menu.isDataTypeHeart, 1, 2);
@@ -1022,6 +1101,7 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
             case 34: return RWChoiceText(@"On / Off / Query", @"亮屏 / 息屏 / 查询");
             case 35: return RWChoiceText(@"Metric / Imperial / Query", @"公制 / 英制 / 查询");
             case 40: return @"0–9999";
+            case 41: case 42: return RWChoiceText(@"Query / Set", @"查询 / 设置");
             default: return run;
         }
     }
@@ -1718,6 +1798,9 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
         }
         else if (indexPath.row == 40){ //自定义数字显示
             [self showCustomNumberInput];
+        }
+        else if (indexPath.row == 41 || indexPath.row == 42){
+            [self showDeviceSettingActionsForSourceRow:indexPath.row];
         }
     }
     else if (indexPath.section == 1){

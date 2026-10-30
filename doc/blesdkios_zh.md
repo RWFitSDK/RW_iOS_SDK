@@ -290,6 +290,8 @@ DeviceFuncV2Model类属性定义:
 | isSupportDeviceChallenge    | 是否支持设备身份认证       |
 | isSupportSedentary          | 是否支持久坐提醒设置       |
 | isDrink                     | 是否支持喝水提醒设置       |
+| isSupportCustomerModel      | 是否支持客户型号设置与获取（3.2.1.34） |
+| isSupportPpgSampleRate      | 是否支持PPG采样率设置与获取（5.2.5.4） |
 
 ##### 3.1.8 使用外部 CBCentralManager 搜索并由 SDK 连接
 
@@ -467,6 +469,7 @@ userInfoModel.age = 20;
 | firmwareVersion | NSString | 固件版本号 |
 | uiVersion | NSString | UI版本号 |
 | deviceForm | NSInteger | 产品形态：0无屏戒指、1有屏戒指、2无屏手链、3有屏手链、4无屏手环、5有屏手环、6手表；-1未提供或不支持 |
+| customerModel | NSString | 客户型号；未提供时与原设备型号一致 |
 
 > **注意:** 升级固件前必须校验设备的 `deviceModel` 与升级固件对应的设备型号是否一致, 只有型号一致时才能进行升级, 型号不一致时禁止升级.
 
@@ -1714,6 +1717,37 @@ bean.remindDuration = 60;
 
 状态变化通过 `BluetoothNotificationProtocolPush` 推送，`dataType` 为 `DHDevicePushTypeCountControl`，`dataValue` 为 NSNumber(BOOL)；实时计数通过 `DHDevicePushTypeMuslimCount` 返回。监听方式见 3.2.1.21。
 
+##### 3.2.1.34 客户型号设置与获取
+
+> 设置或查询客户型号，默认与原设备型号一致。功能配置表属性：`isSupportCustomerModel`。
+
+方法说明：
+
+`+ (void)setCustomerModel:(NSString *)model block:(void(^)(int code, id data))block`
+
+`+ (void)getCustomerModel:(void(^)(int code, id data))block`
+
+| 参数 | 说明 |
+| ---- | ---- |
+| model | 客户型号，最多8个字符，仅支持英文字母和数字 |
+
+设置成功时 `code=0`；查询成功时 `data` 为 `NSString` 客户型号。
+
+```objective-c
+[DHBleCommand setCustomerModel:@"MODEL001" block:^(int code, id data) {
+    NSLog(@"setCustomerModel code=%d", code);
+}];
+
+// 设置完成后查询
+[DHBleCommand getCustomerModel:^(int code, id data) {
+    if (code == 0 && [data isKindOfClass:NSString.class]) {
+        NSLog(@"customerModel=%@", data);
+    }
+}];
+```
+
+获取设备信息时，也可通过 `DHFirmwareVersionModel.customerModel` 读取客户型号。固件升级仍使用原设备型号 `deviceModel` 匹配固件。
+
 #### 3.2.2 健康数据同步(实时单次与全天检测)
 
 > 健康数据检测有两种方式: 实时单次检测与全天检测。健康数据包括心率,血氧,压力,HRV,睡眠等, **睡眠无实时检测**。 
@@ -2951,7 +2985,41 @@ tModeSetModel.interval = 60; // 推荐监测间隔：60分钟
 
 
 
+##### 5.2.5.4 PPG采样率设置与获取
+
+> 设置或查询PPG采样率，单位Hz，具体可用值需设备固件支持。功能配置表属性：`isSupportPpgSampleRate`。
+
+方法说明：
+
+`+ (void)setPpgSampleRate:(NSInteger)sampleRate block:(void(^)(int code, id data))block`
+
+`+ (void)getPpgSampleRate:(void(^)(int code, id data))block`
+
+| 参数 | 说明 |
+| ---- | ---- |
+| sampleRate | PPG采样率，单位Hz |
+
+设置成功时 `code=0`；查询成功时 `data` 为 `NSNumber` 采样率，单位Hz。
+
+```objective-c
+[DHBleCommand setPpgSampleRate:100 block:^(int code, id data) {
+    NSLog(@"setPpgSampleRate code=%d", code);
+}];
+
+// 设置完成后查询
+[DHBleCommand getPpgSampleRate:^(int code, id data) {
+    if (code == 0 && [data isKindOfClass:NSNumber.class]) {
+        NSLog(@"PPG sample rate=%@ Hz", data);
+    }
+}];
+```
+
 ## SDK修订记录
+
+**V2.0.0_261028** (2026.10.28)
+
+- 新增PPG采样率设置与获取接口 `setPpgSampleRate:block:`/`getPpgSampleRate:`(5.2.5.4)，功能表新增 `isSupportPpgSampleRate`
+- 新增客户型号设置与获取接口 `setCustomerModel:block:`/`getCustomerModel:`(3.2.1.34)，功能表新增 `isSupportCustomerModel`，设备信息新增 `customerModel`
 
 **V2.0.0_261022** (2026.10.22)
 

@@ -10,6 +10,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface DeviceFuncV2Model : NSObject
 
+/// 是否支持PPG采样率设置与获取 / Supports PPG sample-rate settings and queries.
+@property (nonatomic, assign) BOOL isSupportPpgSampleRate;
+/// 是否支持客户型号设置与获取 / Supports customer-model settings and queries.
+@property (nonatomic, assign) BOOL isSupportCustomerModel;
+
 @property (nonatomic, assign) BOOL isTakePhoto;
 @property (nonatomic, assign) BOOL isLEDLight;
 

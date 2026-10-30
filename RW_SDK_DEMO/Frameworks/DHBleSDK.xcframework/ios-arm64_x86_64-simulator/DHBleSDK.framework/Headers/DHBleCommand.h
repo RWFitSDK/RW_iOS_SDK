@@ -449,6 +449,19 @@ NS_ASSUME_NONNULL_BEGIN
 /// @param block 操作结果回调 / One-shot operation result callback.
 + (void)showCustomNumber:(NSInteger)number block:(void(^)(int code, id data))block;
 
+#pragma mark- PPG采样率与客户型号
+
+/// 设置PPG采样率，单位Hz。需 isSupportPpgSampleRate。
+/// Set PPG sample rate in Hz. Requires isSupportPpgSampleRate.
++ (void)setPpgSampleRate:(NSInteger)sampleRate block:(void(^)(int code, id data))block;
+/// 获取PPG采样率，成功时data为NSNumber(Hz)。Get PPG sample rate; data is NSNumber (Hz) on success.
++ (void)getPpgSampleRate:(void(^)(int code, id data))block;
+/// 设置客户型号，最多8个字符，仅支持英文字母和数字。需 isSupportCustomerModel。
+/// Set customer model, up to 8 characters; English letters and digits only. Requires isSupportCustomerModel.
++ (void)setCustomerModel:(NSString *)model block:(void(^)(int code, id data))block;
+/// 获取客户型号，成功时data为NSString。Get customer model; data is NSString on success.
++ (void)getCustomerModel:(void(^)(int code, id data))block;
+
 #pragma mark- Muslim时间显示模式
 
 /// 获取Muslim时间显示模式
