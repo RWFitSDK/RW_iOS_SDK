@@ -340,6 +340,19 @@ NS_ASSUME_NONNULL_BEGIN
 /// @param block 回调
 + (void)controlOpen:(NSInteger)type dataType:(NSInteger)dataType block:(void(^)(int code, id data))block;
 
+/// 综合检测, 需 isSupportCompositeMeasurement; 不与单项检测同时使用。
+/// Composite measurement; requires isSupportCompositeMeasurement. Do not run with an individual measurement.
+/// @param type 1开始, 0停止 / 1 start, 0 stop. 停止时通过原检测的 finishedBlock 收尾。
+/// @param startedBlock 设备确认开始 / Start confirmed by the device.
+/// @param dataBlock 每个完整组合包只回调一次数组; 项目字段: dataType(健康检测类型)、timestamp(Unix秒)、value、extraValue(舒张压, 其它为0)。
+/// One array per complete packet: dataType, timestamp (Unix seconds), value, extraValue (diastolic pressure).
+/// @param finishedBlock 整轮结束或失败, code为SendStateCode, 未佩戴为SendState_NotWorn; 回调均在主线程, 结束后自动释放。
+/// Session completion/failure on the main thread; callbacks are released automatically.
++ (void)controlCompositeMeasurement:(NSInteger)type
+                      startedBlock:(void(^)(void))startedBlock
+                         dataBlock:(void(^)(NSArray<NSDictionary *> *results))dataBlock
+                     finishedBlock:(void(^)(int code))finishedBlock;
+
 #pragma mark- 健康数据---同步
 /// 自动同步数据
 /// @param block 同步完成回调
@@ -448,6 +461,12 @@ NS_ASSUME_NONNULL_BEGIN
 /// 设备显示3秒, 再次调用重新计时。The device displays the number for 3 seconds without saving it.
 /// @param block 操作结果回调 / One-shot operation result callback.
 + (void)showCustomNumber:(NSInteger)number block:(void(^)(int code, id data))block;
+
+/// 字符显示与时长设置, 需 isSupportCustomTextDisplay / Custom text display and duration.
+/// @param text 最多5个英文字母或数字, 超出截取前5个 / Up to five English letters or digits; longer text is truncated.
+/// @param durationSeconds 时长(秒), 自动限制为1..255 / Duration in seconds, clamped to 1..255.
+/// @param block 设备接受指令后返回, 不等待显示结束 / Returns when accepted, without waiting for display completion.
++ (void)showCustomText:(NSString *)text durationSeconds:(NSInteger)durationSeconds block:(void(^)(int code, id data))block;
 
 #pragma mark- PPG采样率与客户型号
 

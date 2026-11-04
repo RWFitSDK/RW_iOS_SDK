@@ -159,6 +159,7 @@
 "rw_measurement_not_started" = "Not measuring";
 "rw_measurement_start_failed" = "Failed to start: %d";
 "rw_measurement_stop_failed" = "Failed to stop: %d";
+"rw_measurement_not_worn" = "リングを装着してから、もう一度お試しください。";
 "rw_no_detail_data" = "No data. Pull down on Home to sync.";
 "rw_logs" = "Logs";
 "rw_share_logs" = "Share Logs";

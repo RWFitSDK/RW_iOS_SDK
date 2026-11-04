@@ -288,6 +288,8 @@ Use `[model isMessageTypeSupported:index]` to check a message type; see 3.2.1.14
 | isDrink                     | Does it support drink reminder settings?                   |
 | isSupportCustomerModel      | Supports customer model settings and retrieval (3.2.1.34) |
 | isSupportPpgSampleRate      | Supports PPG sample rate settings and retrieval (5.2.5.4) |
+| isSupportCompositeMeasurement | Supports composite health measurement (3.2.2.1) |
+| isSupportCustomTextDisplay | Supports custom text display and duration settings (3.2.1.35) |
 
 ##### 3.1.8 Use an External CBCentralManager for Scanning and Let the SDK Connect
 
@@ -1739,6 +1741,30 @@ For settings, `code=0` indicates success. For successful queries, `data` is an N
 
 The customer model is also available as `DHFirmwareVersionModel.customerModel` when retrieving device information. OTA firmware matching still uses the original `deviceModel`.
 
+##### 3.2.1.35 Custom Text Display with Duration
+
+> Requires `isSupportCustomTextDisplay`. Display English letters, digits, or a combination, for the specified duration. Calling again updates the content and restarts the display timer.
+
+Method:
+
+`+ (void)showCustomText:(NSString *)text durationSeconds:(NSInteger)durationSeconds block:(void(^)(int code, id data))block`
+
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| text | NSString | Up to five English letters or digits; longer content is truncated to the first five characters. Must not be empty. |
+| durationSeconds | NSInteger | Display duration in seconds; values below 1 are treated as 1 and values above 255 as 255. |
+| block | block | Called when the device accepts the command, without waiting for the display to finish. `code=0` indicates success; a non-zero code indicates failure. |
+
+Invalid content is reported with a non-zero `code`. Wait for the previous display request to complete before sending another.
+
+```objective-c
+if (supportMenu.isSupportCustomTextDisplay) {
+    [DHBleCommand showCustomText:@"A627" durationSeconds:5 block:^(int code, id data) {
+        NSLog(@"showCustomText code=%d", code);
+    }];
+}
+```
+
 #### 3.2.2 Health data synchronization (real-time single measurement and all-day monitoring)
 
 > There are two ways to monitor health data: real-time single measurements and continuous 24-hour monitoring. Health data includes heart rate, blood oxygen, stress levels, HRV, and sleep, **but sleep is not monitored in real time**.
@@ -1749,82 +1775,151 @@ The customer model is also available as `DHFirmwareVersionModel.customerModel` w
 
 
 
-##### 3.2.2.1 Real-time monitoring - Start and stop device health data monitoring.
+##### 3.2.2.0 Real-time Monitoring - Individual Measurement
 
-> Start health data monitoring (heart rate, blood oxygen, HRV, stress, blood sugar);
+> [!NOTE]
 >
-> After the test is completed, the device notifies the app via the `BluetoothNotificationHealthRingMeasureStateChange` notification;
->
-> The real-time test values are notified to the app via the `BluetoothNotificationHealthRingMeasureValueChange` notification;
-
-> [!CAUTION]
->
-> Only one health detection type can be active at a time. You must wait for the current detection to complete (receive the completion callback) or manually stop it before starting a new detection type. Starting multiple types simultaneously will cause detection errors.
+> Start or stop a single measurement of heart rate, blood oxygen, HRV, stress, blood glucose, blood pressure, or temperature. Individual and composite measurements cannot run at the same time; start the next measurement only after the current one finishes or is stopped manually.
 
 Method Description:
 
-`+(void)controlOpen:(NSInteger)type dataType:(NSInteger)dataType block:(void(^)(int code, id data))block`
+`+ (void)controlOpen:(NSInteger)type dataType:(NSInteger)dataType block:(void(^)(int code, id data))block`
 
 Parameter Description:
 
-| Parameter | Type      | illustrate        | illustrate                                                   |
+| Parameter | Type      | Description       | Values                                                       |
 | --------- | --------- | ----------------- | ------------------------------------------------------------ |
-| dataType  | NSInteger | Health data types | Heart Rate: BLE_KEY HEART_RATE<br/>Blood Oxygen: BLEKEY BLOOD OXYGEN<br/>HRV: BLE_KEY HRV<br/>Stress: BLE_KEY_STRESS<br/>Blood Sugar: BLE_KEY_BLOOD_SUGAR<br/>Blood Pressure: BLE_KEY_BLOOD_PRESSURE |
+| dataType  | NSInteger | Health data types | Heart rate: BLE_KEY_HEART_RATE<br>Blood oxygen: BLE_KEY_BLOOD_OXYGEN<br>HRV: BLE_KEY_HRV<br>Stress: BLE_KEY_STRESS<br>Blood glucose: BLE_KEY_BLOOD_SUGAR<br>Blood pressure: BLE_KEY_BLOOD_PRESSURE<br>Temperature: BLE_KEY_TEMPERATURE |
 | type      | NSInteger | Start/Stop        | Start: 1<br/>Stop: 0                                         |
+| block | block | Command result | `code=0` indicates success, non-zero indicates failure; measurement completion arrives via the notifications below |
 
-Example of usage:
+Result notifications:
+
+| Notification | Description |
+| ------------ | ----------- |
+| BluetoothNotificationHealthRingMeasureValueChange | Real-time values during measurement; `userInfo` contains `dataType` and `dataValue`; blood pressure also carries `systolic` and `diastolic` |
+| BluetoothNotificationHealthRingMeasureStateChange | Measurement state and end reason; `userInfo` fields are listed below |
+
+| State notification field | Description |
+| ------------------------ | ----------- |
+| ringMeasure | `0` means the measurement has ended, `1` means started; existing usage is unchanged |
+| dataType | Measurement type, matching the `dataType` parameter of `controlOpen` |
+| code | End reason: `SendState_OK` normal completion, `SendState_NotWorn` device not worn, other non-zero values indicate an error |
+
+When the device is not worn, it ends the measurement and reports through the state notification above; no separate stop command is required.
+
+Register the listeners first, then start the measurement:
 
 ```objective-c
-+ (void)controlOpen:(NSInteger)type dataType:(NSInteger)dataType block:(void(^)(int code, id data))block
-// Start heart-rate measurement
-[DHBleCommand controlOpen:1 dataType:BLE_KEY_HEART_RATE block:^(int code, id  _Nonnull data) {
-
-}];
-
-// Stop heart-rate measurement
-[DHBleCommand controlOpen:0 dataType:BLE_KEY_HEART_RATE block:^(int code, id  _Nonnull data) {
-
-}];
-
-// Observe real-time value changes during measurement
 [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateRingMeasureValueChange:) name:BluetoothNotificationHealthRingMeasureValueChange object:nil];
+[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateRingMeasureStateChange:) name:BluetoothNotificationHealthRingMeasureStateChange object:nil];
+
+[DHBleCommand controlOpen:1 dataType:BLE_KEY_HEART_RATE block:^(int code, id data) {
+    NSLog(@"Start heart-rate measurement code=%d", code);
+}];
+```
+
+```objective-c
+// Receive real-time values
 
 - (void)updateRingMeasureValueChange:(NSNotification *)ntf
 {
-    NSDictionary *tUserInfo = ntf.userInfo;
-    NSInteger tDataValue = [tUserInfo[@"dataValue"] integerValue];
-    NSInteger tDataType = [tUserInfo[@"dataType"] integerValue];
-
-    
-    NSLog(@"updateRingMeasureValueChange 0x%04X value: %zd", (unsigned int)tDataType, tDataValue);
-    if (tDataType == BLE_KEY_APP_REAL_TIME_MUSLIM_COUNT){ //Muslim Count
-        
-    }
-    else if (tDataType == BLE_KEY_APP_REAL_BLOOD_SUGAR_DATA){ //BloodSugar
-        
-    }
-    else if (tDataType == BLE_KEY_APP_REAL_TIME_HRV_DATA){ //HRV
-        
-    }
-    else if (tDataType == BLE_KEY_APP_REAL_TIME_HR_DATA){ //HR Heart Rate
-        
-    }
-    else if (tDataType == BLE_KEY_APP_REAL_TIME_BLOOD_OXYGEN_DATA){ //BloodOxygen
-        
-    }
-    else if (tDataType == BLE_KEY_APP_REAL_TIME_STRESS_DATA){ //Stress
-        
-    }
-    else if (tDataType == BLE_KEY_APP_REAL_TIME_BP_DATA){ //BloodPressure
-        NSInteger sp = [tUserInfo[@"systolic"] integerValue]; //Systolic
-        NSInteger dp = [tUserInfo[@"diastolic"] integerValue]; //Diastolic
-        NSLog(@"BloodPressure sp=%zd dp=%zd", sp, dp);
+    NSDictionary *info = ntf.userInfo;
+    NSInteger dataType = [info[@"dataType"] integerValue];
+    if (dataType == BLE_KEY_APP_REAL_TIME_BP_DATA) {
+        NSLog(@"Blood pressure: %@/%@ mmHg", info[@"systolic"], info[@"diastolic"]);
+    } else if (dataType == BLE_KEY_APP_REAL_TIME_TEMPERATURE_DATA) {
+        NSLog(@"Temperature: %.1f °C", [info[@"dataValue"] doubleValue] / 10.0);
+    } else {
+        NSLog(@"type=0x%04X, value=%@", (unsigned int)dataType, info[@"dataValue"]);
     }
 }
 
+- (void)updateRingMeasureStateChange:(NSNotification *)ntf
+{
+    if ([ntf.userInfo[@"ringMeasure"] integerValue] == 0) {
+        NSInteger code = [ntf.userInfo[@"code"] integerValue];
+        if (code == SendState_NotWorn) {
+            NSLog(@"Ring not worn. Please put it on and try again.");
+        } else {
+            NSLog(@"Measurement finished type=%@, code=%zd", ntf.userInfo[@"dataType"], code);
+        }
+    }
+}
 ```
 
+To stop early, call separately:
 
+```objective-c
+[DHBleCommand controlOpen:0 dataType:BLE_KEY_HEART_RATE block:^(int code, id data) {
+    NSLog(@"Stop heart-rate measurement code=%d", code);
+}];
+```
+
+Remove the notification observers when the page exits.
+
+##### 3.2.2.1 Real-time Monitoring - Composite Measurement
+
+> Requires `isSupportCompositeMeasurement`. Only items actually reported by the device are returned. Do not run individual and composite measurements at the same time.
+
+Method Description:
+
+```objective-c
++ (void)controlCompositeMeasurement:(NSInteger)type
+                      startedBlock:(void(^)(void))startedBlock
+                         dataBlock:(void(^)(NSArray<NSDictionary *> *results))dataBlock
+                     finishedBlock:(void(^)(int code))finishedBlock;
+```
+
+Parameters and callbacks:
+
+| Parameter/Callback | Description |
+| ------------------ | ----------- |
+| type | `1`: start; `0`: stop |
+| startedBlock | The device has confirmed that measurement has started |
+| dataBlock(results) | All items from one complete report, returned as an array of NSDictionary objects; fields are listed below |
+| finishedBlock(code) | The measurement session has ended or failed: `SendState_OK` (`0`) indicates normal completion; `SendState_NotWorn` means the device is not worn—put it on and try again; other non-zero values indicate failure |
+
+Result fields:
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| dataType | NSNumber | Measurement type, identified by the `BLE_KEY_*` constants in the individual measurement parameter table in 3.2.2.0 |
+| timestamp | NSNumber | Unix timestamp in seconds; all items in one report share the same timestamp |
+| value | NSNumber | Measured value; systolic pressure for blood pressure |
+| extraValue | NSNumber | Diastolic pressure for blood pressure; 0 for other items |
+
+Receiving data does not indicate that the session has finished; wait for `finishedBlock`. All callbacks run on the main thread.
+
+Example:
+
+```objective-c
+if (supportMenu.isSupportCompositeMeasurement) {
+    [DHBleCommand controlCompositeMeasurement:1 startedBlock:^{
+        NSLog(@"Composite measurement started");
+    } dataBlock:^(NSArray<NSDictionary *> *results) {
+        for (NSDictionary *item in results) {
+            NSLog(@"type=%@, time=%@, value=%@, extra=%@",
+                  item[@"dataType"], item[@"timestamp"], item[@"value"], item[@"extraValue"]);
+        }
+    } finishedBlock:^(int code) {
+        if (code == SendState_NotWorn) {
+            NSLog(@"Ring not worn. Please put it on and try again.");
+        } else {
+            NSLog(@"Composite measurement finished, code=%d", code);
+        }
+    }];
+}
+```
+
+To stop, call separately:
+
+```objective-c
+[DHBleCommand controlCompositeMeasurement:0 startedBlock:^{
+} dataBlock:^(NSArray<NSDictionary *> *results) {
+} finishedBlock:^(int code) {
+}];
+```
 
 ##### 3.2.2.2 Continuous monitoring - Set the interval for continuous monitoring of health data.
 
@@ -3002,6 +3097,12 @@ For settings, `code=0` indicates success. For successful queries, `data` is an N
 ```
 
 ## SDK Revision History
+
+**V2.0.0_261104** (2026.11.04)
+
+- Fixed an issue where the customer model (`customerModel`) could not be read correctly from device information (3.2.1.3).
+- Added `showCustomText` for custom text display and duration settings (3.2.1.35); added `isSupportCustomTextDisplay` to the configuration table.
+- Added `controlCompositeMeasurement` for multiple health measurements in one session (3.2.2.1); added `isSupportCompositeMeasurement` to the configuration table.
 
 **V2.0.0_261028** (2026.10.28)
 

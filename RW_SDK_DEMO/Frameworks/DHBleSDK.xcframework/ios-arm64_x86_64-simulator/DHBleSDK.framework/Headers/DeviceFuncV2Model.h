@@ -53,6 +53,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL isBackLightSleepMode; //是否支持屏幕睡眠时间设置/是否显示亮屏时长设置
 @property (nonatomic, assign) BOOL isSupportScreenControl; //是否支持即时屏幕亮灭控制
 @property (nonatomic, assign) BOOL isSupportCustomNumberDisplay; //是否支持自定义数字显示
+@property (nonatomic, assign) BOOL isSupportCustomTextDisplay; //是否支持自定义字符显示与时长设置
+@property (nonatomic, assign) BOOL isSupportCompositeMeasurement; //是否支持综合检测
 @property (nonatomic, assign) BOOL isDefaultENSYSTEM; //默认显示英制;
 @property (nonatomic, assign) BOOL isDefaultNoViewWorkout; //默认不显示多运动;
 @property (nonatomic, assign) BOOL isSupportWorkout3; //戒指多运动;

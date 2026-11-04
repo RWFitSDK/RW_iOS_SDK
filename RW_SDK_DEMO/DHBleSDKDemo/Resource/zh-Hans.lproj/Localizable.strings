@@ -160,6 +160,7 @@
 "rw_measurement_not_started" = "未开始检测";
 "rw_measurement_start_failed" = "启动失败：%d";
 "rw_measurement_stop_failed" = "停止失败：%d";
+"rw_measurement_not_worn" = "未佩戴，请佩戴后重试";
 "rw_no_detail_data" = "暂无数据，请在首页下拉同步";
 "rw_logs" = "日志";
 "rw_share_logs" = "分享日志";

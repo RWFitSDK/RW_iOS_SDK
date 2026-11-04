@@ -129,11 +129,18 @@ static UIColor *RWHealthDetailColor(NSString *hex)
 {
     // ringMeasure=0 对应设备主动返回的检测结束状态；普通控制响应不改变按钮状态。
     if ([notification.userInfo[@"ringMeasure"] integerValue] != 0) return;
+    NSNumber *dataType = notification.userInfo[@"dataType"];
+    if (dataType && dataType.integerValue != self.measurementType) return;
     dispatch_async(dispatch_get_main_queue(), ^{
+        BOOL wasMeasuring = self.measuring || self.measurementCommandPending;
         self.measuring = NO;
         self.measurementCommandPending = NO;
         if (self.measurementType > 0) {
             [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationNone];
+        }
+        if (wasMeasuring && [notification.userInfo[@"code"] integerValue] == SendState_NotWorn) {
+            NSLog(@"Single measurement ended: device not worn, type=0x%04X", (unsigned int)self.measurementType);
+            SHOWHUD(NSLocalizedString(@"rw_measurement_not_worn", nil))
         }
     });
 }

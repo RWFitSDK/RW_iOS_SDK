@@ -18,6 +18,8 @@
 // 设备主动推送；userInfo: dataType、dataValue、timestamp(Unix毫秒)
 #define BluetoothNotificationProtocolPush @"BluetoothNotificationProtocolPush"
 //健康戒指手动测量改变
+// userInfo: ringMeasure(1开始/0结束)、dataType(检测类型)；结束时code为SendStateCode，未佩戴为SendState_NotWorn。
+// userInfo: ringMeasure (1 started / 0 ended), dataType; on completion, code is SendStateCode.
 #define BluetoothNotificationHealthRingMeasureStateChange @"BluetoothNotificationHealthRingMeasureStateChange"
 
 #define BluetoothNotificationHealthRingSenorStopChange @"BluetoothNotificationHealthRingSenorStopChange"
@@ -66,6 +68,7 @@ typedef enum : NSUInteger {
     SendState_Failed,
     SendState_DuplicateSend, //重复发送
     SendState_NotSupport, //不支持
+    SendState_NotWorn, //检测结束，设备未佩戴 / Measurement ended: device not worn
     SendState_Max
 } SendStateCode;
 

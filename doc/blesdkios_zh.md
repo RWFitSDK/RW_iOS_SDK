@@ -292,6 +292,8 @@ DeviceFuncV2Model类属性定义:
 | isDrink                     | 是否支持喝水提醒设置       |
 | isSupportCustomerModel      | 是否支持客户型号设置与获取（3.2.1.34） |
 | isSupportPpgSampleRate      | 是否支持PPG采样率设置与获取（5.2.5.4） |
+| isSupportCompositeMeasurement | 是否支持综合检测（3.2.2.1） |
+| isSupportCustomTextDisplay | 是否支持自定义字符显示与时长设置（3.2.1.35） |
 
 ##### 3.1.8 使用外部 CBCentralManager 搜索并由 SDK 连接
 
@@ -1748,6 +1750,30 @@ bean.remindDuration = 60;
 
 获取设备信息时，也可通过 `DHFirmwareVersionModel.customerModel` 读取客户型号。固件升级仍使用原设备型号 `deviceModel` 匹配固件。
 
+##### 3.2.1.35 字符显示与时长设置
+
+> 功能配置表属性：`isSupportCustomTextDisplay`。显示英文字母、数字或混合内容，并设置显示时长；再次调用时更新内容并重新计时。
+
+方法说明：
+
+`+ (void)showCustomText:(NSString *)text durationSeconds:(NSInteger)durationSeconds block:(void(^)(int code, id data))block`
+
+| 参数 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| text | NSString | 显示内容，最多5个英文字母或数字；超出取前5个，不可为空 |
+| durationSeconds | NSInteger | 显示时长，单位秒；小于1按1处理，大于255按255处理 |
+| block | block | 设备接受指令后回调，`code=0` 表示成功，非0表示失败；不等待显示结束 |
+
+内容无效时回调 `code` 非0。请等待前一次显示请求返回后再发起下一次。
+
+```objective-c
+if (supportMenu.isSupportCustomTextDisplay) {
+    [DHBleCommand showCustomText:@"A627" durationSeconds:5 block:^(int code, id data) {
+        NSLog(@"showCustomText code=%d", code);
+    }];
+}
+```
+
 #### 3.2.2 健康数据同步(实时单次与全天检测)
 
 > 健康数据检测有两种方式: 实时单次检测与全天检测。健康数据包括心率,血氧,压力,HRV,睡眠等, **睡眠无实时检测**。 
@@ -1758,85 +1784,153 @@ bean.remindDuration = 60;
 
 
 
-##### 3.2.2.1 实时检测-启动与关闭设备健康数据检测
+##### 3.2.2.0 实时检测-单项检测
 
-> 启动健康数据检测(心率,血氧,HRV,压力,血糖); 
+> [!NOTE]
 >
-> 测试完成设备通过 `BluetoothNotificationHealthRingMeasureStateChange` 通知app；
+> 启动或停止心率、血氧、HRV、压力、血糖、血压、体温中的一项检测。
 >
-> 测试实时值通过 `BluetoothNotificationHealthRingMeasureValueChange` 通知app;
+> 单项检测与综合检测不能同时进行，当前检测结束或主动停止后，再启动下一次检测。
 
-> [!CAUTION]
->
-> 同一时间只能开启一种健康检测类型, 必须等当前检测结束(收到完成回调)或主动关闭后, 才能启动新的检测类型. 同时开启多种会导致检测异常.
+方法说明：
 
-方法说明:
+`+ (void)controlOpen:(NSInteger)type dataType:(NSInteger)dataType block:(void(^)(int code, id data))block`
 
-`+(void)controlOpen:(NSInteger)type dataType:(NSInteger)dataType block:(void(^)(int code, id data))block`
-
-参数说明:
+参数说明：
 
 | 参数     | 类型      | 说明         | 值                                                           |
 | -------- | --------- | ------------ | ------------------------------------------------------------ |
 | dataType | NSInteger | 健康数据类型 | 心率: BLE_KEY_HEART_RATE<br>血氧: BLE_KEY_BLOOD_OXYGEN<br>HRV: BLE_KEY_HRV<br>压力: BLE_KEY_STRESS<br>血糖: BLE_KEY_BLOOD_SUGAR<br>血压: BLE_KEY_BLOOD_PRESSURE<br>体温: BLE_KEY_TEMPERATURE |
 | type     | NSInteger | 启动/关闭    | 启动: 1<br>关闭: 0                                           |
+| block | block | 指令结果 | `code=0` 表示操作成功，非0表示失败；检测结束通过下方通知接收 |
 
-调用示例:
+结果监听：
+
+| 通知 | 说明 |
+| ---- | ---- |
+| BluetoothNotificationHealthRingMeasureValueChange | 测量中实时值，`userInfo` 包含 `dataType`、`dataValue`；血压另含 `systolic`、`diastolic` |
+| BluetoothNotificationHealthRingMeasureStateChange | 检测状态及结束原因，`userInfo` 字段见下表 |
+
+| 状态通知字段 | 说明 |
+| ------------ | ---- |
+| ringMeasure | `0` 表示检测结束，`1` 表示开始；原有用法不变 |
+| dataType | 检测类型，与 `controlOpen` 的 `dataType` 参数一致 |
+| code | 检测结束原因：`SendState_OK` 正常结束，`SendState_NotWorn` 未佩戴，其他非0值表示异常 |
+
+未佩戴时，设备会结束检测并通过上述状态通知告知 App，无需再次发送停止指令。
+
+调用示例：先注册监听，再启动检测。
 
 ```objective-c
-+ (void)controlOpen:(NSInteger)type dataType:(NSInteger)dataType block:(void(^)(int code, id data))block
-//启动心率测试
-[DHBleCommand controlOpen:1 dataType:BLE_KEY_HEART_RATE block:^(int code, id  _Nonnull data) {
-
-}];
-
-//关闭心率测试
-[DHBleCommand controlOpen:0 dataType:BLE_KEY_HEART_RATE block:^(int code, id  _Nonnull data) {
-
-}];
-
-// 监听测量中实时数值改变
 [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateRingMeasureValueChange:) name:BluetoothNotificationHealthRingMeasureValueChange object:nil];
+[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateRingMeasureStateChange:) name:BluetoothNotificationHealthRingMeasureStateChange object:nil];
+
+[DHBleCommand controlOpen:1 dataType:BLE_KEY_HEART_RATE block:^(int code, id data) {
+    NSLog(@"启动心率检测 code=%d", code);
+}];
+```
+
+```objective-c
+// 接收实时数值
 
 - (void)updateRingMeasureValueChange:(NSNotification *)ntf
 {
-    NSDictionary *tUserInfo = ntf.userInfo;
-    NSInteger tDataValue = [tUserInfo[@"dataValue"] integerValue];
-    NSInteger tDataType = [tUserInfo[@"dataType"] integerValue];
-
-    
-    NSLog(@"updateRingMeasureValueChange 0x%04X 数值: %zd", (unsigned int)tDataType, tDataValue);
-    if (tDataType == BLE_KEY_APP_REAL_TIME_MUSLIM_COUNT){ //Muslim Count
-        
-    }
-    else if (tDataType == BLE_KEY_APP_REAL_BLOOD_SUGAR_DATA){ //BloodSugar 血糖
-        
-    }
-    else if (tDataType == BLE_KEY_APP_REAL_TIME_HRV_DATA){ //HRV 心率变异性
-        
-    }
-    else if (tDataType == BLE_KEY_APP_REAL_TIME_HR_DATA){ //HR 心率
-        
-    }
-    else if (tDataType == BLE_KEY_APP_REAL_TIME_BLOOD_OXYGEN_DATA){ //BloodOxygen 血氧
-        
-    }
-    else if (tDataType == BLE_KEY_APP_REAL_TIME_STRESS_DATA){ //Stress 压力
-        
-    }
-    else if (tDataType == BLE_KEY_APP_REAL_TIME_BP_DATA){ //BloodPressure 血压
-        NSInteger sp = [tUserInfo[@"systolic"] integerValue]; //收缩压
-        NSInteger dp = [tUserInfo[@"diastolic"] integerValue]; //舒张压
-        NSLog(@"BloodPressure sp=%zd dp=%zd", sp, dp);
-    }
-    else if (tDataType == BLE_KEY_APP_REAL_TIME_TEMPERATURE_DATA){ //Temperature 体温
-        NSLog(@"Temperature value=%.1f", tDataValue / 10.0); //除以10得实际温度
+    NSDictionary *info = ntf.userInfo;
+    NSInteger dataType = [info[@"dataType"] integerValue];
+    if (dataType == BLE_KEY_APP_REAL_TIME_BP_DATA) {
+        NSLog(@"血压：%@/%@ mmHg", info[@"systolic"], info[@"diastolic"]);
+    } else if (dataType == BLE_KEY_APP_REAL_TIME_TEMPERATURE_DATA) {
+        NSLog(@"体温：%.1f ℃", [info[@"dataValue"] doubleValue] / 10.0);
+    } else {
+        NSLog(@"type=0x%04X, value=%@", (unsigned int)dataType, info[@"dataValue"]);
     }
 }
 
+- (void)updateRingMeasureStateChange:(NSNotification *)ntf
+{
+    if ([ntf.userInfo[@"ringMeasure"] integerValue] == 0) {
+        NSInteger code = [ntf.userInfo[@"code"] integerValue];
+        if (code == SendState_NotWorn) {
+            NSLog(@"未佩戴，请佩戴后重试");
+        } else {
+            NSLog(@"检测结束 type=%@, code=%zd", ntf.userInfo[@"dataType"], code);
+        }
+    }
+}
 ```
 
+如需提前停止，单独调用：
 
+```objective-c
+[DHBleCommand controlOpen:0 dataType:BLE_KEY_HEART_RATE block:^(int code, id data) {
+    NSLog(@"停止心率检测 code=%d", code);
+}];
+```
+
+页面退出时移除对应通知监听。
+
+##### 3.2.2.1 实时检测-综合检测
+
+> 功能配置表属性：`isSupportCompositeMeasurement`。以设备实际返回的项目为准。综合检测与单项检测不能同时进行。
+
+方法说明：
+
+```objective-c
++ (void)controlCompositeMeasurement:(NSInteger)type
+                      startedBlock:(void(^)(void))startedBlock
+                         dataBlock:(void(^)(NSArray<NSDictionary *> *results))dataBlock
+                     finishedBlock:(void(^)(int code))finishedBlock;
+```
+
+参数说明：
+
+| 参数/回调 | 说明 |
+| --------- | ---- |
+| type | `1` 开始；`0` 停止 |
+| startedBlock | 设备已确认开始检测 |
+| dataBlock(results) | 一次返回本次上报的全部检测项目，数组中每项为一个 NSDictionary，字段见下表 |
+| finishedBlock(code) | 整轮检测结束或失败：`SendState_OK`（`0`）正常结束；`SendState_NotWorn` 未佩戴，需佩戴后重试；其他非0值表示失败 |
+
+结果字段说明：
+
+| 字段 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| dataType | NSNumber | 检测类型，使用3.2.2.0单项检测参数表中的 `BLE_KEY_*` 常量区分 |
+| timestamp | NSNumber | Unix秒时间戳，同一次上报的各项共用相同时间戳 |
+| value | NSNumber | 对应项目的数值；血压为收缩压 |
+| extraValue | NSNumber | 血压为舒张压；其他项目为0 |
+
+收到数据不代表整轮检测结束，以 `finishedBlock` 为准。回调均在主线程执行。
+
+调用示例：
+
+```objective-c
+if (supportMenu.isSupportCompositeMeasurement) {
+    [DHBleCommand controlCompositeMeasurement:1 startedBlock:^{
+        NSLog(@"综合检测已开始");
+    } dataBlock:^(NSArray<NSDictionary *> *results) {
+        for (NSDictionary *item in results) {
+            NSLog(@"type=%@, time=%@, value=%@, extra=%@",
+                  item[@"dataType"], item[@"timestamp"], item[@"value"], item[@"extraValue"]);
+        }
+    } finishedBlock:^(int code) {
+        if (code == SendState_NotWorn) {
+            NSLog(@"未佩戴，请佩戴后重试");
+        } else {
+            NSLog(@"综合检测结束 code=%d", code);
+        }
+    }];
+}
+```
+
+如需停止，单独调用：
+
+```objective-c
+[DHBleCommand controlCompositeMeasurement:0 startedBlock:^{
+} dataBlock:^(NSArray<NSDictionary *> *results) {
+} finishedBlock:^(int code) {
+}];
+```
 
 ##### 3.2.2.2 全天检测-设置健康数据全天监听间隔
 
@@ -3015,6 +3109,12 @@ tModeSetModel.interval = 60; // 推荐监测间隔：60分钟
 ```
 
 ## SDK修订记录
+
+**V2.0.0_261104** (2026.11.04)
+
+- 修复获取设备信息时客户型号 `customerModel` 无法正确读取的问题（3.2.1.3）。
+- 新增字符显示与时长设置接口 `showCustomText`（3.2.1.35），功能配置表新增 `isSupportCustomTextDisplay`。
+- 新增实时综合检测接口 `controlCompositeMeasurement`，支持一轮获取多项健康数据（3.2.2.1），功能配置表新增 `isSupportCompositeMeasurement`。
 
 **V2.0.0_261028** (2026.10.28)
 

@@ -258,6 +258,8 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
 @property (nonatomic, strong) NSArray<NSNumber *> *visibleBaseIndexes;
 @property (nonatomic, strong) NSArray<NSNumber *> *visibleHealthIndexes;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *functionDetailValues;
+@property (nonatomic, strong) NSObject *compositeDemoRequest;
+@property (nonatomic, copy) NSString *compositeDemoResults;
 
 
 @property (nonatomic, strong) NSArray *groupTitleArr;
@@ -307,6 +309,7 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
     self.functionBaseList = [self.functionBaseList arrayByAddingObjectsFromArray:@[@"Device Challenge-设备身份认证", @"Sedentary Reminder-久坐提醒", @"Drink Reminder-喝水提醒", @"Custom Vibration Control-自定义震动控制"]];
     self.functionBaseList = [self.functionBaseList arrayByAddingObject:@"Custom Number Display-自定义数字显示"];
     self.functionBaseList = [self.functionBaseList arrayByAddingObjectsFromArray:@[@"PPG Sample Rate-PPG采样率", @"Customer Model-客户型号"]];
+    self.functionBaseList = [self.functionBaseList arrayByAddingObjectsFromArray:@[@"Custom Text Display-自定义字符显示", @"Composite Measurement-综合检测"]];
 
     self.functionHealthList = @[@"Real-time, single-instance health data monitoring-实时单次启动健康数据检测(心率,血氧,HRV, 压力, 血糖)", @"Get HeartRate Monitor(获取心率监听)", @"Set HeartRate Monitor(设置心率监听)",@"Get Blood oxygen Monitor(获取血氧监听)", @"Set Blood oxygen Monitor(设置血氧监听)",@"Get HRV Monitor(获取HRV监听)", @"Set HRV Monitor(设置HRV监听)",@"Get PPG Monitor(获取PPG监听)", @"Set PPG Monitor(设置PPG监听)",@"Get Stress Monitor(获取压力监听)", @"Set Stress Monitor(设置压力监听)",@"Get Blood Sugar Monitor(获取血糖监听)", @"Set Blood Sugar Monitor(设置血糖监听)", @"Sync all your health data(同步所有健康数据)", @"Get Blood Pressure Monitor(获取血压监听)", @"Set Blood Pressure Monitor(设置血压监听)", @"Get Temperature Monitor(获取定时体温监测)", @"Set Temperature Monitor(设置定时体温监测)", @"Get Muslim Time Display Mode(获取Muslim时间显示模式)", @"Set Muslim Time Display Mode(设置Muslim时间显示模式)", @"Get Muslim Count Reset Mode(获取Muslim计数清零方式)", @"Set Muslim Count Reset Mode(设置Muslim计数清零方式)", @"PPG Raw Data(PPG原始数据：启动、停止采集或获取历史)", @"HR Calibration(心率校正)", @"Get Fall Detect(获取跌落提醒开关)", @"Set Fall Detect(设置跌落提醒)", @"Get Count Reminder(获取计数提醒间隔)", @"Set Count Reminder(设置计数提醒间隔)"];
 
@@ -460,6 +463,8 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
         self.infoDeviceStateLb.text = @"Disconnected";
         // 断开后清除本次连接读取/设置的展示值，避免换设备后显示旧数据。
         [self.functionDetailValues removeAllObjects];
+        self.compositeDemoRequest = nil;
+        self.compositeDemoResults = nil;
     }
     [self updateDeviceHeaderView];
 }
@@ -473,6 +478,8 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
     else{
         self.infoDeviceStateLb.text = @"Disconnected";
         [self.functionDetailValues removeAllObjects];
+        self.compositeDemoRequest = nil;
+        self.compositeDemoResults = nil;
     }
     [self rebuildVisibleFunctionIndexes];
     [self.functionTb reloadData];
@@ -872,6 +879,136 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
     [self presentViewController:alert animated:YES completion:nil];
 }
 
+- (void)showCustomTextInput
+{
+    if (![DHBluetoothManager shareInstance].deviceFuncV2Model.isSupportCustomTextDisplay) {
+        SHOWHUD(NSLocalizedString(@"rw_not_supported", nil))
+        return;
+    }
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:RWLocalizedFunctionTitle(self.functionBaseList[43])
+                                                                  message:RWChoiceText(@"Up to 5 letters or digits; duration in seconds", @"最多5个英文字母或数字；时长单位为秒")
+                                                           preferredStyle:UIAlertControllerStyleAlert];
+    [alert addTextFieldWithConfigurationHandler:^(UITextField *field) {
+        field.placeholder = RWChoiceText(@"Text", @"显示内容");
+        field.keyboardType = UIKeyboardTypeASCIICapable;
+        field.autocorrectionType = UITextAutocorrectionTypeNo;
+        field.autocapitalizationType = UITextAutocapitalizationTypeNone;
+        field.text = @"A627";
+    }];
+    [alert addTextFieldWithConfigurationHandler:^(UITextField *field) {
+        field.placeholder = RWChoiceText(@"Duration: 1–255 seconds", @"显示时长：1～255秒");
+        field.keyboardType = UIKeyboardTypeNumberPad;
+        field.text = @"5";
+    }];
+    [alert addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"rw_cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
+    __weak typeof(self) weakSelf = self;
+    __weak UIAlertController *weakAlert = alert;
+    [alert addAction:[UIAlertAction actionWithTitle:RWChoiceText(@"Show", @"显示") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        NSString *input = weakAlert.textFields.firstObject.text ?: @"";
+        NSString *text = [input substringToIndex:MIN(input.length, 5)];
+        NSCharacterSet *allowed = [NSCharacterSet characterSetWithCharactersInString:@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"];
+        if (text.length == 0 || [text rangeOfCharacterFromSet:allowed.invertedSet].location != NSNotFound) {
+            SHOWHUD(RWChoiceText(@"Enter 1–5 English letters or digits", @"请输入1～5个英文字母或数字"))
+            return;
+        }
+        NSInteger duration = MIN(MAX(weakAlert.textFields[1].text.integerValue, 1), 255);
+        [DHBleCommand showCustomText:text durationSeconds:duration block:^(int code, id data) {
+            NSLog(@"showCustomText text=%@ duration=%ld code=%d data=%@", text, (long)duration, code, data);
+            if (!weakSelf) return;
+            if (code == SendState_OK) {
+                [weakSelf updateDetailText:[NSString stringWithFormat:@"%@ · %ld s", text, (long)duration] section:0 sourceRow:43];
+            } else {
+                NSString *message = [NSString stringWithFormat:RWChoiceText(@"Failed to send: %d", @"发送失败：%d"), code];
+                SHOWHUD(message)
+            }
+        }];
+    }]];
+    [self presentViewController:alert animated:YES completion:nil];
+}
+
+- (NSString *)compositeResultText:(NSArray<NSDictionary *> *)results
+{
+    NSMutableArray<NSString *> *lines = [NSMutableArray array];
+    for (NSDictionary *result in results) {
+        NSString *name;
+        NSString *unit = @"";
+        switch ([result[@"dataType"] integerValue]) {
+            case BLE_KEY_HEART_RATE: name = RWChoiceText(@"Heart rate", @"心率"); unit = @" bpm"; break;
+            case BLE_KEY_HRV: name = @"HRV"; unit = @" ms"; break;
+            case BLE_KEY_STRESS: name = RWChoiceText(@"Stress", @"压力"); break;
+            case BLE_KEY_BLOOD_PRESSURE: name = RWChoiceText(@"Blood pressure", @"血压"); unit = @" mmHg"; break;
+            case BLE_KEY_TEMPERATURE: name = RWChoiceText(@"Temperature", @"体温"); unit = @" ℃"; break;
+            case BLE_KEY_BLOOD_SUGAR: name = RWChoiceText(@"Blood glucose", @"血糖"); unit = @" mmol/L"; break;
+            default: continue;
+        }
+        NSString *value = [NSString stringWithFormat:@"%g", [result[@"value"] doubleValue]];
+        if ([result[@"dataType"] integerValue] == BLE_KEY_BLOOD_PRESSURE) {
+            value = [value stringByAppendingFormat:@"/%g", [result[@"extraValue"] doubleValue]];
+        }
+        [lines addObject:[NSString stringWithFormat:@"%@: %@%@", name, value, unit]];
+    }
+    return [lines componentsJoinedByString:@"\n"];
+}
+
+- (void)updateCompositeStatus:(NSString *)status
+{
+    NSString *text = self.compositeDemoResults.length ? [NSString stringWithFormat:@"%@\n%@", status, self.compositeDemoResults] : status;
+    [self updateDetailText:text section:0 sourceRow:44];
+}
+
+- (void)showCompositeMeasurementActions
+{
+    if (![DHBluetoothManager shareInstance].deviceFuncV2Model.isSupportCompositeMeasurement) {
+        SHOWHUD(NSLocalizedString(@"rw_not_supported", nil))
+        return;
+    }
+    __weak typeof(self) weakSelf = self;
+    [self showPickerWithTitle:RWLocalizedFunctionTitle(self.functionBaseList[44])
+                     options:@[RWChoiceText(@"Start", @"启动"), RWChoiceText(@"Stop", @"停止")]
+               selectedIndex:self.compositeDemoRequest ? 1 : 0 selection:^(NSInteger selectedIndex) {
+        typeof(self) self = weakSelf;
+        if (!self) return;
+        if (selectedIndex == 1) {
+            NSLog(@"controlCompositeMeasurement stop");
+            // 有正在进行的检测时，SDK 通过启动时传入的 finishedBlock 收尾。
+            [DHBleCommand controlCompositeMeasurement:0 startedBlock:^{} dataBlock:^(NSArray<NSDictionary *> *results) {} finishedBlock:^(int code) {
+                NSLog(@"controlCompositeMeasurement stop code=%d", code);
+                if (!weakSelf.compositeDemoRequest) {
+                    [weakSelf updateCompositeStatus:code == SendState_OK ? RWChoiceText(@"Stopped", @"已停止") : [NSString stringWithFormat:RWChoiceText(@"Stop failed: %d", @"停止失败：%d"), code]];
+                }
+            }];
+            return;
+        }
+        if (self.compositeDemoRequest) return;
+        NSObject *request = [NSObject new];
+        self.compositeDemoRequest = request;
+        self.compositeDemoResults = nil;
+        [self updateCompositeStatus:RWChoiceText(@"Starting…", @"正在启动…")];
+        NSLog(@"controlCompositeMeasurement start");
+        [DHBleCommand controlCompositeMeasurement:1 startedBlock:^{
+            NSLog(@"controlCompositeMeasurement started");
+            if (weakSelf.compositeDemoRequest != request) return;
+            [weakSelf updateCompositeStatus:RWChoiceText(@"Measuring…", @"检测中…")];
+        } dataBlock:^(NSArray<NSDictionary *> *results) {
+            NSLog(@"controlCompositeMeasurement results=%@", results);
+            if (weakSelf.compositeDemoRequest != request) return;
+            weakSelf.compositeDemoResults = [weakSelf compositeResultText:results];
+            [weakSelf updateCompositeStatus:RWChoiceText(@"Measuring…", @"检测中…")];
+        } finishedBlock:^(int code) {
+            NSLog(@"controlCompositeMeasurement finished code=%d", code);
+            if (weakSelf.compositeDemoRequest != request) return;
+            weakSelf.compositeDemoRequest = nil;
+            NSString *status = code == SendState_OK ? RWChoiceText(@"Finished", @"检测结束") :
+                (code == SendState_NotWorn ? RWChoiceText(@"Not worn", @"未佩戴，请佩戴后重试") :
+                 [NSString stringWithFormat:RWChoiceText(@"Detection failed: %d", @"检测失败：%d"), code]);
+            [weakSelf updateCompositeStatus:status];
+            if (code == SendState_NotWorn) {
+                SHOWHUD(status)
+            }
+        }];
+    }];
+}
+
 - (void)muslimCountResetModeNotification:(NSNotification *)ntf
 {
     NSLog(@"Muslim Count Reset Mode set successfully");
@@ -1049,6 +1186,8 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
         if (menu.isSupportCustomNumberDisplay) [base addObject:@40];
         if (menu.isSupportPpgSampleRate) [base addObject:@41];
         if (menu.isSupportCustomerModel) [base addObject:@42];
+        if (menu.isSupportCustomTextDisplay) [base addObject:@43];
+        if (menu.isSupportCompositeMeasurement) [base addObject:@44];
 
         // 实时单次检测统一放在首页的健康详情页，设备设置页不重复显示。
         addPair(health, menu.isDataTypeHeart, 1, 2);
@@ -1102,6 +1241,8 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
             case 35: return RWChoiceText(@"Metric / Imperial / Query", @"公制 / 英制 / 查询");
             case 40: return @"0–9999";
             case 41: case 42: return RWChoiceText(@"Query / Set", @"查询 / 设置");
+            case 43: return RWChoiceText(@"Text / Duration", @"内容 / 显示时长");
+            case 44: return RWChoiceText(@"Start / Stop", @"启动 / 停止");
             default: return run;
         }
     }
@@ -1183,23 +1324,27 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    static NSString *cellIdentifier = @"RWDeviceFunctionCell";
+    NSIndexPath *sourceIndexPath = [self sourceIndexPathForVisibleIndexPath:indexPath];
+    BOOL isComposite = sourceIndexPath.section == 0 && sourceIndexPath.row == 44;
+    NSString *cellIdentifier = isComposite ? @"RWCompositeMeasurementCell" : @"RWDeviceFunctionCell";
     UITableViewCell *tCell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
     if (!tCell){
-        tCell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cellIdentifier];
+        tCell = [[UITableViewCell alloc] initWithStyle:isComposite ? UITableViewCellStyleSubtitle : UITableViewCellStyleValue1 reuseIdentifier:cellIdentifier];
     }
     tCell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
 
     tCell.textLabel.font = [UIFont systemFontOfSize:14.0];
     tCell.textLabel.numberOfLines = 1;
     tCell.textLabel.lineBreakMode = NSLineBreakByTruncatingTail;
-    tCell.detailTextLabel.font = [UIFont systemFontOfSize:12.0];
+    tCell.detailTextLabel.font = [UIFont systemFontOfSize:isComposite ? 14.0 : 12.0];
     if (@available(iOS 13.0, *)) {
         tCell.detailTextLabel.textColor = UIColor.secondaryLabelColor;
     } else {
         tCell.detailTextLabel.textColor = UIColor.grayColor;
     }
-    tCell.detailTextLabel.adjustsFontSizeToFitWidth = YES;
+    tCell.detailTextLabel.numberOfLines = isComposite ? 0 : 1;
+    tCell.detailTextLabel.lineBreakMode = isComposite ? NSLineBreakByWordWrapping : NSLineBreakByTruncatingTail;
+    tCell.detailTextLabel.adjustsFontSizeToFitWidth = !isComposite;
     tCell.detailTextLabel.minimumScaleFactor = 0.75;
 
     if (indexPath.section == 0){
@@ -1259,7 +1404,7 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
                 if (code == 0){
                     NSLog(@"getFirmwareVersion OK");
                     DHFirmwareVersionModel *model = data;
-                    NSLog(@"型号 %@ 固件版本 %@ UI版本 %@", model.deviceModel, model.firmwareVersion, model.uiVersion);
+                    NSLog(@"型号 %@ 客户型号 %@ 固件版本 %@ UI版本 %@", model.deviceModel, model.customerModel, model.firmwareVersion, model.uiVersion);
                     [self updateDetailText:model.firmwareVersion section:0 sourceRow:3];
                 }
             }];
@@ -1802,6 +1947,12 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
         else if (indexPath.row == 41 || indexPath.row == 42){
             [self showDeviceSettingActionsForSourceRow:indexPath.row];
         }
+        else if (indexPath.row == 43){
+            [self showCustomTextInput];
+        }
+        else if (indexPath.row == 44){
+            [self showCompositeMeasurementActions];
+        }
     }
     else if (indexPath.section == 1){
         if (indexPath.row == 0){ //
@@ -2273,6 +2424,15 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
+    NSIndexPath *sourceIndexPath = [self sourceIndexPathForVisibleIndexPath:indexPath];
+    if (sourceIndexPath.section == 0 && sourceIndexPath.row == 44) {
+        NSString *text = [self detailTextForSection:0 sourceRow:44];
+        CGFloat width = MAX(CGRectGetWidth(tableView.bounds) - 64, 1);
+        CGRect bounds = [text boundingRectWithSize:CGSizeMake(width, CGFLOAT_MAX)
+                                          options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading
+                                       attributes:@{NSFontAttributeName: [UIFont systemFontOfSize:14.0]} context:nil];
+        return MAX(60, ceil(CGRectGetHeight(bounds)) + 36);
+    }
     return 50.0;
 }
 
