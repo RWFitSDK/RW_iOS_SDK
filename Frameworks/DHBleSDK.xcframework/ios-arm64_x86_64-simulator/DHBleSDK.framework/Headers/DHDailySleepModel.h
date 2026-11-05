@@ -28,6 +28,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// status（0.清醒 1.浅睡 2.深睡）
 @property (nonatomic,strong) NSMutableArray <NSDictionary *> *items;
 
+/// 睡眠类别：0 夜睡，1 小睡（如午睡）
+@property (nonatomic, assign) NSInteger sleepCategory;
+
 @property (nonatomic, assign) BOOL isJLType;
 
 @end

@@ -2364,6 +2364,8 @@ tModeSetModel.interval = 60; // 推荐监测间隔：60分钟
 
 睡眠数据 `DHDailySleepModel`:
 
+每段夜睡或小睡分别返回一条记录，可包含多天数据。小睡需设备固件支持。
+
 | 属性 | 类型 | 说明 |
 | ---- | ---- | ---- |
 | timestamp | NSString | 日期对应的Unix时间戳, 单位秒 |
@@ -2372,6 +2374,7 @@ tModeSetModel.interval = 60; // 推荐监测间隔：60分钟
 | beginTime | NSString | 入睡时间, Unix时间戳秒 |
 | endTime | NSString | 醒来时间, Unix时间戳秒 |
 | items | NSMutableArray&lt;NSDictionary *&gt; | 每条包含status和value |
+| sleepCategory | NSInteger | 睡眠类别：`0` 夜睡，`1` 小睡（如午睡） |
 
 睡眠明细中 `value` 为该阶段时长, 单位分钟; `status`: 0.清醒 1.浅睡 2.深睡 3.REM.
 
@@ -3109,6 +3112,10 @@ tModeSetModel.interval = 60; // 推荐监测间隔：60分钟
 ```
 
 ## SDK修订记录
+
+**V2.0.0_261105** (2026.11.05)
+
+- 新增小睡数据支持，睡眠记录新增 `sleepCategory` 区分夜睡与小睡（3.2.2.4）。
 
 **V2.0.0_261104** (2026.11.04)
 

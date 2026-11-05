@@ -2352,6 +2352,8 @@ Step data — `DHDailyStepModel`:
 
 Sleep data — `DHDailySleepModel`:
 
+Each night sleep or nap session is returned as a separate record. Data may span multiple days. Nap support requires compatible firmware.
+
 | Property | Type | Description |
 | -------- | ---- | ----------- |
 | timestamp | NSString | Unix timestamp for the date, in seconds |
@@ -2360,6 +2362,7 @@ Sleep data — `DHDailySleepModel`:
 | beginTime | NSString | Sleep start time, Unix timestamp in seconds |
 | endTime | NSString | Wake-up time, Unix timestamp in seconds |
 | items | NSMutableArray&lt;NSDictionary *&gt; | Each item contains status and value |
+| sleepCategory | NSInteger | Sleep category: `0` night sleep, `1` nap |
 
 In each sleep item, `value` is the stage duration in minutes. `status`: 0 awake, 1 light sleep, 2 deep sleep, 3 REM.
 
@@ -3097,6 +3100,10 @@ For settings, `code=0` indicates success. For successful queries, `data` is an N
 ```
 
 ## SDK Revision History
+
+**V2.0.0_261105** (2026.11.05)
+
+- Added nap support and the `sleepCategory` field to distinguish night sleep from naps (3.2.2.4).
 
 **V2.0.0_261104** (2026.11.04)
 
