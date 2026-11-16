@@ -5,6 +5,7 @@
 
 #import "RWHealthHomeController.h"
 #import "RWHealthDetailController.h"
+#import "RWActigraphyController.h"
 #import "WorkoutTypeController.h"
 #import "RecordingViewController.h"
 #import "ScanViewController.h"
@@ -83,6 +84,8 @@ static UIColor *RWHealthColor(NSString *hex)
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *healthValues;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSArray<NSString *> *> *healthRecords;
 @property (nonatomic, assign) BOOL syncingHealthData;
+@property (nonatomic, strong) RWActigraphyController *actigraphyController;
+@property (nonatomic, copy) NSString *actigraphyDeviceIdentifier;
 @end
 
 @implementation RWHealthHomeController
@@ -226,6 +229,10 @@ static UIColor *RWHealthColor(NSString *hex)
         HUDDISS
     }
     NSString *uuid = [DHBleCentralManager currentBindedUUID] ?: @"";
+    if (![self.actigraphyDeviceIdentifier isEqualToString:uuid]) {
+        self.actigraphyDeviceIdentifier = uuid;
+        self.actigraphyController = nil;
+    }
     NSString *name = [[DHBluetoothManager shareInstance] savedDeviceName];
     self.deviceNameLabel.text = name.length ? name : NSLocalizedString(@"rw_unbound_device", nil);
     self.deviceStateLabel.text = connected ? NSLocalizedString(@"rw_connected", nil) : (uuid.length ? NSLocalizedString(@"rw_saved_disconnected", nil) : NSLocalizedString(@"rw_disconnected", nil));
@@ -253,6 +260,7 @@ static UIColor *RWHealthColor(NSString *hex)
         add(menu.isDataTypeBloodSugar, @"sugar", NSLocalizedString(@"rw_blood_sugar", nil), @"mmol/L", BLE_KEY_BLOOD_SUGAR);
         add(menu.isDataTypeTemperature, @"temperature", NSLocalizedString(@"rw_temperature", nil), @"℃", BLE_KEY_TEMPERATURE);
         add(menu.isDataTypeMuslimCount, @"muslim", NSLocalizedString(@"rw_tasbeeh_count", nil), NSLocalizedString(@"rw_unit_times", nil), 0);
+        add(menu.isSupportActigraphy, @"actigraphy", NSLocalizedString(@"rw_actigraphy", nil), @"", 0);
         add(menu.isSupportWorkout3, @"workout", NSLocalizedString(@"rw_multi_sport", nil), @"", 0);
         add(menu.isSupportRecording, @"recording", NSLocalizedString(@"rw_recording", nil), @"", 0);
     }
@@ -397,6 +405,12 @@ static UIColor *RWHealthColor(NSString *hex)
         cell.valueLabel.text = NSLocalizedString(@"rw_record_control", nil);
         cell.detailLabel.text = NSLocalizedString(@"rw_record_file_management", nil);
     }
+    if ([item[@"id"] isEqual:@"actigraphy"]) {
+        cell.valueLabel.text = self.actigraphyController.records.count
+            ? [NSString stringWithFormat:NSLocalizedString(@"rw_actigraphy_groups", nil), (unsigned long)self.actigraphyController.records.count]
+            : NSLocalizedString(@"rw_no_data", nil);
+        cell.detailLabel.text = NSLocalizedString(@"rw_actigraphy_entry_hint", nil);
+    }
     return cell;
 }
 
@@ -409,6 +423,20 @@ static UIColor *RWHealthColor(NSString *hex)
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
     NSDictionary *item = self.healthItems[indexPath.item];
+    if ([item[@"id"] isEqual:@"actigraphy"]) {
+        // 保留页面与结果，返回首页后再次进入不重复发起同步。
+        if (!self.actigraphyController) {
+            self.actigraphyController = [[RWActigraphyController alloc] init];
+            __weak typeof(self) weakSelf = self;
+            __weak RWActigraphyController *weakController = self.actigraphyController;
+            self.actigraphyController.onRecordsUpdated = ^(NSArray *records) {
+                if (weakSelf.actigraphyController == weakController) [weakSelf.collectionView reloadData];
+            };
+        }
+        self.actigraphyController.hidesBottomBarWhenPushed = YES;
+        [self.navigationController pushViewController:self.actigraphyController animated:YES];
+        return;
+    }
     if ([item[@"id"] isEqual:@"recording"]) {
         RecordingViewController *controller = [[RecordingViewController alloc] init];
         controller.hidesBottomBarWhenPushed = YES;

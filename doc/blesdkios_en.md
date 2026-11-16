@@ -114,6 +114,8 @@ Main properties of the `DHPeripheralModel` scan result:
 | deviceModel | NSString | Device model identifier, not a unique device serial number; empty if unavailable |
 | batteryStatus | NSInteger | Charging status: `0` not charging, `1` charging, `2` full; `-1` unavailable or unsupported. Requires device firmware support |
 | deviceForm | NSInteger | Product form: `0` ring without a screen, `1` ring with a screen, `2` bracelet without a screen, `3` bracelet with a screen, `4` wristband without a screen, `5` wristband with a screen, `6` watch; `-1` unavailable or unsupported. Requires device firmware support |
+| deviceBodyColor | NSInteger | Device body color: `0` not set, `1` black, `2` pink, `3` red, `4` silver, `5` gold; `-1` unavailable or unsupported. Requires device firmware support |
+| deviceSize | NSInteger | Device size number, e.g. `9` for size 9 or `10` for size 10; `0` not set, `-1` unavailable or unsupported. Requires device firmware support |
 
 > `batteryStatus` is not a battery percentage. Read the battery level after connecting; see [3.2.1.4 Get Battery Level](#3214-get-battery-level).
 
@@ -233,11 +235,17 @@ Example of usage:
 
 ##### 3.1.6 Equipment Configuration Table
 
->  [!IMPORTANT]
+> [!IMPORTANT]
 >
-> Due to the variety of device models and their differing supported features, a feature table has been introduced to allow users to check the supported functions of each device.  Please refer to the DeviceFuncV2Model class for details. The feature table content can be saved according to your specific business needs.
+> The feature table describes device capabilities; it is not a set of feature switches. For capability flags, `YES` means supported and `NO` means unsupported.
+>
+> Changing `DeviceFuncV2Model` properties or calling an SDK setting method cannot add a feature that the device does not support. SDK APIs can only control features already supported by the device.
+>
+> To add feature support, first confirm whether a compatible firmware update is available. If additional hardware capabilities are required, use a device model that supports the feature.
 
-`-(void)centralManagerDidFunctionMenu:(DeviceFuncV2Model *)deviceFuncModel`
+You may cache the feature table for your application. Retrieve it again after switching devices or updating the firmware.
+
+`- (void)centralManagerDidFunctionMenu:(DeviceFuncV2Model *)deviceFuncModel peripheral:(DHPeripheralModel *)peripheral;`
 
 DeviceFuncV2Model class attribute definitions:
 
@@ -245,7 +253,7 @@ Use `[model isMessageTypeSupported:index]` to check a message type; see 3.2.1.14
 
 | attribute                   | illustrate                                                |
 | --------------------------- | --------------------------------------------------------- |
-| isPushMsgEnableSwitch       | Enable or disable message control switch                  |
+| isPushMsgEnableSwitch       | Whether notification switches are supported               |
 | pushMsgSwitchValue          | Supported message types, low 32 bits (bit0-bit31)        |
 | pushMsgSwitchValue2         | Supported message types, high 32 bits (bit32-bit63); defaults to 0 on old devices |
 | activityDataInterval        | Today's step-detail interval in minutes; an unconfigured value is normalized to 60 |
@@ -290,6 +298,9 @@ Use `[model isMessageTypeSupported:index]` to check a message type; see 3.2.1.14
 | isSupportPpgSampleRate      | Supports PPG sample rate settings and retrieval (5.2.5.4) |
 | isSupportCompositeMeasurement | Supports composite health measurement (3.2.2.1) |
 | isSupportCustomTextDisplay | Supports custom text display and duration settings (3.2.1.35) |
+| isSupportDeviceBodyColor | Supports device body color settings and retrieval (3.2.1.36) |
+| isSupportVibrationSwitch | Supports master vibration switch settings and retrieval (3.2.1.37) |
+| isSupportDeviceSize | Supports device size settings and retrieval (3.2.1.38) |
 
 ##### 3.1.8 Use an External CBCentralManager for Scanning and Let the SDK Connect
 
@@ -470,6 +481,8 @@ Return value:
 | uiVersion | NSString | UI version |
 | deviceForm | NSInteger | Product form: 0 ring without a screen, 1 ring with a screen, 2 bracelet without a screen, 3 bracelet with a screen, 4 wristband without a screen, 5 wristband with a screen, 6 watch; -1 unavailable or unsupported |
 | customerModel | NSString | Customer model; defaults to the original device model when unavailable |
+| deviceBodyColor | NSInteger | Device body color: 0 not set, 1 black, 2 pink, 3 red, 4 silver, 5 gold; -1 unavailable or unsupported. Requires device firmware support |
+| deviceSize | NSInteger | Device size number, e.g. 9 for size 9 or 10 for size 10; 0 not set, -1 unavailable or unsupported. See 3.2.1.38 for settings and retrieval |
 
 > **Important:** Before an OTA update, verify that the device `deviceModel` matches the target device model of the firmware file. Start the update only when they match. Do not update a device with firmware for a different model.
 
@@ -899,7 +912,7 @@ sleepModel.sleepEndMin = 00;
 
 `- (BOOL)isMessageTypeSupported:(NSInteger)index;`
 
-Call this method on the `DeviceFuncV2Model` returned by `centralManagerDidFunctionMenu:`. YES means supported; NO means unsupported. The result is not the current switch state.
+Call this method on the `DeviceFuncV2Model` returned by `centralManagerDidFunctionMenu:peripheral:`. YES means supported; NO means unsupported. The result is not the current switch state.
 
 | Parameter | Type | Description |
 | --------- | ---- | ----------- |
@@ -907,6 +920,7 @@ Call this method on the `DeviceFuncV2Model` returned by `centralManagerDidFuncti
 
 ```objective-c
 - (void)centralManagerDidFunctionMenu:(DeviceFuncV2Model *)model
+                         peripheral:(DHPeripheralModel *)peripheral
 {
     BOOL supportsTelegram = [model isMessageTypeSupported:17];
     BOOL supportsYandexMarket = [model isMessageTypeSupported:32];
@@ -1185,7 +1199,7 @@ Fields of the touch event `dataValue`:
 
 | Field | Description | Value |
 | ---- | ---- | ---- |
-| keyType | Key type | 1: Touch key; 2: Fall (requires the fall-detect reminder enabled, see 3.2.1.24); 3: SOS; 4: Repeated taps |
+| keyType | Key type | 1: Touch key; 2: Fall (requires fall detection to be enabled); 3: SOS; 4: Repeated taps |
 | touchType | Touch type / tap count | For touch keys: 1: Single tap; 2: Double tap; 3: Triple tap; 4: Long press; 5: Flick; 6: Release after a long press. Defaults to 1 for fall; unused for SOS; contains the tap count (1-9) for repeated taps |
 
 > This feature requires the device firmware to be customized and enabled.
@@ -1292,46 +1306,6 @@ Example of usage:
         } else {
             NSLog(@"HR calibration done, result=%zd", result);
         }
-    }
-}];
-```
-
-
-
-##### 3.2.1.24 Fall Detection Setting
-
-> Set or get the fall detection alert switch. When enabled, the device will report fall events via touch event notification (3.2.1.21).
->
-> Fall events are returned through the `BluetoothNotificationProtocolPush` notification, with `dataType` = `DHDevicePushTypeTouchEvent`; `keyType=2` in `dataValue` indicates a fall event, see 3.2.1.21.
->
-> Configuration table property: `isSupportFallDetect`
-
-Method Description:
-
-`+(void)setFallDetect:(UInt8)enable block:(void(^)(int code, id data))block`
-
-`+(void)getFallDetect:(void(^)(int code, id data))block`
-
-Parameter Description:
-
-| Parameter | Type  | Description | Value         |
-| --------- | ----- | ----------- | ------------- |
-| enable    | UInt8 | Switch      | 0: off, 1: on |
-
-Example of usage:
-
-```objective-c
-//Get fall detect switch
-[DHBleCommand getFallDetect:^(int code, id  _Nonnull data) {
-    if (code == 0){
-        NSLog(@"getFallDetect OK: %@", data);
-    }
-}];
-
-//Set fall detect on
-[DHBleCommand setFallDetect:1 block:^(int code, id  _Nonnull data) {
-    if (code == 0){
-        NSLog(@"setFallDetect ON OK");
     }
 }];
 ```
@@ -1761,6 +1735,79 @@ Invalid content is reported with a non-zero `code`. Wait for the previous displa
 if (supportMenu.isSupportCustomTextDisplay) {
     [DHBleCommand showCustomText:@"A627" durationSeconds:5 block:^(int code, id data) {
         NSLog(@"showCustomText code=%d", code);
+    }];
+}
+```
+
+##### 3.2.1.36 Device Body Color Settings and Retrieval
+
+> Requires `isSupportDeviceBodyColor`. Set or query the device body color. The color is also available as `DHPeripheralModel.deviceBodyColor` in scan results and `DHFirmwareVersionModel.deviceBodyColor` in device information.
+
+`+ (void)setDeviceBodyColor:(NSInteger)color block:(void(^)(int code, id data))block`
+
+`+ (void)getDeviceBodyColor:(void(^)(int code, id data))block`
+
+| Parameter | Type | Description |
+| ---- | ---- | ---- |
+| color | NSInteger | `0`: not set<br>`1`: black<br>`2`: pink<br>`3`: red<br>`4`: silver<br>`5`: gold |
+| block | block | `code=0` indicates success; a non-zero code indicates failure. A successful query returns an `NSNumber` in `data`; use `integerValue` to get the color. |
+
+```objective-c
+if (supportMenu.isSupportDeviceBodyColor) {
+    [DHBleCommand setDeviceBodyColor:5 block:^(int code, id data) {
+        NSLog(@"setDeviceBodyColor code=%d", code);
+    }];
+    // Query the current color
+    [DHBleCommand getDeviceBodyColor:^(int code, id data) {
+        if (code == 0) NSLog(@"Body color=%ld", (long)[data integerValue]);
+    }];
+}
+```
+
+##### 3.2.1.37 Master Vibration Switch Settings and Retrieval
+
+> Requires `isSupportVibrationSwitch` and device firmware support. Set or query the device's master vibration switch.
+
+`+ (void)setVibrationSwitch:(BOOL)enabled block:(void(^)(int code, id data))block`
+
+`+ (void)getVibrationSwitch:(void(^)(int code, id data))block`
+
+| Parameter | Type | Description |
+| ---- | ---- | ---- |
+| enabled | BOOL | `YES`: on<br>`NO`: off |
+| block | block | `code=0` indicates success; a non-zero code indicates failure. A successful query returns an `NSNumber` in `data`; use `boolValue` to get the current switch state. |
+
+```objective-c
+if (supportMenu.isSupportVibrationSwitch) {
+    [DHBleCommand setVibrationSwitch:YES block:^(int code, id data) {
+        NSLog(@"setVibrationSwitch code=%d", code);
+    }];
+    // Query the current switch state
+    [DHBleCommand getVibrationSwitch:^(int code, id data) {
+        if (code == 0) NSLog(@"Vibration switch=%d", [data boolValue]);
+    }];
+}
+```
+
+
+##### 3.2.1.38 Device Size Settings and Retrieval
+
+> Requires `isSupportDeviceSize` and device firmware support. Set or query the device size. The size is also available as `DHPeripheralModel.deviceSize` in scan results and `DHFirmwareVersionModel.deviceSize` in device information.
+
+`+ (void)setDeviceSize:(NSInteger)size block:(void(^)(int code, id data))block;`
+
+`+ (void)getDeviceSize:(void(^)(int code, id data))block;`
+
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| size | NSInteger | Device size number, e.g. `9` for size 9 or `10` for size 10; `0` means not set |
+
+`code=0` indicates success. A successful query returns the size number as an `NSNumber` in `data`.
+
+```objc
+if (supportMenu.isSupportDeviceSize) {
+    [DHBleCommand getDeviceSize:^(int code, id data) {
+        if (code == 0) NSLog(@"Device size: %@", data);
     }];
 }
 ```
@@ -2849,7 +2896,7 @@ id observer = [[NSNotificationCenter defaultCenter]
 
 Register the observer before starting. Recording status remains available through `DHDevicePushTypeRecordStatus` pushes or `getRecordStatus`; `realtime` indicates whether real-time mode is active.
 
-#### 5.2.5 Sensor Raw Data
+#### 5.2.5 Sensor Raw Data (Custom Feature)
 
 This section covers two different data retrieval methods:
 
@@ -3100,6 +3147,12 @@ For settings, `code=0` indicates success. For successful queries, `data` is an N
 ```
 
 ## SDK Revision History
+
+**V2.0.0_261116** (2026.11.16)
+
+- Added `setDeviceSize:block:`/`getDeviceSize:` for device size settings and retrieval (3.2.1.38), the `isSupportDeviceSize` capability, and `deviceSize` in scan results and device information (0 not set, -1 unavailable or unsupported).
+- Added `setDeviceBodyColor:block:`/`getDeviceBodyColor:` for device body color settings and retrieval (3.2.1.36), and the `isSupportDeviceBodyColor` capability.
+- Added `setVibrationSwitch:block:`/`getVibrationSwitch:` for master vibration switch settings and retrieval (3.2.1.37), and the `isSupportVibrationSwitch` capability.
 
 **V2.0.0_261105** (2026.11.05)
 

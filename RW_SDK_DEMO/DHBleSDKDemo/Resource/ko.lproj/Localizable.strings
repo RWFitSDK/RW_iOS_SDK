@@ -138,6 +138,15 @@
 "rw_temperature" = "Temperature";
 "rw_tasbeeh_count" = "Tasbeeh Count";
 "rw_multi_sport" = "Multi-sport";
+"rw_actigraphy" = "활동 기록";
+"rw_actigraphy_sync" = "활동 기록 동기화";
+"rw_actigraphy_syncing" = "활동 기록 동기화 중…";
+"rw_actigraphy_sync_hint" = "버튼을 눌러 활동 기록을 동기화하세요.";
+"rw_actigraphy_entry_hint" = "상세 화면에서 동기화";
+"rw_actigraphy_groups" = "%lu개 기록 그룹";
+"rw_actigraphy_sync_complete" = "동기화 완료: %lu개 그룹";
+"rw_actigraphy_valid_count" = "유효 항목: %lu/30";
+"rw_actigraphy_empty" = "활동 기록이 없습니다. 위의 동기화 버튼을 누르세요.";
 "rw_unit_steps" = "steps";
 "rw_unit_minutes" = "min";
 "rw_unit_times" = "times";

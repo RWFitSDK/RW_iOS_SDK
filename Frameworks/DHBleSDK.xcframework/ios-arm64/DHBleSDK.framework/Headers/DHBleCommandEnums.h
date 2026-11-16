@@ -109,7 +109,9 @@ typedef enum : UInt16 {
     /// 计数识别状态: dataValue为NSNumber(BOOL), YES=Arm NO=Disarm。
     DHDevicePushTypeCountControl = 0x0615,
     /// 赞念实时计数: dataValue为NSDictionary, timestamp(Unix秒)+value(累计计数), 每项一条通知。
-    DHDevicePushTypeMuslimCount = 0x0253
+    DHDevicePushTypeMuslimCount = 0x0253,
+    /// dataValue为DHGratitudeRoundModel，TXY儿童感恩状态推送。
+    DHDevicePushTypeGratitudeState = 0x0901
 } DHDevicePushType;
 
 typedef enum {

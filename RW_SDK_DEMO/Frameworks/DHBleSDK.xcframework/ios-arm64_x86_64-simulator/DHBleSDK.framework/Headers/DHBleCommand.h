@@ -40,6 +40,7 @@
 #import <DHBleSDK/DHDailyBloodSugarModel.h>
 #import <DHBleSDK/DHDailyTempModel.h>
 #import <DHBleSDK/DHDailyMuslimCountModel.h>
+#import <DHBleSDK/DHActigraphySyncModel.h>
 #import <DHBleSDK/DHVibrationLevelModel.h>
 #import <DHBleSDK/DHAncsSetModel.h>
 #import <DHBleSDK/DHSportControlModel.h>
@@ -327,6 +328,10 @@ NS_ASSUME_NONNULL_BEGIN
 /// @param dataBlock 数据回调, data为NSArray<NSDictionary>，每个元素包含 sensorType, sequence, count + 对应数据数组(ppgData/accData/ppgRedData/irData)
 + (void)ringGetHistorySensorRaw:(void(^)(int code, id data))block dataBlock:(void(^)(int code, int progress, id data))dataBlock;
 
+/// 独立同步体动记录，需isSupportActigraphy为YES。
+/// code=0时返回全部记录（无数据为空数组）；非0表示失败，records为nil。
++ (void)syncActigraphy:(void(^)(int code, NSArray<DHActigraphySyncModel *> * _Nullable records))block;
+
 #pragma mark- 工厂测试与校正
 /// 启动工厂测试
 /// @param testMode 测试模式: 0x15=心率校正
@@ -480,6 +485,20 @@ NS_ASSUME_NONNULL_BEGIN
 + (void)setCustomerModel:(NSString *)model block:(void(^)(int code, id data))block;
 /// 获取客户型号，成功时data为NSString。Get customer model; data is NSString on success.
 + (void)getCustomerModel:(void(^)(int code, id data))block;
+
+/// 设置设备外观颜色：0未设置、1黑色、2粉色、3红色、4银色、5金色。需 isSupportDeviceBodyColor。
+/// Set device body color: 0 not set, 1 black, 2 pink, 3 red, 4 silver, 5 gold.
++ (void)setDeviceBodyColor:(NSInteger)color block:(void(^)(int code, id data))block;
+/// 获取设备外观颜色；成功时 data 为 NSNumber。Get device body color as NSNumber.
++ (void)getDeviceBodyColor:(void(^)(int code, id data))block;
+/// 设置设备尺寸号，0表示未设置。需 isSupportDeviceSize。Set device size; 0 means not set.
++ (void)setDeviceSize:(NSInteger)size block:(void(^)(int code, id data))block;
+/// 获取设备尺寸，成功时data为NSNumber尺寸号。Get device size as NSNumber.
++ (void)getDeviceSize:(void(^)(int code, id data))block;
+/// 设置震动总开关。需 isSupportVibrationSwitch。Set the master vibration switch.
++ (void)setVibrationSwitch:(BOOL)enabled block:(void(^)(int code, id data))block;
+/// 获取震动总开关；成功时 data 为 NSNumber(BOOL)。Get the vibration switch as NSNumber(BOOL).
++ (void)getVibrationSwitch:(void(^)(int code, id data))block;
 
 #pragma mark- Muslim时间显示模式
 

@@ -138,6 +138,15 @@
 "rw_temperature" = "Temperature";
 "rw_tasbeeh_count" = "Tasbeeh Count";
 "rw_multi_sport" = "Multi-sport";
+"rw_actigraphy" = "体動記録";
+"rw_actigraphy_sync" = "体動記録を同期";
+"rw_actigraphy_syncing" = "体動記録を同期中…";
+"rw_actigraphy_sync_hint" = "ボタンをタップして体動記録を同期します。";
+"rw_actigraphy_entry_hint" = "詳細画面で同期";
+"rw_actigraphy_groups" = "%lu組の記録";
+"rw_actigraphy_sync_complete" = "同期完了：%lu組";
+"rw_actigraphy_valid_count" = "有効項目数：%lu/30";
+"rw_actigraphy_empty" = "体動記録がありません。上の同期ボタンをタップしてください。";
 "rw_unit_steps" = "steps";
 "rw_unit_minutes" = "min";
 "rw_unit_times" = "times";

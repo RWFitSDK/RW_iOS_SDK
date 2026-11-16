@@ -15,7 +15,11 @@
 @implementation RWScanDeviceCellModel
 @end
 
-@interface RWScanDeviceCell : BaseTableViewCell
+@interface RWScanDeviceCell : UITableViewCell
+@property (nonatomic, strong) RWScanDeviceCellModel *model;
+@property (nonatomic, strong) UILabel *nameLabel;
+@property (nonatomic, strong) UILabel *rssiLabel;
+@property (nonatomic, strong) UILabel *detailLabel;
 @property (nonatomic, strong) UILabel *deviceFormLabel;
 @end
 
@@ -25,31 +29,67 @@
 {
     self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
     if (self) {
+        self.selectionStyle = UITableViewCellSelectionStyleNone;
+        self.contentView.backgroundColor = HomeColor_BackgroundColor;
+        UIView *cardView = [[UIView alloc] init];
+        cardView.backgroundColor = HomeColor_BlockColor;
+        cardView.layer.cornerRadius = 10;
+        [self.contentView addSubview:cardView];
+
+        self.nameLabel = [[UILabel alloc] init];
+        self.nameLabel.font = HomeFont_TitleFont;
+        self.nameLabel.textColor = HomeColor_TitleColor;
+        self.nameLabel.numberOfLines = 0;
+        self.rssiLabel = [[UILabel alloc] init];
+        self.rssiLabel.font = HomeFont_SubTitleFont;
+        self.rssiLabel.textColor = HomeColor_SubTitleColor;
+        self.rssiLabel.textAlignment = NSTextAlignmentRight;
+        [self.rssiLabel setContentHuggingPriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
+        [self.rssiLabel setContentCompressionResistancePriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
+        UIStackView *titleRow = [[UIStackView alloc] initWithArrangedSubviews:@[self.nameLabel, self.rssiLabel]];
+        titleRow.axis = UILayoutConstraintAxisHorizontal;
+        titleRow.alignment = UIStackViewAlignmentTop;
+        titleRow.spacing = 10;
+
+        self.detailLabel = [[UILabel alloc] init];
+        self.detailLabel.font = HomeFont_SubTitleFont;
+        self.detailLabel.textColor = HomeColor_SubTitleColor;
+        self.detailLabel.numberOfLines = 0;
         self.deviceFormLabel = [[UILabel alloc] init];
         self.deviceFormLabel.font = HomeFont_SubTitleFont;
         self.deviceFormLabel.textColor = HomeColor_SubTitleColor;
-        self.deviceFormLabel.textAlignment = NSTextAlignmentRight;
-        self.deviceFormLabel.adjustsFontSizeToFitWidth = YES;
-        self.deviceFormLabel.minimumScaleFactor = 0.7;
+        self.deviceFormLabel.numberOfLines = 0;
         self.deviceFormLabel.hidden = YES;
-        UIView *cardView = self.leftTitleLabel.superview;
-        [cardView addSubview:self.deviceFormLabel];
-        [self.deviceFormLabel mas_makeConstraints:^(MASConstraintMaker *make) {
-            make.left.equalTo(self.leftTitleLabel.mas_right).offset(5);
+        UIStackView *contentStack = [[UIStackView alloc] initWithArrangedSubviews:
+            @[titleRow, self.detailLabel, self.deviceFormLabel]];
+        contentStack.axis = UILayoutConstraintAxisVertical;
+        contentStack.spacing = 7;
+        [cardView addSubview:contentStack];
+        [cardView mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.top.equalTo(self.contentView);
+            make.left.equalTo(self.contentView).offset(15);
+            make.right.equalTo(self.contentView).offset(-15);
+            make.bottom.equalTo(self.contentView).offset(-10);
+        }];
+        [contentStack mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.top.equalTo(cardView).offset(12);
+            make.left.equalTo(cardView).offset(15);
             make.right.equalTo(cardView).offset(-15);
-            make.bottom.equalTo(cardView).offset(-8);
+            make.bottom.equalTo(cardView).offset(-12);
         }];
     }
     return self;
 }
 
-- (void)setModel:(BaseCellModel *)model
+- (void)setModel:(RWScanDeviceCellModel *)model
 {
-    [super setModel:model];
-    NSString *text = [model isKindOfClass:[RWScanDeviceCellModel class]]
-        ? ((RWScanDeviceCellModel *)model).deviceFormText : nil;
-    self.deviceFormLabel.text = text;
-    self.deviceFormLabel.hidden = text.length == 0;
+    _model = model;
+    self.nameLabel.text = model.leftTitle;
+    self.rssiLabel.text = model.subTitle;
+    self.detailLabel.text = model.contentTitle;
+    self.detailLabel.hidden = model.contentTitle.length == 0;
+    self.deviceFormLabel.text = model.deviceFormText;
+    self.deviceFormLabel.hidden = model.deviceFormText.length == 0;
 }
 
 @end
@@ -196,6 +236,21 @@
         cellModel.subTitle = [NSString stringWithFormat:@"%ld",(long)model.rssi];
         cellModel.deviceFormText = model.deviceForm >= 0 && model.deviceForm < (NSInteger)deviceFormKeys.count
             ? NSLocalizedString(deviceFormKeys[model.deviceForm], nil) : @"";
+        if (model.deviceBodyColor >= 0 && model.deviceBodyColor <= 5) {
+            BOOL isChinese = [[[NSLocale preferredLanguages] firstObject] hasPrefix:@"zh"];
+            NSArray<NSString *> *colors = isChinese ? @[@"未设置", @"黑色", @"粉色", @"红色", @"银色", @"金色"]
+                : @[@"Not set", @"Black", @"Pink", @"Red", @"Silver", @"Gold"];
+            cellModel.deviceFormText = cellModel.deviceFormText.length
+                ? [NSString stringWithFormat:@"%@ · %@", cellModel.deviceFormText, colors[model.deviceBodyColor]]
+                : colors[model.deviceBodyColor];
+        }
+        if (model.deviceSize >= 0 && model.deviceSize <= 255) {
+            BOOL isChinese = [[[NSLocale preferredLanguages] firstObject] hasPrefix:@"zh"];
+            NSString *sizeText = model.deviceSize == 0 ? (isChinese ? @"尺寸未设置" : @"Size not set")
+                : [NSString stringWithFormat:isChinese ? @"%ld号" : @"Size %ld", (long)model.deviceSize];
+            cellModel.deviceFormText = cellModel.deviceFormText.length
+                ? [NSString stringWithFormat:@"%@ · %@", cellModel.deviceFormText, sizeText] : sizeText;
+        }
         // 广播充电状态: 0未充电 1充电中 2充满; -1未提供时不显示。
         NSString *batteryStatusText = @"";
         if (model.batteryStatus >= 0 && model.batteryStatus <= 2) {
@@ -313,7 +368,8 @@
         _myTableView.showsVerticalScrollIndicator = NO;
         _myTableView.showsHorizontalScrollIndicator = NO;
         _myTableView.separatorStyle = UITableViewCellSeparatorStyleNone;
-        _myTableView.rowHeight = 90;
+        _myTableView.rowHeight = UITableViewAutomaticDimension;
+        _myTableView.estimatedRowHeight = 110;
         _myTableView.delegate = self;
         _myTableView.dataSource = self;
         [_myTableView registerClass:[RWScanDeviceCell class] forCellReuseIdentifier:@"RWScanDeviceCell"];

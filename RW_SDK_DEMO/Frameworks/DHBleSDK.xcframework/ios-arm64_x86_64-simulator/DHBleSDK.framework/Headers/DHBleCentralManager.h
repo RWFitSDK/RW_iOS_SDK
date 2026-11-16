@@ -31,8 +31,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// 开始搜索 注意:如果设备未解绑,即使搜索到设备也不调用代理返回设备列表
 + (void)startScan;
-/// 开始搜索并按客户代码过滤
-/// @param customerCode nil表示不过滤；0x00返回旧格式和协议v1公版设备；0x01-0xFE仅返回协议v1且客户代码一致的设备
+/// 兼容旧调用，与 startScan 行为相同，建议使用 startScan。
+/// @param customerCode 兼容保留，参数被忽略，不进行客户代码过滤。
 + (void)startScanWithCustomerCode:(nullable NSNumber *)customerCode;
 /// 停止搜索
 + (void)stopScan;

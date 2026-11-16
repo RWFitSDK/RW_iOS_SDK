@@ -9,14 +9,24 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @interface DeviceFuncV2Model : NSObject
+/// 是否支持儿童感恩手环功能，协议offset43 bit0。
+@property (nonatomic, assign) BOOL isSupportGratitudeBand;
 
 /// 是否支持PPG采样率设置与获取 / Supports PPG sample-rate settings and queries.
 @property (nonatomic, assign) BOOL isSupportPpgSampleRate;
 /// 是否支持客户型号设置与获取 / Supports customer-model settings and queries.
 @property (nonatomic, assign) BOOL isSupportCustomerModel;
+/// 是否支持设备外观颜色设置与获取 / Supports device body color settings and queries.
+@property (nonatomic, assign) BOOL isSupportDeviceBodyColor;
+/// 是否支持设备尺寸设置与获取。Supports device size settings and retrieval.
+@property (nonatomic, assign) BOOL isSupportDeviceSize;
+/// 是否支持震动总开关设置与获取 / Supports the master vibration switch.
+@property (nonatomic, assign) BOOL isSupportVibrationSwitch;
 
 @property (nonatomic, assign) BOOL isTakePhoto;
 @property (nonatomic, assign) BOOL isLEDLight;
+/// App亮度设置是否隐藏“关闭”选项；默认NO。
+@property (nonatomic, assign) BOOL isHideLedLightOff;
 
 @property (nonatomic, assign) BOOL isWearDir; //手势方向
 
@@ -92,6 +102,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL isDataTypeBloodSugar;
 @property (nonatomic, assign) BOOL isDataTypeMuslimCount;
 @property (nonatomic, assign) BOOL isDataTypeTemperature; //是否支持体温
+@property (nonatomic, assign) BOOL isSupportActigraphy; //是否支持体动历史记录
 /// 计步明细间隔，单位：分钟；旧设备或功能位未配置时为60
 /// 当天计步明细间隔，单位：分钟；仅 BLE_KEY_ACTIVITY_CURRENT_DAY (0x051A) 使用
 @property (nonatomic, assign) NSInteger activityDataInterval;

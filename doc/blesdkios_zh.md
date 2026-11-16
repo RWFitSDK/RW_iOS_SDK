@@ -117,6 +117,8 @@ https://github.com/nordicsemi/IOS-nRF-Connect-Device-Manager
 | deviceModel | NSString | 设备型号标识，不是设备唯一序列号；未提供时为空 |
 | batteryStatus | NSInteger | 充电状态：`0`未充电、`1`充电中、`2`充满；`-1`未提供或不支持，需设备固件支持 |
 | deviceForm | NSInteger | 产品形态：`0`无屏戒指、`1`有屏戒指、`2`无屏手链、`3`有屏手链、`4`无屏手环、`5`有屏手环、`6`手表；`-1`未提供或不支持，需设备固件支持 |
+| deviceBodyColor | NSInteger | 设备外观颜色：`0`未设置、`1`黑色、`2`粉色、`3`红色、`4`银色、`5`金色；`-1`未提供或不支持，需设备固件支持 |
+| deviceSize | NSInteger | 设备尺寸号，如`9`表示9号、`10`表示10号；`0`未设置，`-1`未提供或不支持，需设备固件支持 |
 
 > `batteryStatus` 不是电量百分比。电量百分比需连接后获取，见 [3.2.1.4 获取电量](#3214-获取电量)。
 
@@ -238,9 +240,15 @@ DHPeripheralModel *deviceModel = self.deviceArray[indexPath.row];
 
 > [!IMPORTANT]
 >
-> 因设备型号多, 支持的功能不同,所以引入功能表信息,可查询设备功能支持情况. 具体参考DeviceFuncV2Model类. 可根据业务自行保存功能表内容. 
+> 功能表是设备能力说明，不是功能开关。功能支持标志为 `YES` 表示支持，`NO` 表示不支持。
+>
+> 修改 `DeviceFuncV2Model` 属性或调用 SDK 设置接口，都不能让设备获得原本不支持的功能。SDK 接口只能控制设备已经支持的功能。
+>
+> 如需增加功能支持，须确认是否可通过适配固件升级实现；涉及硬件能力时，需更换支持该功能的设备型号。
 
-`-(void)centralManagerDidFunctionMenu:(DeviceFuncV2Model *)deviceFuncModel`
+可根据业务需要保存功能表；更换设备或升级固件后，应重新获取。
+
+`- (void)centralManagerDidFunctionMenu:(DeviceFuncV2Model *)deviceFuncModel peripheral:(DHPeripheralModel *)peripheral;`
 
 DeviceFuncV2Model类属性定义:
 
@@ -248,7 +256,7 @@ DeviceFuncV2Model类属性定义:
 
 | 属性                        | 说明                        |
 | --------------------------- | --------------------------- |
-| isPushMsgEnableSwitch       | 是否启用消息控制开关        |
+| isPushMsgEnableSwitch       | 是否支持消息推送开关        |
 | pushMsgSwitchValue          | 消息类型支持能力低32位（bit0-bit31） |
 | pushMsgSwitchValue2         | 消息类型支持能力高32位（bit32-bit63），旧设备默认为0 |
 | activityDataInterval        | 当天计步明细间隔（分钟）；未配置时按60处理 |
@@ -294,6 +302,9 @@ DeviceFuncV2Model类属性定义:
 | isSupportPpgSampleRate      | 是否支持PPG采样率设置与获取（5.2.5.4） |
 | isSupportCompositeMeasurement | 是否支持综合检测（3.2.2.1） |
 | isSupportCustomTextDisplay | 是否支持自定义字符显示与时长设置（3.2.1.35） |
+| isSupportDeviceBodyColor | 是否支持设备外观颜色设置与获取（3.2.1.36） |
+| isSupportVibrationSwitch | 是否支持震动总开关设置与获取（3.2.1.37） |
+| isSupportDeviceSize | 是否支持设备尺寸设置与获取（3.2.1.38） |
 
 ##### 3.1.8 使用外部 CBCentralManager 搜索并由 SDK 连接
 
@@ -472,6 +483,8 @@ userInfoModel.age = 20;
 | uiVersion | NSString | UI版本号 |
 | deviceForm | NSInteger | 产品形态：0无屏戒指、1有屏戒指、2无屏手链、3有屏手链、4无屏手环、5有屏手环、6手表；-1未提供或不支持 |
 | customerModel | NSString | 客户型号；未提供时与原设备型号一致 |
+| deviceBodyColor | NSInteger | 设备外观颜色：0未设置、1黑色、2粉色、3红色、4银色、5金色；-1未提供或不支持，需设备固件支持 |
+| deviceSize | NSInteger | 设备尺寸号，如9表示9号、10表示10号；0未设置，-1未提供或不支持。设置与查询见3.2.1.38 |
 
 > **注意:** 升级固件前必须校验设备的 `deviceModel` 与升级固件对应的设备型号是否一致, 只有型号一致时才能进行升级, 型号不一致时禁止升级.
 
@@ -892,7 +905,7 @@ sleepModel.sleepEndMin = 00;
 
 `- (BOOL)isMessageTypeSupported:(NSInteger)index;`
 
-使用 `centralManagerDidFunctionMenu:` 返回的 `DeviceFuncV2Model` 调用，YES表示支持，NO表示不支持；不表示当前开关状态。
+使用 `centralManagerDidFunctionMenu:peripheral:` 返回的 `DeviceFuncV2Model` 调用，YES表示支持，NO表示不支持；不表示当前开关状态。
 
 | 参数 | 类型 | 说明 |
 | ---- | ---- | ---- |
@@ -900,6 +913,7 @@ sleepModel.sleepEndMin = 00;
 
 ```objective-c
 - (void)centralManagerDidFunctionMenu:(DeviceFuncV2Model *)model
+                         peripheral:(DHPeripheralModel *)peripheral
 {
     BOOL supportsTelegram = [model isMessageTypeSupported:17];
     BOOL supportsYandexMarket = [model isMessageTypeSupported:32];
@@ -1185,7 +1199,7 @@ DHDevicePushType 说明：
 
 | 字段 | 说明 | 值 |
 | ---- | ---- | ---- |
-| keyType | 按键类型 | 1：触摸按键；2：跌落（需开启跌落提醒，见 3.2.1.24）；3：SOS；4：连续点击 |
+| keyType | 按键类型 | 1：触摸按键；2：跌落（需开启跌落提醒）；3：SOS；4：连续点击 |
 | touchType | 触摸类型/点击次数 | 触摸按键时：1：单击；2：双击；3：三击；4：长按；5：甩动；6：Release(长按后松手)。跌落时默认为1；SOS时不使用；连续点击时表示次数(1-9) |
 
 > 此功能需设备固件定制支持并启用。
@@ -1292,46 +1306,6 @@ id observer = [[NSNotificationCenter defaultCenter]
         } else {
             NSLog(@"HR calibration done, result=%zd", result);
         }
-    }
-}];
-```
-
-
-
-##### 3.2.1.24 跌落提醒设置
-
-> 设置或获取跌落提醒开关. 开启后设备检测到跌落时会通过触摸事件通知(3.2.1.21)上报.
->
-> 跌落事件通过 `BluetoothNotificationProtocolPush` 通知返回，`dataType` 为 `DHDevicePushTypeTouchEvent`，`dataValue` 中 `keyType=2` 表示跌落事件，见 3.2.1.21。
->
-> 配置表属性: `isSupportFallDetect`
-
-方法说明:
-
-`+(void)setFallDetect:(UInt8)enable block:(void(^)(int code, id data))block`
-
-`+(void)getFallDetect:(void(^)(int code, id data))block`
-
-参数说明:
-
-| 参数   | 类型  | 说明 | 值            |
-| ------ | ----- | ---- | ------------- |
-| enable | UInt8 | 开关 | 0: 关, 1: 开 |
-
-调用示例:
-
-```objective-c
-//获取跌落提醒开关
-[DHBleCommand getFallDetect:^(int code, id  _Nonnull data) {
-    if (code == 0){
-        NSLog(@"getFallDetect OK: %@", data);
-    }
-}];
-
-//设置跌落提醒开启
-[DHBleCommand setFallDetect:1 block:^(int code, id  _Nonnull data) {
-    if (code == 0){
-        NSLog(@"setFallDetect ON OK");
     }
 }];
 ```
@@ -1770,6 +1744,79 @@ bean.remindDuration = 60;
 if (supportMenu.isSupportCustomTextDisplay) {
     [DHBleCommand showCustomText:@"A627" durationSeconds:5 block:^(int code, id data) {
         NSLog(@"showCustomText code=%d", code);
+    }];
+}
+```
+
+##### 3.2.1.36 设备外观颜色设置与获取
+
+> 功能配置表属性：`isSupportDeviceBodyColor`。设置或查询设备外观颜色，也可通过扫描结果 `DHPeripheralModel.deviceBodyColor` 或设备信息 `DHFirmwareVersionModel.deviceBodyColor` 读取。
+
+`+ (void)setDeviceBodyColor:(NSInteger)color block:(void(^)(int code, id data))block`
+
+`+ (void)getDeviceBodyColor:(void(^)(int code, id data))block`
+
+| 参数 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| color | NSInteger | `0`：未设置<br>`1`：黑色<br>`2`：粉色<br>`3`：红色<br>`4`：银色<br>`5`：金色 |
+| block | block | `code=0` 表示成功，非0表示失败；查询成功时 `data` 为 `NSNumber`，通过 `integerValue` 获取颜色值 |
+
+```objective-c
+if (supportMenu.isSupportDeviceBodyColor) {
+    [DHBleCommand setDeviceBodyColor:5 block:^(int code, id data) {
+        NSLog(@"setDeviceBodyColor code=%d", code);
+    }];
+    // 查询当前颜色
+    [DHBleCommand getDeviceBodyColor:^(int code, id data) {
+        if (code == 0) NSLog(@"外观颜色=%ld", (long)[data integerValue]);
+    }];
+}
+```
+
+##### 3.2.1.37 震动总开关设置与获取
+
+> 功能配置表属性：`isSupportVibrationSwitch`。设置或查询设备震动总开关，需设备固件支持。
+
+`+ (void)setVibrationSwitch:(BOOL)enabled block:(void(^)(int code, id data))block`
+
+`+ (void)getVibrationSwitch:(void(^)(int code, id data))block`
+
+| 参数 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| enabled | BOOL | `YES`：开启<br>`NO`：关闭 |
+| block | block | `code=0` 表示成功，非0表示失败；查询成功时 `data` 为 `NSNumber`，通过 `boolValue` 获取当前开关 |
+
+```objective-c
+if (supportMenu.isSupportVibrationSwitch) {
+    [DHBleCommand setVibrationSwitch:YES block:^(int code, id data) {
+        NSLog(@"setVibrationSwitch code=%d", code);
+    }];
+    // 查询当前开关
+    [DHBleCommand getVibrationSwitch:^(int code, id data) {
+        if (code == 0) NSLog(@"震动总开关=%d", [data boolValue]);
+    }];
+}
+```
+
+
+##### 3.2.1.38 设备尺寸设置与获取
+
+> 功能配置表属性：`isSupportDeviceSize`。设置或查询设备尺寸，也可通过扫描结果 `DHPeripheralModel.deviceSize` 或设备信息 `DHFirmwareVersionModel.deviceSize` 读取，需设备固件支持。
+
+`+ (void)setDeviceSize:(NSInteger)size block:(void(^)(int code, id data))block;`
+
+`+ (void)getDeviceSize:(void(^)(int code, id data))block;`
+
+| 参数 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| size | NSInteger | 设备尺寸号，如`9`表示9号、`10`表示10号；`0`表示未设置 |
+
+`code=0` 表示成功；查询成功时 `data` 为 `NSNumber` 尺寸号。
+
+```objc
+if (supportMenu.isSupportDeviceSize) {
+    [DHBleCommand getDeviceSize:^(int code, id data) {
+        if (code == 0) NSLog(@"设备尺寸：%@", data);
     }];
 }
 ```
@@ -2861,7 +2908,7 @@ id observer = [[NSNotificationCenter defaultCenter]
 
 先注册监听再启动。录音状态仍通过 `DHDevicePushTypeRecordStatus` 推送或 `getRecordStatus` 查询，`realtime` 表示当前是否为实时方式。
 
-#### 5.2.5 传感器原始数据
+#### 5.2.5 传感器原始数据（定制功能）
 
 本节包含两种不同的数据方式:
 
@@ -3113,6 +3160,12 @@ tModeSetModel.interval = 60; // 推荐监测间隔：60分钟
 
 ## SDK修订记录
 
+**V2.0.0_261116** (2026.11.16)
+
+- 新增设备尺寸设置与获取接口 `setDeviceSize:block:`/`getDeviceSize:`（3.2.1.38），功能配置表新增 `isSupportDeviceSize`，扫描结果与设备信息新增 `deviceSize`（0未设置、-1未提供或不支持）。
+- 新增设备外观颜色设置与获取接口 `setDeviceBodyColor:block:`/`getDeviceBodyColor:`（3.2.1.36），功能配置表新增 `isSupportDeviceBodyColor`。
+- 新增震动总开关设置与获取接口 `setVibrationSwitch:block:`/`getVibrationSwitch:`（3.2.1.37），功能配置表新增 `isSupportVibrationSwitch`。
+
 **V2.0.0_261105** (2026.11.05)
 
 - 新增小睡数据支持，睡眠记录新增 `sleepCategory` 区分夜睡与小睡（3.2.2.4）。
@@ -3194,7 +3247,7 @@ tModeSetModel.interval = 60; // 推荐监测间隔：60分钟
 
 - 添加定时体温监测功能(3.2.2.2.7)
 - 功能配置表添加`isDataTypeTemperature`
-- 添加跌落提醒设置功能(3.2.1.24)
+- 添加跌落提醒设置功能
 - 功能配置表添加`isSupportFallDetect`
 
 **V2.0.0_20260522** (2026.05.22)

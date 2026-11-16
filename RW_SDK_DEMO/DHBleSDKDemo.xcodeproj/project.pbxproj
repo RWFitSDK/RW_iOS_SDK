@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A61107000000000000000103 /* RWActigraphyController.m in Sources */ = {isa = PBXBuildFile; fileRef = A61107000000000000000102 /* RWActigraphyController.m */; };
 		1EFD5E4B89206B9CA649FE50 /* iOSMcuManagerLibrary in Frameworks */ = {isa = PBXBuildFile; productRef = A5391A86A7338E3F02C6EB0D /* iOSMcuManagerLibrary */; };
 		2ECAE87C98F14DD26008DB75 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = F58D4F8FB9661BAC7BA1BC70 /* ZIPFoundation */; };
 		58D363902B093AAA52588EAC /* RWLogArchive.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F246BD2CF516A2758B6AB82 /* RWLogArchive.swift */; };
@@ -71,6 +72,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A61107000000000000000101 /* RWActigraphyController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RWActigraphyController.h; sourceTree = "<group>"; };
+		A61107000000000000000102 /* RWActigraphyController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RWActigraphyController.m; sourceTree = "<group>"; };
 		277623512415C9057AF85BD5 /* UIColor+DHColor.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = "UIColor+DHColor.h"; sourceTree = "<group>"; };
 		38E3FCD7A64A8F44D2D227E0 /* DHProgressHUD.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = DHProgressHUD.h; sourceTree = "<group>"; };
 		598799A7BD535A7333CB9A2F /* Pods-DHBleSDKDemo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DHBleSDKDemo.release.xcconfig"; path = "Target Support Files/Pods-DHBleSDKDemo/Pods-DHBleSDKDemo.release.xcconfig"; sourceTree = "<group>"; };
@@ -231,6 +234,8 @@
 		AB3AA1A9288A3EC900FAC387 /* Controllers */ = {
 			isa = PBXGroup;
 			children = (
+				A61107000000000000000101 /* RWActigraphyController.h */,
+				A61107000000000000000102 /* RWActigraphyController.m */,
 				AB1F60AC2F1B3FA700758020 /* WorkOut */,
 				A92026090000000000000014 /* RingRecording */,
 				D10000000000000000000001 /* RWHealthHomeController.h */,
@@ -546,6 +551,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A61107000000000000000103 /* RWActigraphyController.m in Sources */,
 				AB036DAB2D378CEA00B69787 /* BaseTableViewCell.m in Sources */,
 				D10000000000000000000005 /* RWHealthHomeController.m in Sources */,
 				A92026090000000000000013 /* RecordingViewController.m in Sources */,

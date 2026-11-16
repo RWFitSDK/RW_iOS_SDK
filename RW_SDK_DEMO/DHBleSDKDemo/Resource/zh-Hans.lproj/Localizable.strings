@@ -139,6 +139,15 @@
 "rw_temperature" = "体温";
 "rw_tasbeeh_count" = "赞念计数";
 "rw_multi_sport" = "多运动";
+"rw_actigraphy" = "体动记录";
+"rw_actigraphy_sync" = "同步体动记录";
+"rw_actigraphy_syncing" = "正在同步体动记录…";
+"rw_actigraphy_sync_hint" = "点击按钮同步体动记录";
+"rw_actigraphy_entry_hint" = "进入详情，点击同步";
+"rw_actigraphy_groups" = "%lu组记录";
+"rw_actigraphy_sync_complete" = "同步完成，共%lu组";
+"rw_actigraphy_valid_count" = "有效项数：%lu/30";
+"rw_actigraphy_empty" = "暂无体动记录，请点击上方同步按钮";
 "rw_unit_steps" = "步";
 "rw_unit_minutes" = "分钟";
 "rw_unit_times" = "次";

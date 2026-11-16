@@ -310,6 +310,8 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
     self.functionBaseList = [self.functionBaseList arrayByAddingObject:@"Custom Number Display-自定义数字显示"];
     self.functionBaseList = [self.functionBaseList arrayByAddingObjectsFromArray:@[@"PPG Sample Rate-PPG采样率", @"Customer Model-客户型号"]];
     self.functionBaseList = [self.functionBaseList arrayByAddingObjectsFromArray:@[@"Custom Text Display-自定义字符显示", @"Composite Measurement-综合检测"]];
+    self.functionBaseList = [self.functionBaseList arrayByAddingObjectsFromArray:@[@"Device Body Color-设备外观颜色", @"Vibration Switch-震动总开关"]];
+    self.functionBaseList = [self.functionBaseList arrayByAddingObject:@"Device Size-设备尺寸"];
 
     self.functionHealthList = @[@"Real-time, single-instance health data monitoring-实时单次启动健康数据检测(心率,血氧,HRV, 压力, 血糖)", @"Get HeartRate Monitor(获取心率监听)", @"Set HeartRate Monitor(设置心率监听)",@"Get Blood oxygen Monitor(获取血氧监听)", @"Set Blood oxygen Monitor(设置血氧监听)",@"Get HRV Monitor(获取HRV监听)", @"Set HRV Monitor(设置HRV监听)",@"Get PPG Monitor(获取PPG监听)", @"Set PPG Monitor(设置PPG监听)",@"Get Stress Monitor(获取压力监听)", @"Set Stress Monitor(设置压力监听)",@"Get Blood Sugar Monitor(获取血糖监听)", @"Set Blood Sugar Monitor(设置血糖监听)", @"Sync all your health data(同步所有健康数据)", @"Get Blood Pressure Monitor(获取血压监听)", @"Set Blood Pressure Monitor(设置血压监听)", @"Get Temperature Monitor(获取定时体温监测)", @"Set Temperature Monitor(设置定时体温监测)", @"Get Muslim Time Display Mode(获取Muslim时间显示模式)", @"Set Muslim Time Display Mode(设置Muslim时间显示模式)", @"Get Muslim Count Reset Mode(获取Muslim计数清零方式)", @"Set Muslim Count Reset Mode(设置Muslim计数清零方式)", @"PPG Raw Data(PPG原始数据：启动、停止采集或获取历史)", @"HR Calibration(心率校正)", @"Get Fall Detect(获取跌落提醒开关)", @"Set Fall Detect(设置跌落提醒)", @"Get Count Reminder(获取计数提醒间隔)", @"Set Count Reminder(设置计数提醒间隔)"];
 
@@ -723,9 +725,17 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
     if (dataType != DHDevicePushTypePower) return;
     DHBatteryInfoModel *model = userInfo[@"dataValue"];
     if (![model isKindOfClass:DHBatteryInfoModel.class]) return;
-    NSLog(@"Realtime Battery power=%zd charging=%zd", model.battery, model.status);
-    NSString *charging = model.status == 1 ? RWChoiceText(@"charging", @"充电中") : RWChoiceText(@"not charging", @"未充电");
-    [self updateDetailText:[NSString stringWithFormat:@"%zd%%, %@", model.battery, charging] section:0 sourceRow:4];
+    [self displayBattery:model source:@"push"];
+}
+
+- (void)displayBattery:(DHBatteryInfoModel *)model source:(NSString *)source
+{
+    NSString *charging;
+    if (model.status == 0) charging = RWChoiceText(@"Not charging", @"未充电");
+    else if (model.status == 1) charging = RWChoiceText(@"Charging", @"充电中");
+    else charging = [NSString stringWithFormat:RWChoiceText(@"Unknown (%zd)", @"未知（%zd）"), model.status];
+    NSLog(@"[DemoBattery] source=%@ battery=%zd%% chargingStatus=%zd(%@)", source, model.battery, model.status, charging);
+    [self updateDetailText:[NSString stringWithFormat:@"%zd%% · %@", model.battery, charging] section:0 sourceRow:4];
 }
 
 - (void)sensorRawDataNotification:(NSNotification *)ntf
@@ -1150,6 +1160,122 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
     }];
 }
 
+- (NSString *)deviceSizeText:(NSInteger)size
+{
+    return size == 0 ? RWChoiceText(@"Not set", @"未设置")
+        : [NSString stringWithFormat:RWChoiceText(@"Size %ld", @"%ld号"), (long)size];
+}
+
+- (void)showDeviceSizeActions
+{
+    if (![DHBluetoothManager shareInstance].deviceFuncV2Model.isSupportDeviceSize) return;
+    NSString *uuid = [DHBleCentralManager currentBindedUUID] ?: @"";
+    __weak typeof(self) weakSelf = self;
+    [self showPickerWithTitle:RWChoiceText(@"Device Size", @"设备尺寸")
+                     options:@[RWChoiceText(@"Query", @"查询"), RWChoiceText(@"Set", @"设置")]
+               selectedIndex:0 selection:^(NSInteger index) {
+        if (!weakSelf || ![DHBleCentralManager isConnected] ||
+            ![uuid isEqualToString:([DHBleCentralManager currentBindedUUID] ?: @"")]) return;
+        if (index == 0) {
+            [DHBleCommand getDeviceSize:^(int code, id data) {
+                NSLog(@"getDeviceSize code=%d data=%@", code, data);
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (!weakSelf || ![DHBleCentralManager isConnected] ||
+                        ![uuid isEqualToString:([DHBleCentralManager currentBindedUUID] ?: @"")]) return;
+                    if (code == 0 && [data isKindOfClass:NSNumber.class]) {
+                        [weakSelf updateDetailText:[weakSelf deviceSizeText:[data integerValue]] section:0 sourceRow:47];
+                    } else { SHOWHUD(RWChoiceText(@"Query failed", @"查询失败")) }
+                });
+            }];
+            return;
+        }
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:RWChoiceText(@"Device Size", @"设备尺寸")
+            message:RWChoiceText(@"Enter a size, e.g. 9; 0 means not set", @"输入尺寸号，如9；0表示未设置")
+            preferredStyle:UIAlertControllerStyleAlert];
+        [alert addTextFieldWithConfigurationHandler:^(UITextField *field) { field.keyboardType = UIKeyboardTypeNumberPad; }];
+        __weak UIAlertController *weakAlert = alert;
+        [alert addAction:[UIAlertAction actionWithTitle:RWChoiceText(@"Cancel", @"取消") style:UIAlertActionStyleCancel handler:nil]];
+        [alert addAction:[UIAlertAction actionWithTitle:RWChoiceText(@"Confirm", @"确认") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+            if (!weakSelf || ![DHBleCentralManager isConnected] ||
+                ![uuid isEqualToString:([DHBleCentralManager currentBindedUUID] ?: @"")]) return;
+            NSString *input = weakAlert.textFields.firstObject.text;
+            if (!input.length || [input rangeOfCharacterFromSet:NSCharacterSet.decimalDigitCharacterSet.invertedSet].location != NSNotFound) return;
+            NSInteger size = MAX((NSInteger)0, MIN((NSInteger)255, input.integerValue));
+            [DHBleCommand setDeviceSize:size block:^(int code, id data) {
+                NSLog(@"setDeviceSize size=%ld code=%d", (long)size, code);
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (!weakSelf || ![DHBleCentralManager isConnected] ||
+                        ![uuid isEqualToString:([DHBleCentralManager currentBindedUUID] ?: @"")]) return;
+                    if (code == 0) [weakSelf updateDetailText:[weakSelf deviceSizeText:size] section:0 sourceRow:47];
+                    else { SHOWHUD(RWChoiceText(@"Setting failed", @"设置失败")) }
+                });
+            }];
+        }]];
+        [weakSelf presentViewController:alert animated:YES completion:nil];
+    }];
+}
+
+- (NSArray<NSString *> *)deviceBodyColorOptions
+{
+    return @[RWChoiceText(@"Not set", @"未设置"), RWChoiceText(@"Black", @"黑色"), RWChoiceText(@"Pink", @"粉色"),
+             RWChoiceText(@"Red", @"红色"), RWChoiceText(@"Silver", @"银色"), RWChoiceText(@"Gold", @"金色")];
+}
+
+- (void)readAppearanceSettingForSourceRow:(NSInteger)row
+{
+    BOOL isColor = row == 45;
+    NSString *uuid = [DHBleCentralManager currentBindedUUID] ?: @"";
+    __weak typeof(self) weakSelf = self;
+    void (^callback)(int, id) = ^(int code, id data) {
+        NSLog(@"%@ code=%d data=%@", isColor ? @"getDeviceBodyColor" : @"getVibrationSwitch", code, data);
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (!weakSelf || ![DHBleCentralManager isConnected] ||
+                ![uuid isEqualToString:([DHBleCentralManager currentBindedUUID] ?: @"")]) return;
+            if (code != 0 || ![data isKindOfClass:NSNumber.class] ||
+                (isColor && ([data integerValue] < 0 || [data integerValue] > 5))) {
+                SHOWHUD(RWChoiceText(@"Query failed", @"查询失败"))
+                return;
+            }
+            NSString *text = isColor ? [weakSelf deviceBodyColorOptions][[data integerValue]]
+                : ([data boolValue] ? RWChoiceText(@"On", @"开启") : RWChoiceText(@"Off", @"关闭"));
+            [weakSelf updateDetailText:text section:0 sourceRow:row];
+        });
+    };
+    if (isColor) [DHBleCommand getDeviceBodyColor:callback];
+    else [DHBleCommand getVibrationSwitch:callback];
+}
+
+- (void)showAppearanceSettingForSourceRow:(NSInteger)row
+{
+    BOOL isColor = row == 45;
+    DeviceFuncV2Model *menu = [DHBluetoothManager shareInstance].deviceFuncV2Model;
+    if (!(isColor ? menu.isSupportDeviceBodyColor : menu.isSupportVibrationSwitch)) return;
+    NSString *uuid = [DHBleCentralManager currentBindedUUID] ?: @"";
+    NSArray<NSString *> *values = isColor ? [self deviceBodyColorOptions]
+        : @[RWChoiceText(@"On", @"开启"), RWChoiceText(@"Off", @"关闭")];
+    NSArray<NSString *> *options = [@[RWChoiceText(@"Query", @"查询")] arrayByAddingObjectsFromArray:values];
+    __weak typeof(self) weakSelf = self;
+    [self showPickerWithTitle:RWLocalizedFunctionTitle(self.functionBaseList[row]) options:options selectedIndex:0 selection:^(NSInteger index) {
+        if (!weakSelf || ![DHBleCentralManager isConnected] ||
+            ![uuid isEqualToString:([DHBleCentralManager currentBindedUUID] ?: @"")]) return;
+        if (index == 0) {
+            [weakSelf readAppearanceSettingForSourceRow:row];
+            return;
+        }
+        void (^callback)(int, id) = ^(int code, id data) {
+            NSLog(@"%@ option=%zd code=%d", isColor ? @"setDeviceBodyColor" : @"setVibrationSwitch", index, code);
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (!weakSelf || ![DHBleCentralManager isConnected] ||
+                    ![uuid isEqualToString:([DHBleCentralManager currentBindedUUID] ?: @"")]) return;
+                if (code == 0) [weakSelf readAppearanceSettingForSourceRow:row];
+                else { SHOWHUD(RWChoiceText(@"Setting failed", @"设置失败")) }
+            });
+        };
+        if (isColor) [DHBleCommand setDeviceBodyColor:index - 1 block:callback];
+        else [DHBleCommand setVibrationSwitch:index == 1 block:callback];
+    }];
+}
+
 - (void)rebuildVisibleFunctionIndexes
 {
     DeviceFuncV2Model *menu = [DHBluetoothManager shareInstance].deviceFuncV2Model;
@@ -1188,6 +1314,9 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
         if (menu.isSupportCustomerModel) [base addObject:@42];
         if (menu.isSupportCustomTextDisplay) [base addObject:@43];
         if (menu.isSupportCompositeMeasurement) [base addObject:@44];
+        if (menu.isSupportDeviceBodyColor) [base addObject:@45];
+        if (menu.isSupportVibrationSwitch) [base addObject:@46];
+        if (menu.isSupportDeviceSize) [base addObject:@47];
 
         // 实时单次检测统一放在首页的健康详情页，设备设置页不重复显示。
         addPair(health, menu.isDataTypeHeart, 1, 2);
@@ -1240,7 +1369,7 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
             case 34: return RWChoiceText(@"On / Off / Query", @"亮屏 / 息屏 / 查询");
             case 35: return RWChoiceText(@"Metric / Imperial / Query", @"公制 / 英制 / 查询");
             case 40: return @"0–9999";
-            case 41: case 42: return RWChoiceText(@"Query / Set", @"查询 / 设置");
+            case 41: case 42: case 45: case 46: case 47: return RWChoiceText(@"Query / Set", @"查询 / 设置");
             case 43: return RWChoiceText(@"Text / Duration", @"内容 / 显示时长");
             case 44: return RWChoiceText(@"Start / Stop", @"启动 / 停止");
             default: return run;
@@ -1413,9 +1542,7 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
             [DHBleCommand getBattery:^(int code, id  _Nonnull data) {
                 if (code == 0){
                     DHBatteryInfoModel *model = data;
-                    NSLog(@"getBattery OK 电量值 %zd 充电状态 %zd", model.battery, model.status);
-                    NSString *charging = model.status == 1 ? RWChoiceText(@"charging", @"充电中") : RWChoiceText(@"not charging", @"未充电");
-                    [self updateDetailText:[NSString stringWithFormat:@"%zd%%, %@", model.battery, charging] section:0 sourceRow:4];
+                    [self displayBattery:model source:@"query"];
                 }
             }];
         }
@@ -1952,6 +2079,12 @@ static NSString *RWLocalizedFunctionTitle(NSString *title)
         }
         else if (indexPath.row == 44){
             [self showCompositeMeasurementActions];
+        }
+        else if (indexPath.row == 45 || indexPath.row == 46){
+            [self showAppearanceSettingForSourceRow:indexPath.row];
+        }
+        else if (indexPath.row == 47){
+            [self showDeviceSizeActions];
         }
     }
     else if (indexPath.section == 1){
